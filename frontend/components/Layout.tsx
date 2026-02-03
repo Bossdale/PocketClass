@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Platform, StatusBar } from 'react-native';
 import { ShieldCheck, LogOut } from 'lucide-react-native';
 
 interface LayoutProps {
@@ -14,11 +14,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, onDisconnect }) => {
       <View style={styles.header}>
         <View style={styles.logoContainer}>
           <View style={styles.iconWrapper}>
-            {/* Fix: use stroke instead of color for lucide-react-native types */}
-            <ShieldCheck size={24} stroke="#2563eb" />
+            <Image 
+              source={require('../assets/images/pillsync-logo.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
-          <Text style={styles.logoText}>
-            MedBox <Text style={styles.logoHighlight}>Smart</Text>
+          <Text style={styles.logoText}><Text style={styles.logoHighlight}>PillSync</Text>
           </Text>
         </View>
         <TouchableOpacity onPress={onDisconnect} style={styles.logoutButton}>
@@ -37,6 +39,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
   header: {
     flexDirection: 'row',
@@ -53,10 +56,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconWrapper: {
-    padding: 8,
-    backgroundColor: '#dbeafe',
-    borderRadius: 8,
+    padding: 2,
     marginRight: 10,
+  },
+  logoImage: {
+    width: 38,
+    height: 38,
   },
   logoText: {
     fontSize: 20,
