@@ -1,98 +1,117 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import React, { useState, useEffect, useRef } from 'react';
+import { SafeAreaView, StyleSheet, View, StatusBar, Platform } from 'react-native';
+import { AppPhase, PatientRecord, Partition } from '../../types';
+import PatientDashboard from '../../components/Patient/Dashboard';
+import { Layout } from '../../components/Layout';
+import SplashScreen from '../../components/SplashScreen';
+import BluetoothScreen from '../../components/BluetoothScreen';
+import AlarmModal from '../../components/Patient/AlarmModal';
 
-export default function HomeScreen() {
+const INITIAL_PATIENT: PatientRecord = {
+  id: 'P001',
+  name: 'User',
+  age: 68,
+  partitions: [
+    { id: 1, label: 'Heart Meds', medicineName: 'Atorvastatin', pillCount: 14, schedule: ['08:00', '20:00'], isBlinking: false, adherenceRate: 98, history: [true, true, true, true, true, true, true] },
+    { id: 2, label: 'Diabetes', medicineName: 'Metformin', pillCount: 4, schedule: ['09:00'], isBlinking: false, adherenceRate: 85, history: [true, false, true, true, false, true, true] },
+    { id: 3, label: 'Pain Relief', medicineName: 'Ibuprofen', pillCount: 22, schedule: ['12:00', '18:00', '00:00'], isBlinking: false, adherenceRate: 40, history: [false, false, true, false, true, false, false] },
+    { id: 4, label: 'Unassigned', medicineName: '', pillCount: 0, schedule: [], isBlinking: false, adherenceRate: 0, history: [] },
+    { id: 5, label: 'Unassigned', medicineName: '', pillCount: 0, schedule: [], isBlinking: false, adherenceRate: 0, history: [] },
+    { id: 6, label: 'Unassigned', medicineName: '', pillCount: 0, schedule: [], isBlinking: false, adherenceRate: 0, history: [] }
+  ],
+  lastLocation: { lat: 40.7128, lng: -74.0060 },
+  riskScore: 45
+};
+
+const App: React.FC = () => {
+  const [phase, setPhase] = useState<AppPhase>(AppPhase.SPLASH);
+  const [connectedDevice, setConnectedDevice] = useState<string | null>(null);
+  const [patient, setPatient] = useState<PatientRecord>(INITIAL_PATIENT);
+  const [activeAlarm, setActiveAlarm] = useState<Partition | null>(null);
+  const lastCheckedMinute = useRef<string>("");
+
+  useEffect(() => {
+    if (phase === AppPhase.SPLASH) {
+      const timer = setTimeout(() => setPhase(AppPhase.BLUETOOTH), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== AppPhase.HOME || !connectedDevice) return;
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const currentH = now.getHours().toString().padStart(2, '0');
+      const currentM = now.getMinutes().toString().padStart(2, '0');
+      const currentTime = `${currentH}:${currentM}`;
+
+      if (currentTime !== lastCheckedMinute.current) {
+        patient.partitions.forEach(p => {
+          if (p.schedule.includes(currentTime)) {
+            setActiveAlarm(p);
+            lastCheckedMinute.current = currentTime;
+          }
+        });
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [phase, connectedDevice, patient.partitions]);
+
+  const handleTakeMed = (id: number) => {
+    setPatient(prev => ({
+      ...prev,
+      partitions: prev.partitions.map(p => 
+        p.id === id ? { ...p, pillCount: Math.max(0, p.pillCount - 1) } : p
+      )
+    }));
+    setActiveAlarm(null);
+  };
+
+  const handleConnect = (deviceName: string) => {
+    setConnectedDevice(deviceName);
+    setPhase(AppPhase.HOME);
+  };
+
+  const handleDisconnect = () => {
+    setConnectedDevice(null);
+    setPhase(AppPhase.BLUETOOTH);
+  };
+
+  if (phase === AppPhase.SPLASH) return <SplashScreen />;
+  
+  if (phase === AppPhase.BLUETOOTH) {
+    return <BluetoothScreen onConnect={handleConnect} />;
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <Layout onDisconnect={handleDisconnect}>
+        <PatientDashboard 
+          patient={patient} 
+          onUpdate={setPatient} 
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+      </Layout>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      {activeAlarm && (
+        <AlarmModal 
+          partition={activeAlarm} 
+          onConfirm={() => handleTakeMed(activeAlarm.id)} 
+          onClose={() => setActiveAlarm(null)} 
+        />
+      )}
+    </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
 });
+
+export default App;
