@@ -213,11 +213,8 @@ const PartitionConfig: React.FC<PartitionConfigProps> = ({ partition, onSave, on
         </TouchableOpacity>
       </ScrollView>
 
-      {/* RENDER THE DATE PICKER (Logic differs for iOS vs Android) */}
       {showPicker && (
         Platform.OS === 'ios' ? (
-          // iOS Modal Picker (Simplification for this example)
-          // Ideally you wrap this in a Modal for iOS
           <DateTimePicker
             value={tempDate}
             mode={pickerMode}
@@ -226,7 +223,6 @@ const PartitionConfig: React.FC<PartitionConfigProps> = ({ partition, onSave, on
             style={{ width: '100%', backgroundColor: 'white' }} 
           />
         ) : (
-          // Android Picker (Opens natively)
           <DateTimePicker
             value={tempDate}
             mode={pickerMode}
