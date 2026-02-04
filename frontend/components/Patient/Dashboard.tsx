@@ -29,19 +29,31 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patient, onUpdate }
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Reusable function to fetch location
+  // --- REVISED PERMISSIONS LOGIC ---
   const getPermissions = async () => {
     setRefreshing(true);
     try {
+      // 1. Check if App has permission
       let { status } = await Location.requestForegroundPermissionsAsync();
       
       if (status !== 'granted') {
         setErrorMsg('Permission Denied');
         setUserLocation(null);
+        setRefreshing(false);
         return;
       }
 
-      // accuracy: Balanced helps avoid long timeouts on some devices
+      // 2. CRITICAL FIX: Check if Device GPS is actually ON
+      // This prevents the "Unsatisfied device settings" crash
+      const isLocationEnabled = await Location.hasServicesEnabledAsync();
+      if (!isLocationEnabled) {
+        setErrorMsg('Location Services Disabled');
+        setUserLocation(null);
+        setRefreshing(false);
+        return; 
+      }
+
+      // 3. Only if (1) and (2) pass, try to get position
       let location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
@@ -54,9 +66,10 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patient, onUpdate }
       });
       setErrorMsg(null); 
     } catch (error) {
-      setErrorMsg('Location Disabled');
+      // Even if something else fails, we catch it here gracefully
+      setErrorMsg('Location Unavailable');
       setUserLocation(null);
-      console.log("Location error caught:", error);
+      console.log("Handled location error:", error);
     } finally {
       setRefreshing(false);
     }
@@ -200,7 +213,7 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patient, onUpdate }
               ) : errorMsg ? (
                 <>
                   <MapPin size={24} stroke="#94a3b8" />
-                  <Text style={styles.loadingText}>Location is unavailable</Text>
+                  <Text style={styles.loadingText}>Turn on device location</Text>
                   <TouchableOpacity style={styles.reloadButton} onPress={getPermissions}>
                     <Text style={styles.reloadButtonText}>RETRY CONNECTION</Text>
                   </TouchableOpacity>
