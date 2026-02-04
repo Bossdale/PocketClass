@@ -15,33 +15,23 @@ const PartitionConfig: React.FC<PartitionConfigProps> = ({ partition, onSave, on
     label: partition.label === 'Unassigned' ? '' : partition.label,
     medicineName: partition.medicineName,
     pillCount: partition.pillCount === 0 ? 1 : partition.pillCount,
-    // Ensure we have at least one schedule item
     schedule: partition.schedule.length > 0 ? partition.schedule : [new Date().toISOString()]
   });
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // State for the DatePicker modal
   const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
   const [showPicker, setShowPicker] = useState(false);
   const [currentScheduleIndex, setCurrentScheduleIndex] = useState<number | null>(null);
   const [tempDate, setTempDate] = useState<Date>(new Date());
 
-  // Helper to format time to 12-hour AM/PM
   const formatTime12Hour = (isoString: string) => {
     const date = new Date(isoString);
-    // Handle invalid dates gracefully
     if (isNaN(date.getTime())) return "Set Time";
-    
-    return date.toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      hour12: true 
-    });
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
-  // Helper to format date
   const formatDate = (isoString: string) => {
     const date = new Date(isoString);
     if (isNaN(date.getTime())) return "Set Date";
@@ -49,46 +39,47 @@ const PartitionConfig: React.FC<PartitionConfigProps> = ({ partition, onSave, on
   };
 
   const addTimeSlot = () => {
-    const nextHour = new Date();
-    nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0); // Default to next hour
-    setFormData({ ...formData, schedule: [...formData.schedule, nextHour.toISOString()] });
+    const now = new Date();
+    setFormData({ ...formData, schedule: [...formData.schedule, now.toISOString()] });
   };
 
   const removeTimeSlot = (index: number) => {
     const newSchedule = formData.schedule.filter((_, i) => i !== index);
-    setFormData({ ...formData, schedule: newSchedule.length > 0 ? newSchedule : [new Date().toISOString()] });
+    setFormData({ ...formData, schedule: newSchedule });
   };
 
   const openPicker = (index: number, mode: 'date' | 'time') => {
     setCurrentScheduleIndex(index);
     setPickerMode(mode);
-    setTempDate(new Date(formData.schedule[index]));
+    
+    const currentSlotValue = formData.schedule[index];
+    const dateObj = currentSlotValue ? new Date(currentSlotValue) : new Date();
+    
+    setTempDate(dateObj);
     setShowPicker(true);
   };
 
   const onDateChange = (event: any, selectedDate?: Date) => {
-    // On Android, dismiss picker immediately after selection
     if (Platform.OS === 'android') {
       setShowPicker(false);
+      if (event.type === 'dismissed') return;
     }
 
     if (selectedDate && currentScheduleIndex !== null) {
-      const currentDate = new Date(formData.schedule[currentScheduleIndex]);
-      
+      const currentIso = formData.schedule[currentScheduleIndex];
+      const scheduleDate = currentIso ? new Date(currentIso) : new Date();
+
       if (pickerMode === 'date') {
-        // Keep the time, change the date
-        currentDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+        scheduleDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
       } else {
-        // Keep the date, change the time
-        currentDate.setHours(selectedDate.getHours(), selectedDate.getMinutes());
+        scheduleDate.setHours(selectedDate.getHours(), selectedDate.getMinutes());
       }
-      
+
       const newSchedule = [...formData.schedule];
-      newSchedule[currentScheduleIndex] = currentDate.toISOString();
+      newSchedule[currentScheduleIndex] = scheduleDate.toISOString();
       setFormData({ ...formData, schedule: newSchedule });
 
-      // On Android, if we picked a date, we might want to immediately ask for time, 
-      // but usually separate clicks are better UX.
+      setTempDate(scheduleDate);
     }
   };
 
@@ -98,8 +89,8 @@ const PartitionConfig: React.FC<PartitionConfigProps> = ({ partition, onSave, on
         return;
     }
     setSaving(true);
-    // Simulate API call
-    setTimeout(() => onSave(formData), 1200);
+    const sortedSchedule = [...formData.schedule].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    setTimeout(() => onSave({ ...formData, schedule: sortedSchedule }), 1200);
   };
 
   return (
@@ -185,24 +176,21 @@ const PartitionConfig: React.FC<PartitionConfigProps> = ({ partition, onSave, on
           
           {formData.schedule.map((isoString, idx) => (
             <View key={idx} style={styles.timeRow}>
-              {/* Date Picker Button */}
+              {/* Date Button */}
               <TouchableOpacity onPress={() => openPicker(idx, 'date')} style={styles.dateInput}>
                  <Calendar size={18} stroke="#64748b" />
                  <Text style={styles.dateText}>{formatDate(isoString)}</Text>
               </TouchableOpacity>
 
-              {/* Time Picker Button */}
+              {/* Time Button */}
               <TouchableOpacity onPress={() => openPicker(idx, 'time')} style={styles.timeInput}>
                 <Clock size={18} stroke="#2563eb" />
                 <Text style={styles.timeText}>{formatTime12Hour(isoString)}</Text>
               </TouchableOpacity>
 
-              {/* Delete Button */}
-              {formData.schedule.length > 1 && (
-                <TouchableOpacity onPress={() => removeTimeSlot(idx)} style={styles.deleteBtn}>
-                  <Trash2 size={18} stroke="#e11d48" />
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity onPress={() => removeTimeSlot(idx)} style={styles.deleteBtn}>
+                <Trash2 size={18} stroke="#e11d48" />
+              </TouchableOpacity>
             </View>
           ))}
         </View>
@@ -263,14 +251,10 @@ const styles = StyleSheet.create({
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#eff6ff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   addBtnText: { color: '#2563eb', fontWeight: 'bold', fontSize: 12 },
   timeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  
-  // NEW STYLES FOR DATE/TIME INPUTS
   dateInput: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 16, borderRadius: 20, gap: 8 },
   dateText: { fontSize: 14, fontWeight: 'bold', color: '#64748b' },
-  
   timeInput: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0f9ff', padding: 16, borderRadius: 20, gap: 8, borderWidth: 1, borderColor: '#bae6fd' },
   timeText: { fontSize: 16, fontWeight: '900', color: '#0284c7' },
-  
   deleteBtn: { padding: 16, backgroundColor: '#fff1f2', borderRadius: 16 },
   submitBtn: { backgroundColor: '#2563eb', paddingVertical: 20, borderRadius: 24, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12, shadowColor: '#2563eb', shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
   submitBtnDisabled: { backgroundColor: '#94a3b8', shadowOpacity: 0 },

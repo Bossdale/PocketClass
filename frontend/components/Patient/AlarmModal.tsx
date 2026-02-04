@@ -127,7 +127,7 @@ const AlarmModal: React.FC<AlarmModalProps> = ({ partition, onConfirm, onClose }
                 {manualTurnOff ? <Pill size={40} stroke="#16a34a" /> : <AlertTriangle size={40} stroke="#d97706" />}
               </View>
               
-              <Text style={confirmTitle}>
+              <Text style={styles.confirmTitle}>
                 {manualTurnOff ? "Alarm Deactivated." : "Buzzer Timed Out."}{"\n"}
                 <Text style={manualTurnOff ? styles.textGreen : styles.textAmber}>Did you take your meds?</Text>
               </Text>
