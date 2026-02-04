@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions, Image, ActivityIndicator } from 'react-native';
-import { Battery, Bluetooth, Settings, MapPin, Volume2, Clock, Maximize2, X, Navigation } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions, ActivityIndicator } from 'react-native';
+import { Battery, Bluetooth, Settings, MapPin, Volume2, Clock, Maximize2, X } from 'lucide-react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { PatientRecord, Partition } from '../../types';
@@ -25,31 +25,49 @@ interface PatientDashboardProps {
 const PatientDashboard: React.FC<PatientDashboardProps> = ({ patient, onUpdate }) => {
   const [configPartition, setConfigPartition] = useState<Partition | null>(null);
   const [showFullMap, setShowFullMap] = useState(false);
-
   const [userLocation, setUserLocation] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    (async () => {
+  // Reusable function to fetch location
+  const getPermissions = async () => {
+    setRefreshing(true);
+    try {
       let { status } = await Location.requestForegroundPermissionsAsync();
+      
       if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
+        setErrorMsg('Permission Denied');
+        setUserLocation(null);
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({});
+      // accuracy: Balanced helps avoid long timeouts on some devices
+      let location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
       setUserLocation({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
         latitudeDelta: 0.005,
         longitudeDelta: 0.005,
       });
-    })();
+      setErrorMsg(null); 
+    } catch (error) {
+      setErrorMsg('Location Disabled');
+      setUserLocation(null);
+      console.log("Location error caught:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    getPermissions();
   }, []);
 
   const getNextDoseText = (schedule: string[]) => {
     if (!schedule || schedule.length === 0) return '--:--';
-
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -61,12 +79,10 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patient, onUpdate }
 
     if (timesInMinutes.length === 0) return '--:--';
     const nextTime = timesInMinutes.find(t => t > currentMinutes);
-
     const timeToDisplay = nextTime !== undefined ? nextTime : timesInMinutes[0];
 
     const h = Math.floor(timeToDisplay / 60);
     const m = timeToDisplay % 60;
-    
     const displayDate = new Date();
     displayDate.setHours(h);
     displayDate.setMinutes(m);
@@ -156,17 +172,22 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patient, onUpdate }
             </View>
             <Text style={styles.trackerTitle}>Live Tracker</Text>
           </View>
-          <TouchableOpacity onPress={() => setShowFullMap(true)} style={styles.focusButton}>
+          <TouchableOpacity onPress={() => userLocation && setShowFullMap(true)} style={styles.focusButton}>
             <Maximize2 size={12} stroke="#2563eb" />
             <Text style={styles.focusButtonText}>FOCUS MAP</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity onPress={() => setShowFullMap(true)} style={styles.mapContainer}>
+        <TouchableOpacity 
+          onPress={() => userLocation && setShowFullMap(true)} 
+          style={styles.mapContainer}
+          activeOpacity={userLocation ? 0.7 : 1}
+        >
           {userLocation ? (
             <MapView 
               style={styles.map}
               initialRegion={userLocation}
+              region={userLocation}
               showsUserLocation={true} 
               pointerEvents="none"
             >
@@ -174,14 +195,31 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patient, onUpdate }
             </MapView>
           ) : (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#2563eb" />
-              <Text style={styles.loadingText}>Locating Device...</Text>
+              {refreshing ? (
+                <ActivityIndicator size="small" color="#2563eb" />
+              ) : errorMsg ? (
+                <>
+                  <MapPin size={24} stroke="#94a3b8" />
+                  <Text style={styles.loadingText}>Location is unavailable</Text>
+                  <TouchableOpacity style={styles.reloadButton} onPress={getPermissions}>
+                    <Text style={styles.reloadButtonText}>RETRY CONNECTION</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <ActivityIndicator size="small" color="#2563eb" />
+                  <Text style={styles.loadingText}>Locating Device...</Text>
+                </>
+              )}
             </View>
           )}
-          <View style={styles.mapStatus}>
-            <View style={styles.greenPulse} />
-            <Text style={styles.statusText}>Locked on Device</Text>
-          </View>
+          
+          {userLocation && (
+            <View style={styles.mapStatus}>
+              <View style={styles.greenPulse} />
+              <Text style={styles.statusText}>Locked on Device</Text>
+            </View>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.locateButton}>
@@ -235,9 +273,7 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patient, onUpdate }
 const styles = StyleSheet.create({
   container: { padding: 20 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24 },
-  
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  
   title: { fontSize: 28, fontWeight: '900', color: '#0f172a' },
   subtitle: { fontSize: 16, color: '#64748b', fontWeight: '500' },
   statusContainer: { flexDirection: 'row', gap: 8 },
@@ -247,26 +283,8 @@ const styles = StyleSheet.create({
   badgeTextGray: { fontSize: 10, fontWeight: '900', color: '#475569' },
   section: { marginBottom: 24 },
   sectionTitle: { fontSize: 12, fontWeight: '900', color: '#64748b', letterSpacing: 1.5, marginBottom: 16 },
-  
-  grid: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    gap: GRID_SPACING, 
-    backgroundColor: '#e2e8f0', 
-    padding: 12, 
-    borderRadius: 32 
-  },
-  
-  gridItem: { 
-    width: ITEM_WIDTH, 
-    height: 160, 
-    backgroundColor: '#fff', 
-    borderRadius: 24, 
-    padding: 12, 
-    justifyContent: 'space-between', 
-    borderWidth: 3 
-  },
-  
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_SPACING, backgroundColor: '#e2e8f0', padding: 12, borderRadius: 32 },
+  gridItem: { width: ITEM_WIDTH, height: 160, backgroundColor: '#fff', borderRadius: 24, padding: 12, justifyContent: 'space-between', borderWidth: 3 },
   activeItem: { borderColor: '#2563eb' },
   inactiveItem: { borderColor: '#e2e8f0', borderStyle: 'dashed', opacity: 0.6 },
   itemHeader: { gap: 4 },
@@ -295,21 +313,10 @@ const styles = StyleSheet.create({
   focusButtonText: { fontSize: 10, fontWeight: '900', color: '#2563eb' },
   mapContainer: { height: 160, backgroundColor: '#e2e8f0', borderRadius: 16, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', position: 'relative' },
   map: { width: '100%', height: '100%' },
-  
-  loadingContainer: { 
-    height: 160, 
-    backgroundColor: '#e2e8f0', 
-    borderRadius: 16, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    gap: 8 
-  },
-  loadingText: { 
-    color: '#64748b', 
-    fontSize: 12, 
-    fontWeight: '600' 
-  },
-  
+  loadingContainer: { height: 160, backgroundColor: '#e2e8f0', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  loadingText: { color: '#64748b', fontSize: 12, fontWeight: '600' },
+  reloadButton: { marginTop: 10, backgroundColor: '#2563eb', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
+  reloadButtonText: { color: '#fff', fontSize: 10, fontWeight: '900' },
   mapStatus: { position: 'absolute', bottom: 10, right: 10, backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 6 },
   greenPulse: { width: 6, height: 6, backgroundColor: '#22c55e', borderRadius: 3 },
   statusText: { fontSize: 9, fontWeight: '900', color: '#1e293b' },
@@ -317,23 +324,7 @@ const styles = StyleSheet.create({
   locateButtonText: { fontSize: 12, fontWeight: '900', color: '#475569' },
   fullMapContainer: { flex: 1, backgroundColor: '#000' },
   fullMap: { flex: 1 },
-  closeMapButton: { 
-    position: 'absolute', 
-    bottom: 40, 
-    alignSelf: 'center', 
-    backgroundColor: '#ef4444', 
-    paddingVertical: 12, 
-    paddingHorizontal: 24, 
-    borderRadius: 30, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 6
-  },
+  closeMapButton: { position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: '#ef4444', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 30, flexDirection: 'row', alignItems: 'center', gap: 8, elevation: 6 },
   closeMapText: { color: '#fff', fontWeight: '900', fontSize: 14 }
 });
 
