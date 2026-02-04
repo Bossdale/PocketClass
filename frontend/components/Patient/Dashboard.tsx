@@ -79,9 +79,9 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patient, onUpdate }
       <View style={styles.header}>
         <View>
           <View style={styles.titleRow}>
-             <Text style={styles.title}>PillSync</Text>
+             <Text style={styles.title}>MedSync</Text>
            </View>
-          <Text style={styles.subtitle}>Connected PillBox Device</Text>
+          <Text style={styles.subtitle}>Connected Pill Box Device</Text>
         </View>
         <View style={styles.statusContainer}>
           <View style={styles.badgeBlue}>

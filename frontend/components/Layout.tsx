@@ -20,7 +20,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, onDisconnect }) => {
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.logoText}><Text style={styles.logoHighlight}>PillSync</Text>
+          <Text style={styles.logoText}><Text style={styles.logoHighlight}>MedSync</Text>
           </Text>
         </View>
         <TouchableOpacity onPress={onDisconnect} style={styles.logoutButton}>
