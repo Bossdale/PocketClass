@@ -14,6 +14,14 @@ export interface Partition {
   isBlinking: boolean;
   adherenceRate: number;
   history: boolean[];
+
+  isShortTerm?: boolean;
+  durationDays?: number;
+  frequencyType?: 'daily' | 'weekly';
+  selectedDays?: number[];
+  timesPerDay?: number;
+  dosage?: string;
+  colorTheme?: string;
 }
 
 export interface PatientRecord {
