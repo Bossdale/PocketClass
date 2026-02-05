@@ -14,7 +14,7 @@ const SplashScreen: React.FC = () => {
           />
       </View>
       <View style={styles.textContainer}>
-        <Text style={styles.title}>PillSync</Text>
+        <Text style={styles.title}>MedSync</Text>
         <Text style={styles.subtitle}>SMART IOT ECOSYSTEM</Text>
       </View>
       <View style={styles.loader}>
