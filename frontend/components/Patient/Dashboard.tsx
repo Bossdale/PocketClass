@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions, ActivityIndicator } from 'react-native';
-import { Battery, Bluetooth, Settings, MapPin, Volume2, Clock, Maximize2, X } from 'lucide-react-native';
-import MapView, { Marker } from 'react-native-maps';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions, ActivityIndicator, ScrollView } from 'react-native';
+import { Battery, Bluetooth, Settings, MapPin, Volume2, Clock, Maximize2, X, Check, Calendar, PlusCircle, Smartphone, Box } from 'lucide-react-native';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { PatientRecord, Partition } from '../../types';
 import PartitionConfig from './PartitionConfig';
@@ -54,60 +54,54 @@ const PatientDashboard: React.FC<PatientDashboardProps> = (props) => {
   const [patient, setPatient] = useState<PatientRecord>(INITIAL_PATIENT_DATA);
   const [configPartition, setConfigPartition] = useState<Partition | null>(null);
   const [showFullMap, setShowFullMap] = useState(false);
-  const [userLocation, setUserLocation] = useState<any>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  
+  // --- TRACKING STATE ---
+  const [userLocation, setUserLocation] = useState<any>(null); // Phone Location
+  const [kitLocation, setKitLocation] = useState<any>(null);   // Mock Kit Location
+  
+  const isNewDevice = patient.partitions.every(p => !p.label || p.label === 'Unassigned');
 
-  // --- REVISED PERMISSIONS LOGIC ---
-  const getPermissions = async () => {
-    setRefreshing(true);
-    try {
-      // 1. Check if App has permission
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      
-      if (status !== 'granted') {
-        setErrorMsg('Permission Denied');
-        setUserLocation(null);
-        setRefreshing(false);
-        return;
+  // --- SCHEDULE LOGIC ---
+  const [takenDoses, setTakenDoses] = useState<Set<string>>(new Set());
+
+  const todayDoses = useMemo(() => {
+    const doses: any[] = [];
+    patient.partitions.forEach(p => {
+      if (p.label !== 'Unassigned' && p.medicineName && p.schedule) {
+        p.schedule.forEach((timeStr, index) => {
+          const doseId = `${p.id}-${index}`;
+          doses.push({
+            id: doseId,
+            medName: p.medicineName,
+            time: timeStr,
+            status: takenDoses.has(doseId) ? 'taken' : 'pending',
+            partitionId: p.id
+          });
+        });
       }
+    });
+    return doses.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+  }, [patient.partitions, takenDoses]);
 
-      // 2. CRITICAL FIX: Check if Device GPS is actually ON
-      // This prevents the "Unsatisfied device settings" crash
-      const isLocationEnabled = await Location.hasServicesEnabledAsync();
-      if (!isLocationEnabled) {
-        setErrorMsg('Location Services Disabled');
-        setUserLocation(null);
-        setRefreshing(false);
-        return; 
-      }
-
-      // 3. Only if (1) and (2) pass, try to get position
-      let location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
-      setUserLocation({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      });
-      setErrorMsg(null); 
-    } catch (error) {
-      // Even if something else fails, we catch it here gracefully
-      setErrorMsg('Location Unavailable');
-      setUserLocation(null);
-      console.log("Handled location error:", error);
-    } finally {
-      setRefreshing(false);
-    }
+  const toggleDose = (id: string) => {
+    setTakenDoses(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
-  useEffect(() => {
-    getPermissions();
-  }, []);
+  const handlePatientUpdate = (updatedPatient: PatientRecord) => {
+    setPatient(updatedPatient);
+    if (props.onUpdate) props.onUpdate(updatedPatient);
+  };
 
+  const formatTime = (isoString: string) => {
+    const d = new Date(isoString);
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  };
+  
   const getNextDoseText = (schedule: string[]) => {
     if (!schedule || schedule.length === 0) return '--:--';
     const now = new Date();
@@ -160,9 +154,9 @@ const PatientDashboard: React.FC<PatientDashboardProps> = (props) => {
       <View style={styles.header}>
         <View>
           <View style={styles.titleRow}>
-             <Text style={styles.title}>MedSync</Text>
+             <Text style={styles.title}>PillSync</Text>
            </View>
-          <Text style={styles.subtitle}>Connected Pill Box Device</Text>
+          <Text style={styles.subtitle}>Connected PillBox Device</Text>
         </View>
         <View style={styles.statusContainer}>
           <View style={styles.badgeBlue}>
@@ -293,23 +287,18 @@ const PatientDashboard: React.FC<PatientDashboardProps> = (props) => {
             </View>
             <Text style={styles.trackerTitle}>Live Tracker</Text>
           </View>
-          <TouchableOpacity onPress={() => userLocation && setShowFullMap(true)} style={styles.focusButton}>
+          <TouchableOpacity onPress={() => setShowFullMap(true)} style={styles.focusButton}>
             <Maximize2 size={12} stroke="#2563eb" />
             <Text style={styles.focusButtonText}>FULL MAP</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity 
-          onPress={() => userLocation && setShowFullMap(true)} 
-          style={styles.mapContainer}
-          activeOpacity={userLocation ? 0.7 : 1}
-        >
+        <TouchableOpacity onPress={() => setShowFullMap(true)} style={styles.mapContainer}>
           {userLocation ? (
             <MapView 
               style={styles.map}
               initialRegion={userLocation}
-              region={userLocation}
-              showsUserLocation={true} 
+              showsUserLocation={true} // Shows the BLUE DOT (Phone)
               pointerEvents="none"
             >
               {/* KIT MARKER (Mock) */}
@@ -324,31 +313,23 @@ const PatientDashboard: React.FC<PatientDashboardProps> = (props) => {
             </MapView>
           ) : (
             <View style={styles.loadingContainer}>
-              {refreshing ? (
-                <ActivityIndicator size="small" color="#2563eb" />
-              ) : errorMsg ? (
-                <>
-                  <MapPin size={24} stroke="#94a3b8" />
-                  <Text style={styles.loadingText}>Turn on device location</Text>
-                  <TouchableOpacity style={styles.reloadButton} onPress={getPermissions}>
-                    <Text style={styles.reloadButtonText}>RETRY CONNECTION</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <>
-                  <ActivityIndicator size="small" color="#2563eb" />
-                  <Text style={styles.loadingText}>Locating Device...</Text>
-                </>
-              )}
+              <ActivityIndicator size="small" color="#2563eb" />
+              <Text style={styles.loadingText}>Locating Devices...</Text>
             </View>
           )}
           
-          {userLocation && (
-            <View style={styles.mapStatus}>
-              <View style={styles.greenPulse} />
-              <Text style={styles.statusText}>Locked on Device</Text>
+          {/* Status Overlay */}
+          <View style={styles.mapStatus}>
+            <View style={styles.statusRow}>
+               <View style={styles.blueDot} />
+               <Text style={styles.statusText}>Phone</Text>
             </View>
-          )}
+            <View style={styles.divider} />
+            <View style={styles.statusRow}>
+               <View style={styles.redDot} />
+               <Text style={styles.statusText}>Kit (45m away)</Text>
+            </View>
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.locateButton}>
@@ -426,6 +407,7 @@ const PatientDashboard: React.FC<PatientDashboardProps> = (props) => {
 const styles = StyleSheet.create({
   container: { padding: 20 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24 },
+  
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   title: { fontSize: 28, fontWeight: '900', color: '#0f172a' },
   subtitle: { fontSize: 16, color: '#64748b', fontWeight: '500' },
@@ -438,10 +420,11 @@ const styles = StyleSheet.create({
   
   section: { marginBottom: 24 },
   sectionTitle: { fontSize: 12, fontWeight: '900', color: '#64748b', letterSpacing: 1.5, marginBottom: 16 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_SPACING, backgroundColor: '#e2e8f0', padding: 12, borderRadius: 32 },
+  
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_SPACING, backgroundColor: '#f1f5f9', padding: 12, borderRadius: 32 },
   gridItem: { width: ITEM_WIDTH, height: 160, backgroundColor: '#fff', borderRadius: 24, padding: 12, justifyContent: 'space-between', borderWidth: 3 },
-  activeItem: { borderColor: '#2563eb' },
-  inactiveItem: { borderColor: '#e2e8f0', borderStyle: 'dashed', opacity: 0.6 },
+  inactiveItem: { borderColor: '#fff', borderStyle: 'solid', shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 10, elevation: 2 },
+  
   itemHeader: { gap: 4 },
   slotBadge: { alignSelf: 'flex-start', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   slotBadgeInactive: { backgroundColor: '#f1f5f9' },
@@ -494,18 +477,29 @@ const styles = StyleSheet.create({
   focusButtonText: { fontSize: 10, fontWeight: '900', color: '#2563eb' },
   mapContainer: { height: 160, backgroundColor: '#e2e8f0', borderRadius: 16, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', position: 'relative' },
   map: { width: '100%', height: '100%' },
-  loadingContainer: { height: 160, backgroundColor: '#e2e8f0', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  
+  loadingContainer: { height: 160, backgroundColor: '#e2e8f0', borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 8 },
   loadingText: { color: '#64748b', fontSize: 12, fontWeight: '600' },
-  reloadButton: { marginTop: 10, backgroundColor: '#2563eb', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
-  reloadButtonText: { color: '#fff', fontSize: 10, fontWeight: '900' },
-  mapStatus: { position: 'absolute', bottom: 10, right: 10, backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  greenPulse: { width: 6, height: 6, backgroundColor: '#22c55e', borderRadius: 3 },
-  statusText: { fontSize: 9, fontWeight: '900', color: '#1e293b' },
+  
+  // Updated Map Status Overlay
+  mapStatus: { position: 'absolute', bottom: 10, right: 10, backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  divider: { width: 1, height: 12, backgroundColor: '#cbd5e1' },
+  blueDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#2563eb' },
+  redDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' },
+  statusText: { fontSize: 10, fontWeight: '700', color: '#1e293b' },
+
   locateButton: { marginTop: 16, backgroundColor: '#f1f5f9', paddingVertical: 14, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10 },
   locateButtonText: { fontSize: 12, fontWeight: '900', color: '#475569' },
   fullMapContainer: { flex: 1, backgroundColor: '#000' },
   fullMap: { flex: 1 },
-  closeMapButton: { position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: '#ef4444', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 30, flexDirection: 'row', alignItems: 'center', gap: 8, elevation: 6 },
+  
+  // Legend Styles for Full Map
+  legendContainer: { position: 'absolute', top: 60, left: 20, backgroundColor: 'rgba(255,255,255,0.9)', padding: 16, borderRadius: 16, gap: 12 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  legendText: { fontSize: 14, fontWeight: 'bold', color: '#1e293b' },
+
+  closeMapButton: { position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: '#ef4444', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 30, flexDirection: 'row', alignItems: 'center', gap: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 6 },
   closeMapText: { color: '#fff', fontWeight: '900', fontSize: 14 }
 });
 
