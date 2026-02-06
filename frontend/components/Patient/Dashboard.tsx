@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions, ActivityIndicator, ScrollView } from 'react-native';
-import { Battery, Bluetooth, Settings, MapPin, Volume2, Clock, Maximize2, X, Check, Calendar, PlusCircle, Smartphone, Box } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions, ActivityIndicator, ScrollView, Linking } from 'react-native';
+// Added MapPinOff for the error state
+import { Battery, Bluetooth, MapPin, Volume2, Clock, Maximize2, X, Check, Calendar, PlusCircle, Smartphone, Box, MapPinOff, RefreshCw } from 'lucide-react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { PatientRecord, Partition } from '../../types';
@@ -56,6 +57,7 @@ const PatientDashboard: React.FC<PatientDashboardProps> = (props) => {
   const [showFullMap, setShowFullMap] = useState(false);
   
   // --- TRACKING STATE ---
+  const [permissionStatus, setPermissionStatus] = useState<'undetermined' | 'granted' | 'denied'>('undetermined');
   const [userLocation, setUserLocation] = useState<any>(null); // Phone Location
   const [kitLocation, setKitLocation] = useState<any>(null);   // Mock Kit Location
   
@@ -123,29 +125,43 @@ const PatientDashboard: React.FC<PatientDashboardProps> = (props) => {
     return displayDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
-  // --- LOCATION EFFECT ---
-  useEffect(() => {
-    (async () => {
+  // --- LOCATION LOGIC ---
+  const requestLocationPermission = async () => {
+    setPermissionStatus('undetermined'); // Reset to loading state while checking
+    try {
       let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        let location = await Location.getCurrentPositionAsync({});
-        
-        const userLoc = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        };
-        setUserLocation(userLoc);
-
-        // --- MOCK KIT LOCATION ---
-        // Place the kit slightly offset (e.g., ~50 meters away)
-        setKitLocation({
-          latitude: location.coords.latitude + 0.0003, 
-          longitude: location.coords.longitude + 0.0003,
-        });
+      
+      if (status !== 'granted') {
+        setPermissionStatus('denied');
+        setUserLocation(null);
+        return;
       }
-    })();
+
+      setPermissionStatus('granted');
+      let location = await Location.getCurrentPositionAsync({});
+      
+      const userLoc = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      };
+      setUserLocation(userLoc);
+
+      // --- MOCK KIT LOCATION ---
+      setKitLocation({
+        latitude: location.coords.latitude + 0.0003, 
+        longitude: location.coords.longitude + 0.0003,
+      });
+
+    } catch (error) {
+      console.log("Error requesting location:", error);
+      setPermissionStatus('denied');
+    }
+  };
+
+  useEffect(() => {
+    requestLocationPermission();
   }, []);
 
   return (
@@ -154,7 +170,7 @@ const PatientDashboard: React.FC<PatientDashboardProps> = (props) => {
       <View style={styles.header}>
         <View>
           <View style={styles.titleRow}>
-             <Text style={styles.title}>PillSync</Text>
+             <Text style={styles.title}>MedSync</Text>
            </View>
           <Text style={styles.subtitle}>Connected PillBox Device</Text>
         </View>
@@ -287,49 +303,76 @@ const PatientDashboard: React.FC<PatientDashboardProps> = (props) => {
             </View>
             <Text style={styles.trackerTitle}>Live Tracker</Text>
           </View>
-          <TouchableOpacity onPress={() => setShowFullMap(true)} style={styles.focusButton}>
-            <Maximize2 size={12} stroke="#2563eb" />
-            <Text style={styles.focusButtonText}>FULL MAP</Text>
-          </TouchableOpacity>
+          {/* Only show Full Map button if permission is granted */}
+          {permissionStatus === 'granted' && (
+            <TouchableOpacity onPress={() => setShowFullMap(true)} style={styles.focusButton}>
+              <Maximize2 size={12} stroke="#2563eb" />
+              <Text style={styles.focusButtonText}>FULL MAP</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        <TouchableOpacity onPress={() => setShowFullMap(true)} style={styles.mapContainer}>
-          {userLocation ? (
-            <MapView 
-              style={styles.map}
-              initialRegion={userLocation}
-              showsUserLocation={true} // Shows the BLUE DOT (Phone)
-              pointerEvents="none"
-            >
-              {/* KIT MARKER (Mock) */}
-              {kitLocation && (
-                <Marker 
-                  coordinate={kitLocation} 
-                  title="My MedBox" 
-                  description="Last seen 2 mins ago"
-                  pinColor="red" // Explicitly red for the kit
-                />
-              )}
-            </MapView>
+        <TouchableOpacity 
+          onPress={() => permissionStatus === 'granted' && setShowFullMap(true)} 
+          activeOpacity={permissionStatus === 'granted' ? 0.7 : 1}
+          style={styles.mapContainer}
+        >
+          {/* LOGIC: CHECK PERMISSION FIRST */}
+          {permissionStatus === 'denied' ? (
+            // --- PERMISSION DENIED STATE ---
+            <View style={styles.errorContainer}>
+              <View style={styles.errorIconBg}>
+                <MapPinOff size={24} stroke="#ef4444" />
+              </View>
+              <Text style={styles.errorTitle}>Location Required</Text>
+              <Text style={styles.errorText}>Please enable location services</Text>
+              
+              <TouchableOpacity onPress={requestLocationPermission} style={styles.retryButton}>
+                <RefreshCw size={14} stroke="#fff" />
+                <Text style={styles.retryButtonText}>RETRY CONNECTION</Text>
+              </TouchableOpacity>
+            </View>
+
+          ) : permissionStatus === 'granted' && userLocation ? (
+            // --- GRANTED & LOADED STATE ---
+            <>
+              <MapView 
+                style={styles.map}
+                initialRegion={userLocation}
+                showsUserLocation={true}
+                pointerEvents="none"
+              >
+                {kitLocation && (
+                  <Marker 
+                    coordinate={kitLocation} 
+                    title="My MedBox" 
+                    description="Last seen 2 mins ago"
+                    pinColor="red"
+                  />
+                )}
+              </MapView>
+              
+              {/* Status Overlay */}
+              <View style={styles.mapStatus}>
+                <View style={styles.statusRow}>
+                   <View style={styles.blueDot} />
+                   <Text style={styles.statusText}>Phone</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.statusRow}>
+                   <View style={styles.redDot} />
+                   <Text style={styles.statusText}>Kit (45m away)</Text>
+                </View>
+              </View>
+            </>
+
           ) : (
+            // --- LOADING STATE ---
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color="#2563eb" />
               <Text style={styles.loadingText}>Locating Devices...</Text>
             </View>
           )}
-          
-          {/* Status Overlay */}
-          <View style={styles.mapStatus}>
-            <View style={styles.statusRow}>
-               <View style={styles.blueDot} />
-               <Text style={styles.statusText}>Phone</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.statusRow}>
-               <View style={styles.redDot} />
-               <Text style={styles.statusText}>Kit (45m away)</Text>
-            </View>
-          </View>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.locateButton}>
@@ -352,7 +395,6 @@ const PatientDashboard: React.FC<PatientDashboardProps> = (props) => {
                {kitLocation && (
                  <>
                    <Marker coordinate={kitLocation} title="My MedBox" description="Device Location" pinColor="red" />
-                   {/* Optional Line connecting them */}
                    <Polyline 
                      coordinates={[userLocation, kitLocation]} 
                      strokeColor="#2563eb" 
@@ -366,7 +408,6 @@ const PatientDashboard: React.FC<PatientDashboardProps> = (props) => {
             <MapView style={styles.fullMap} initialRegion={FALLBACK_REGION} />
           )}
           
-          {/* Legend Overlay */}
           <View style={styles.legendContainer}>
              <View style={styles.legendItem}>
                 <Smartphone size={16} stroke="#2563eb" />
@@ -475,12 +516,20 @@ const styles = StyleSheet.create({
   trackerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1e293b' },
   focusButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#eff6ff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, gap: 6 },
   focusButtonText: { fontSize: 10, fontWeight: '900', color: '#2563eb' },
-  mapContainer: { height: 160, backgroundColor: '#e2e8f0', borderRadius: 16, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  mapContainer: { height: 170, backgroundColor: '#e2e8f0', borderRadius: 16, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', position: 'relative' },
   map: { width: '100%', height: '100%' },
   
   loadingContainer: { height: 160, backgroundColor: '#e2e8f0', borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 8 },
   loadingText: { color: '#64748b', fontSize: 12, fontWeight: '600' },
   
+  // NEW STYLES FOR ERROR STATE
+  errorContainer: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', padding: 20, backgroundColor: '#fef2f2' },
+  errorIconBg: { marginBottom: 12, padding: 12, backgroundColor: '#fee2e2', borderRadius: 50 },
+  errorTitle: { fontSize: 16, fontWeight: 'bold', color: '#991b1b', marginBottom: 4 },
+  errorText: { fontSize: 12, color: '#b91c1c', textAlign: 'center', marginBottom: 16 },
+  retryButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ef4444', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, gap: 6, shadowColor: '#ef4444', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.2, shadowRadius: 4, elevation: 3 },
+  retryButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 10 },
+
   // Updated Map Status Overlay
   mapStatus: { position: 'absolute', bottom: 10, right: 10, backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
