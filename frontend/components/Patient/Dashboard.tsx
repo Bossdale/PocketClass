@@ -1,25 +1,27 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions, ActivityIndicator, ScrollView, Linking } from 'react-native';
-// Added MapPinOff for the error state
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions, ActivityIndicator, ScrollView } from 'react-native';
 import { Battery, Bluetooth, MapPin, Volume2, Clock, Maximize2, X, Check, Calendar, PlusCircle, Smartphone, Box, MapPinOff, RefreshCw } from 'lucide-react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { PatientRecord, Partition } from '../../types';
-import PartitionConfig from './PartitionConfig';
+import * as Notifications from 'expo-notifications'; 
+
+// --- IMPORTS ---
+import { PatientRecord, Partition } from '../../types'; // Adjust path
+import PartitionConfig from './PartitionConfig'; // Adjust path
+import AlarmModal from './AlarmModal'; // IMPORT THE NEW MODAL HERE
+import { registerForNotifications } from '@/app/utils/NotificationService'; // Adjust path
 
 const { width } = Dimensions.get('window');
 const GRID_SPACING = 12;
 const ITEM_WIDTH = (width - 76) / 2; 
 
-// --- 1. INITIAL EMPTY STATE (FRESH DEVICE) ---
+// --- INITIAL STATE ---
 export const INITIAL_PATIENT_DATA: PatientRecord = {
   id: 'patient-1',
   name: 'User',
   age: 65,
   riskScore: 0,
   lastLocation: { lat: 10.3292, lng: 123.9063 },
-  
-  // FORCE ALL SLOTS TO UNASSIGNED
   partitions: Array.from({ length: 6 }).map((_, i) => ({
     id: i + 1,
     label: 'Unassigned',
@@ -51,16 +53,19 @@ interface PatientDashboardProps {
   onUpdate?: (patient: PatientRecord) => void;
 }
 
-const PatientDashboard: React.FC<PatientDashboardProps> = (props) => {
+const Dashboard: React.FC<PatientDashboardProps> = (props) => {
   const [patient, setPatient] = useState<PatientRecord>(INITIAL_PATIENT_DATA);
   const [configPartition, setConfigPartition] = useState<Partition | null>(null);
+  
+  // --- NEW: ALARM STATE ---
+  const [activeAlarmPartition, setActiveAlarmPartition] = useState<Partition | null>(null);
+
+  // --- MAP / TRACKING STATE ---
   const [showFullMap, setShowFullMap] = useState(false);
-  
-  // --- TRACKING STATE ---
   const [permissionStatus, setPermissionStatus] = useState<'undetermined' | 'granted' | 'denied'>('undetermined');
-  const [userLocation, setUserLocation] = useState<any>(null); // Phone Location
-  const [kitLocation, setKitLocation] = useState<any>(null);   // Mock Kit Location
-  
+  const [userLocation, setUserLocation] = useState<any>(null); 
+  const [kitLocation, setKitLocation] = useState<any>(null); 
+
   const isNewDevice = patient.partitions.every(p => !p.label || p.label === 'Unassigned');
 
   // --- SCHEDULE LOGIC ---
@@ -99,6 +104,118 @@ const PatientDashboard: React.FC<PatientDashboardProps> = (props) => {
     if (props.onUpdate) props.onUpdate(updatedPatient);
   };
 
+  // --- 1. HEARTBEAT: CHECK TIME FOR ALARMS ---
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+
+      patient.partitions.forEach(p => {
+        if (p.label !== 'Unassigned' && p.schedule) {
+          p.schedule.forEach((timeStr, index) => {
+            const d = new Date(timeStr);
+            const doseId = `${p.id}-${index}`;
+
+            // Check if time matches AND dose is not taken AND alarm is not already active
+            if (
+              d.getHours() === currentHour && 
+              d.getMinutes() === currentMinute && 
+              !takenDoses.has(doseId) &&
+              activeAlarmPartition?.id !== p.id
+            ) {
+              setActiveAlarmPartition(p);
+            }
+          });
+        }
+      });
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [patient, takenDoses, activeAlarmPartition]);
+
+
+  // --- 2. HANDLE ALARM SUCCESS (User clicked "Yes I took it") ---
+  const handleAlarmConfirm = () => {
+    if (!activeAlarmPartition) return;
+
+    // A. Find the pending dose for this partition
+    const doseToMark = todayDoses.find(d => 
+      d.partitionId === activeAlarmPartition.id && d.status === 'pending'
+    );
+
+    // B. Mark dose as taken visually
+    if (doseToMark) {
+      toggleDose(doseToMark.id); 
+    }
+
+    // C. Update Inventory (Minus 1 pill)
+    const updatedPartitions = patient.partitions.map(p => {
+      if (p.id === activeAlarmPartition.id) {
+        return { ...p, pillCount: Math.max(0, p.pillCount - 1) };
+      }
+      return p;
+    });
+
+    handlePatientUpdate({ ...patient, partitions: updatedPartitions });
+    setActiveAlarmPartition(null);
+  };
+
+
+  // --- LOCATION & NOTIFICATION SETUP ---
+  const requestLocationPermission = async () => {
+    setPermissionStatus('undetermined'); 
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      
+      if (status !== 'granted') {
+        setPermissionStatus('denied');
+        setUserLocation(null);
+        return;
+      }
+
+      setPermissionStatus('granted');
+      let location = await Location.getCurrentPositionAsync({});
+      
+      const userLoc = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      };
+      setUserLocation(userLoc);
+
+      // Mock Kit Location
+      setKitLocation({
+        latitude: location.coords.latitude + 0.0003, 
+        longitude: location.coords.longitude + 0.0003,
+      });
+
+    } catch (error) {
+      console.log("Error requesting location:", error);
+      setPermissionStatus('denied');
+    }
+  };
+
+  useEffect(() => {
+    requestLocationPermission();
+    registerForNotifications();
+
+    // Listen for notification taps
+    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+       const data = response.notification.request.content.data;
+       if (data.screen === 'AlarmModal') {
+          // Logic to open alarm if triggered by notification
+          // For now, just open the first valid partition as fallback
+          const validP = patient.partitions.find(p => p.label !== 'Unassigned');
+          if(validP) setActiveAlarmPartition(validP);
+       }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  // --- HELPER FORMATTERS ---
   const formatTime = (isoString: string) => {
     const d = new Date(isoString);
     return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -125,326 +242,294 @@ const PatientDashboard: React.FC<PatientDashboardProps> = (props) => {
     return displayDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
-  // --- LOCATION LOGIC ---
-  const requestLocationPermission = async () => {
-    setPermissionStatus('undetermined'); // Reset to loading state while checking
-    try {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      
-      if (status !== 'granted') {
-        setPermissionStatus('denied');
-        setUserLocation(null);
-        return;
-      }
-
-      setPermissionStatus('granted');
-      let location = await Location.getCurrentPositionAsync({});
-      
-      const userLoc = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      };
-      setUserLocation(userLoc);
-
-      // --- MOCK KIT LOCATION ---
-      setKitLocation({
-        latitude: location.coords.latitude + 0.0003, 
-        longitude: location.coords.longitude + 0.0003,
-      });
-
-    } catch (error) {
-      console.log("Error requesting location:", error);
-      setPermissionStatus('denied');
-    }
-  };
-
-  useEffect(() => {
-    requestLocationPermission();
-  }, []);
-
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <View>
-          <View style={styles.titleRow}>
-             <Text style={styles.title}>MedSync</Text>
-           </View>
-          <Text style={styles.subtitle}>Connected PillBox Device</Text>
-        </View>
-        <View style={styles.statusContainer}>
-          <View style={styles.badgeBlue}>
-            <Bluetooth size={14} stroke="#0d9488" />
-            <Text style={styles.badgeTextBlue}>LINK</Text>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+        {/* HEADER */}
+        <View style={styles.header}>
+          <View>
+            <View style={styles.titleRow}>
+               <Text style={styles.title}>MedSync</Text>
+             </View>
+            <Text style={styles.subtitle}>Connected PillBox Device</Text>
           </View>
-          <View style={styles.badgeGray}>
-            <Battery size={14} stroke="#475569" />
-            <Text style={styles.badgeTextGray}>100%</Text>
+          <View style={styles.statusContainer}>
+            <View style={styles.badgeBlue}>
+              <Bluetooth size={14} stroke="#0d9488" />
+              <Text style={styles.badgeTextBlue}>LINK</Text>
+            </View>
+            <View style={styles.badgeGray}>
+              <Battery size={14} stroke="#475569" />
+              <Text style={styles.badgeTextGray}>100%</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* DEVICE LAYOUT GRID */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>DEVICE LAYOUT</Text>
-        <View style={styles.grid}>
-          {patient.partitions.map((partition) => {
-            const isUnassigned = !partition.label || partition.label === 'Unassigned';
-            const activeColor = isUnassigned ? '#cbd5e1' : (partition.colorTheme || '#2563eb');
+        {/* DEVICE LAYOUT GRID */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>DEVICE LAYOUT</Text>
+          <View style={styles.grid}>
+            {patient.partitions.map((partition) => {
+              const isUnassigned = !partition.label || partition.label === 'Unassigned';
+              const activeColor = isUnassigned ? '#cbd5e1' : (partition.colorTheme || '#2563eb');
 
-            return (
-              <TouchableOpacity 
-                key={partition.id}
-                onPress={() => setConfigPartition(partition)}
-                style={[
-                  styles.gridItem,
-                  !isUnassigned 
-                    ? { borderColor: activeColor, borderWidth: 3 } 
-                    : styles.inactiveItem
-                ]}
-              >
-                <View style={styles.itemHeader}>
-                  <View style={[
-                    styles.slotBadge, 
-                    !isUnassigned ? { backgroundColor: activeColor } : styles.slotBadgeInactive
-                  ]}>
-                    <Text style={[styles.slotBadgeText, !isUnassigned ? styles.slotTextActive : styles.slotTextInactive]}>
-                      SLOT {partition.id}
+              return (
+                <TouchableOpacity 
+                  key={partition.id}
+                  onPress={() => setConfigPartition(partition)}
+                  style={[
+                    styles.gridItem,
+                    !isUnassigned 
+                      ? { borderColor: activeColor, borderWidth: 3 } 
+                      : styles.inactiveItem
+                  ]}
+                >
+                  <View style={styles.itemHeader}>
+                    <View style={[
+                      styles.slotBadge, 
+                      !isUnassigned ? { backgroundColor: activeColor } : styles.slotBadgeInactive
+                    ]}>
+                      <Text style={[styles.slotBadgeText, !isUnassigned ? styles.slotTextActive : styles.slotTextInactive]}>
+                        SLOT {partition.id}
+                      </Text>
+                    </View>
+                    <Text style={styles.itemLabel} numberOfLines={1}>
+                      {partition.label || 'Empty'}
                     </Text>
+                    {!isUnassigned && (
+                      <Text style={styles.medicineName} numberOfLines={1}>{partition.medicineName}</Text>
+                    )}
                   </View>
-                  <Text style={styles.itemLabel} numberOfLines={1}>
-                    {partition.label || 'Empty'}
+
+                  <View style={styles.itemFooter}>
+                    {!isUnassigned ? (
+                      <>
+                        <View style={styles.pillCountContainer}>
+                          <Text style={[styles.pillCount, { color: activeColor }]}>{partition.pillCount}</Text>
+                          <Text style={[styles.pillLabel, { color: activeColor }]}>PILLS LEFT</Text>
+                        </View>
+                        <View style={[styles.scheduleBadge, { borderColor: activeColor + '40', backgroundColor: activeColor + '10' }]}>
+                          <Clock size={10} stroke={activeColor} />
+                          <Text style={[styles.scheduleText, { color: activeColor }]}>{getNextDoseText(partition.schedule)}</Text>
+                        </View>
+                      </>
+                    ) : (
+                      <View style={styles.setupContainer}>
+                        <PlusCircle size={20} stroke="#94a3b8" />
+                        <Text style={styles.setupText}>TAP TO ADD</Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* TODAY'S SCHEDULE */}
+        <View style={styles.section}>
+          <View style={styles.scheduleHeader}>
+              <Clock size={20} stroke="#2563eb" />
+              <Text style={styles.scheduleTitle}>Today's Schedule</Text>
+          </View>
+
+          {isNewDevice || todayDoses.length === 0 ? (
+              <View style={styles.emptyState}>
+                  <View style={styles.emptyIconBg}>
+                      <Calendar size={32} stroke="#3b82f6" />
+                  </View>
+                  <Text style={styles.emptyStateTitle}>No Alarms Set</Text>
+                  <Text style={styles.emptyStateText}>
+                    Tap any "Empty" slot above to set up your first medication reminder.
                   </Text>
-                  {!isUnassigned && (
-                    <Text style={styles.medicineName} numberOfLines={1}>{partition.medicineName}</Text>
-                  )}
-                </View>
-
-                <View style={styles.itemFooter}>
-                  {!isUnassigned ? (
-                    <>
-                      <View style={styles.pillCountContainer}>
-                        <Text style={[styles.pillCount, { color: activeColor }]}>{partition.pillCount}</Text>
-                        <Text style={[styles.pillLabel, { color: activeColor }]}>PILLS LEFT</Text>
-                      </View>
-                      <View style={[styles.scheduleBadge, { borderColor: activeColor + '40', backgroundColor: activeColor + '10' }]}>
-                        <Clock size={10} stroke={activeColor} />
-                        <Text style={[styles.scheduleText, { color: activeColor }]}>{getNextDoseText(partition.schedule)}</Text>
-                      </View>
-                    </>
-                  ) : (
-                    <View style={styles.setupContainer}>
-                      <PlusCircle size={20} stroke="#94a3b8" />
-                      <Text style={styles.setupText}>TAP TO ADD</Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* TODAY'S SCHEDULE */}
-      <View style={styles.section}>
-        <View style={styles.scheduleHeader}>
-            <Clock size={20} stroke="#2563eb" />
-            <Text style={styles.scheduleTitle}>Today's Schedule</Text>
-        </View>
-
-        {isNewDevice || todayDoses.length === 0 ? (
-            <View style={styles.emptyState}>
-                <View style={styles.emptyIconBg}>
-                    <Calendar size={32} stroke="#3b82f6" />
-                </View>
-                <Text style={styles.emptyStateTitle}>No Alarms Set</Text>
-                <Text style={styles.emptyStateText}>
-                  Tap any "Empty" slot above to set up your first medication reminder.
-                </Text>
-            </View>
-        ) : (
-            <View style={styles.timelineContainer}>
-                <View style={styles.timelineLine} />
-                {todayDoses.map((dose) => (
-                    <View key={dose.id} style={styles.doseRow}>
-                        <View style={[styles.timeDot, dose.status === 'taken' ? styles.timeDotTaken : styles.timeDotPending]}>
-                             {dose.status === 'taken' && <Check size={12} stroke="#fff" />}
-                        </View>
-                        <View style={[styles.doseCard, dose.status === 'taken' && styles.doseCardTaken]}>
-                            <View>
-                                <Text style={styles.doseTime}>{formatTime(dose.time)}</Text>
-                                <Text style={[styles.doseMedName, dose.status === 'taken' && styles.textTaken]}>
-                                    {dose.medName}
-                                </Text>
-                            </View>
-                            <TouchableOpacity 
-                                onPress={() => toggleDose(dose.id)}
-                                style={[styles.actionBtn, dose.status === 'taken' ? styles.actionBtnTaken : styles.actionBtnPending]}
-                            >
-                                <Text style={[styles.actionBtnText, dose.status === 'taken' ? styles.actionTextTaken : styles.actionTextPending]}>
-                                    {dose.status === 'taken' ? 'Undo' : 'Take'}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                ))}
-            </View>
-        )}
-      </View>
-
-      {/* --- LIVE TRACKER (Updated) --- */}
-      <View style={styles.trackerSection}>
-        <View style={styles.trackerHeader}>
-          <View style={styles.trackerTitleContainer}>
-            <View style={styles.iconBg}>
-              <MapPin size={20} stroke="#f43f5e" />
-            </View>
-            <Text style={styles.trackerTitle}>Live Tracker</Text>
-          </View>
-          {/* Only show Full Map button if permission is granted */}
-          {permissionStatus === 'granted' && (
-            <TouchableOpacity onPress={() => setShowFullMap(true)} style={styles.focusButton}>
-              <Maximize2 size={12} stroke="#2563eb" />
-              <Text style={styles.focusButtonText}>FULL MAP</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <TouchableOpacity 
-          onPress={() => permissionStatus === 'granted' && setShowFullMap(true)} 
-          activeOpacity={permissionStatus === 'granted' ? 0.7 : 1}
-          style={styles.mapContainer}
-        >
-          {/* LOGIC: CHECK PERMISSION FIRST */}
-          {permissionStatus === 'denied' ? (
-            // --- PERMISSION DENIED STATE ---
-            <View style={styles.errorContainer}>
-              <View style={styles.errorIconBg}>
-                <MapPinOff size={24} stroke="#ef4444" />
               </View>
-              <Text style={styles.errorTitle}>Location Required</Text>
-              <Text style={styles.errorText}>Please enable location services</Text>
-              
-              <TouchableOpacity onPress={requestLocationPermission} style={styles.retryButton}>
-                <RefreshCw size={14} stroke="#fff" />
-                <Text style={styles.retryButtonText}>RETRY CONNECTION</Text>
-              </TouchableOpacity>
-            </View>
-
-          ) : permissionStatus === 'granted' && userLocation ? (
-            // --- GRANTED & LOADED STATE ---
-            <>
-              <MapView 
-                style={styles.map}
-                initialRegion={userLocation}
-                showsUserLocation={true}
-                pointerEvents="none"
-              >
-                {kitLocation && (
-                  <Marker 
-                    coordinate={kitLocation} 
-                    title="My MedBox" 
-                    description="Last seen 2 mins ago"
-                    pinColor="red"
-                  />
-                )}
-              </MapView>
-              
-              {/* Status Overlay */}
-              <View style={styles.mapStatus}>
-                <View style={styles.statusRow}>
-                   <View style={styles.blueDot} />
-                   <Text style={styles.statusText}>Phone</Text>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.statusRow}>
-                   <View style={styles.redDot} />
-                   <Text style={styles.statusText}>Kit (45m away)</Text>
-                </View>
+          ) : (
+              <View style={styles.timelineContainer}>
+                  <View style={styles.timelineLine} />
+                  {todayDoses.map((dose) => (
+                      <View key={dose.id} style={styles.doseRow}>
+                          <View style={[styles.timeDot, dose.status === 'taken' ? styles.timeDotTaken : styles.timeDotPending]}>
+                               {dose.status === 'taken' && <Check size={12} stroke="#fff" />}
+                          </View>
+                          <View style={[styles.doseCard, dose.status === 'taken' && styles.doseCardTaken]}>
+                              <View>
+                                  <Text style={styles.doseTime}>{formatTime(dose.time)}</Text>
+                                  <Text style={[styles.doseMedName, dose.status === 'taken' && styles.textTaken]}>
+                                      {dose.medName}
+                                  </Text>
+                              </View>
+                              <TouchableOpacity 
+                                  onPress={() => toggleDose(dose.id)}
+                                  style={[styles.actionBtn, dose.status === 'taken' ? styles.actionBtnTaken : styles.actionBtnPending]}
+                              >
+                                  <Text style={[styles.actionBtnText, dose.status === 'taken' ? styles.actionTextTaken : styles.actionTextPending]}>
+                                      {dose.status === 'taken' ? 'Undo' : 'Take'}
+                                  </Text>
+                              </TouchableOpacity>
+                          </View>
+                      </View>
+                  ))}
               </View>
-            </>
+          )}
+        </View>
 
-          ) : (
-            // --- LOADING STATE ---
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#2563eb" />
-              <Text style={styles.loadingText}>Locating Devices...</Text>
+        {/* --- LIVE TRACKER --- */}
+        <View style={styles.trackerSection}>
+          <View style={styles.trackerHeader}>
+            <View style={styles.trackerTitleContainer}>
+              <View style={styles.iconBg}>
+                <MapPin size={20} stroke="#f43f5e" />
+              </View>
+              <Text style={styles.trackerTitle}>Live Tracker</Text>
             </View>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.locateButton}>
-          <Volume2 size={18} stroke="#475569" />
-          <Text style={styles.locateButtonText}>PING PHYSICAL BOX</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* --- FULL SCREEN MAP MODAL --- */}
-      <Modal visible={showFullMap} animationType="slide">
-        <View style={styles.fullMapContainer}>
-          {userLocation ? (
-            <MapView 
-              style={styles.fullMap}
-              initialRegion={userLocation}
-              showsUserLocation={true}
-              showsBuildings
-              showsTraffic
-            >
-               {kitLocation && (
-                 <>
-                   <Marker coordinate={kitLocation} title="My MedBox" description="Device Location" pinColor="red" />
-                   <Polyline 
-                     coordinates={[userLocation, kitLocation]} 
-                     strokeColor="#2563eb" 
-                     strokeWidth={2} 
-                     lineDashPattern={[5, 5]}
-                   />
-                 </>
-               )}
-            </MapView>
-          ) : (
-            <MapView style={styles.fullMap} initialRegion={FALLBACK_REGION} />
-          )}
-          
-          <View style={styles.legendContainer}>
-             <View style={styles.legendItem}>
-                <Smartphone size={16} stroke="#2563eb" />
-                <Text style={styles.legendText}>You</Text>
-             </View>
-             <View style={styles.legendItem}>
-                <Box size={16} stroke="#ef4444" />
-                <Text style={styles.legendText}>MedBox</Text>
-             </View>
+            {permissionStatus === 'granted' && (
+              <TouchableOpacity onPress={() => setShowFullMap(true)} style={styles.focusButton}>
+                <Maximize2 size={12} stroke="#2563eb" />
+                <Text style={styles.focusButtonText}>FULL MAP</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-          <TouchableOpacity onPress={() => setShowFullMap(false)} style={styles.closeMapButton}>
-            <X size={24} stroke="#fff" />
-            <Text style={styles.closeMapText}>CLOSE MAP</Text>
+          <TouchableOpacity 
+            onPress={() => permissionStatus === 'granted' && setShowFullMap(true)} 
+            activeOpacity={permissionStatus === 'granted' ? 0.7 : 1}
+            style={styles.mapContainer}
+          >
+            {permissionStatus === 'denied' ? (
+              <View style={styles.errorContainer}>
+                <View style={styles.errorIconBg}>
+                  <MapPinOff size={24} stroke="#ef4444" />
+                </View>
+                <Text style={styles.errorTitle}>Location Required</Text>
+                <Text style={styles.errorText}>Please enable location services</Text>
+                
+                <TouchableOpacity onPress={requestLocationPermission} style={styles.retryButton}>
+                  <RefreshCw size={14} stroke="#fff" />
+                  <Text style={styles.retryButtonText}>RETRY CONNECTION</Text>
+                </TouchableOpacity>
+              </View>
+
+            ) : permissionStatus === 'granted' && userLocation ? (
+              <>
+                <MapView 
+                  style={styles.map}
+                  initialRegion={userLocation}
+                  showsUserLocation={true}
+                  pointerEvents="none"
+                >
+                  {kitLocation && (
+                    <Marker 
+                      coordinate={kitLocation} 
+                      title="My MedBox" 
+                      description="Last seen 2 mins ago"
+                      pinColor="red"
+                    />
+                  )}
+                </MapView>
+                
+                <View style={styles.mapStatus}>
+                  <View style={styles.statusRow}>
+                     <View style={styles.blueDot} />
+                     <Text style={styles.statusText}>Phone</Text>
+                  </View>
+                  <View style={styles.divider} />
+                  <View style={styles.statusRow}>
+                     <View style={styles.redDot} />
+                     <Text style={styles.statusText}>Kit (45m away)</Text>
+                  </View>
+                </View>
+              </>
+
+            ) : (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#2563eb" />
+                <Text style={styles.loadingText}>Locating Devices...</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.locateButton}>
+            <Volume2 size={18} stroke="#475569" />
+            <Text style={styles.locateButtonText}>PING PHYSICAL BOX</Text>
           </TouchableOpacity>
         </View>
-      </Modal>
 
-      {configPartition && (
-        <Modal animationType="slide" visible={true} onRequestClose={() => setConfigPartition(null)}>
-          <PartitionConfig 
-            partition={configPartition} 
-            onSave={(data) => {
-              handlePatientUpdate({
-                ...patient,
-                partitions: patient.partitions.map(p => p.id === configPartition.id ? { ...p, ...data as Partition } : p)
-              });
-              setConfigPartition(null);
-            }}
-            onClose={() => setConfigPartition(null)}
-          />
+        {/* --- FULL SCREEN MAP MODAL --- */}
+        <Modal visible={showFullMap} animationType="slide">
+          <View style={styles.fullMapContainer}>
+            {userLocation ? (
+              <MapView 
+                style={styles.fullMap}
+                initialRegion={userLocation}
+                showsUserLocation={true}
+                showsBuildings
+                showsTraffic
+              >
+                 {kitLocation && (
+                   <>
+                     <Marker coordinate={kitLocation} title="My MedBox" description="Device Location" pinColor="red" />
+                     <Polyline 
+                       coordinates={[userLocation, kitLocation]} 
+                       strokeColor="#2563eb" 
+                       strokeWidth={2} 
+                       lineDashPattern={[5, 5]}
+                     />
+                   </>
+                 )}
+              </MapView>
+            ) : (
+              <MapView style={styles.fullMap} initialRegion={FALLBACK_REGION} />
+            )}
+            
+            <View style={styles.legendContainer}>
+               <View style={styles.legendItem}>
+                  <Smartphone size={16} stroke="#2563eb" />
+                  <Text style={styles.legendText}>You</Text>
+               </View>
+               <View style={styles.legendItem}>
+                  <Box size={16} stroke="#ef4444" />
+                  <Text style={styles.legendText}>MedBox</Text>
+               </View>
+            </View>
+
+            <TouchableOpacity onPress={() => setShowFullMap(false)} style={styles.closeMapButton}>
+              <X size={24} stroke="#fff" />
+              <Text style={styles.closeMapText}>CLOSE MAP</Text>
+            </TouchableOpacity>
+          </View>
         </Modal>
+
+        {/* --- CONFIG MODAL --- */}
+        {configPartition && (
+          <Modal animationType="slide" visible={true} onRequestClose={() => setConfigPartition(null)}>
+            <PartitionConfig 
+              partition={configPartition} 
+              onSave={(data) => {
+                handlePatientUpdate({
+                  ...patient,
+                  partitions: patient.partitions.map(p => p.id === configPartition.id ? { ...p, ...data as Partition } : p)
+                });
+                setConfigPartition(null);
+              }}
+              onClose={() => setConfigPartition(null)}
+            />
+          </Modal>
+        )}
+      </ScrollView>
+
+      {/* --- ALARM MODAL (Must be outside ScrollView for full screen overlay) --- */}
+      {activeAlarmPartition && (
+        <AlarmModal 
+          partition={activeAlarmPartition}
+          onConfirm={handleAlarmConfirm}
+          onClose={() => setActiveAlarmPartition(null)}
+        />
       )}
-    </ScrollView>
+    </View>
   );
 };
 
+// --- STYLES (Keep exactly as before) ---
 const styles = StyleSheet.create({
   container: { padding: 20 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24 },
@@ -522,7 +607,6 @@ const styles = StyleSheet.create({
   loadingContainer: { height: 160, backgroundColor: '#e2e8f0', borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 8 },
   loadingText: { color: '#64748b', fontSize: 12, fontWeight: '600' },
   
-  // NEW STYLES FOR ERROR STATE
   errorContainer: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', padding: 20, backgroundColor: '#fef2f2' },
   errorIconBg: { marginBottom: 12, padding: 12, backgroundColor: '#fee2e2', borderRadius: 50 },
   errorTitle: { fontSize: 16, fontWeight: 'bold', color: '#991b1b', marginBottom: 4 },
@@ -530,7 +614,6 @@ const styles = StyleSheet.create({
   retryButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ef4444', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, gap: 6, shadowColor: '#ef4444', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.2, shadowRadius: 4, elevation: 3 },
   retryButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 10 },
 
-  // Updated Map Status Overlay
   mapStatus: { position: 'absolute', bottom: 10, right: 10, backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 8, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   divider: { width: 1, height: 12, backgroundColor: '#cbd5e1' },
@@ -543,7 +626,6 @@ const styles = StyleSheet.create({
   fullMapContainer: { flex: 1, backgroundColor: '#000' },
   fullMap: { flex: 1 },
   
-  // Legend Styles for Full Map
   legendContainer: { position: 'absolute', top: 60, left: 20, backgroundColor: 'rgba(255,255,255,0.9)', padding: 16, borderRadius: 16, gap: 12 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   legendText: { fontSize: 14, fontWeight: 'bold', color: '#1e293b' },
@@ -552,4 +634,4 @@ const styles = StyleSheet.create({
   closeMapText: { color: '#fff', fontWeight: '900', fontSize: 14 }
 });
 
-export default PatientDashboard;
+export default Dashboard;

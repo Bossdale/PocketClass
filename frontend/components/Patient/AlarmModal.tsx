@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Animated, Easing } from 'react-native';
 import { Check, Volume2, VolumeX, Pill, AlertTriangle, Clock } from 'lucide-react-native';
-import { Partition } from '../../types';
+import { Partition } from '../../types'; // Adjust path to your types if needed
 
 interface AlarmModalProps {
   partition: Partition;
@@ -21,11 +20,11 @@ const AlarmModal: React.FC<AlarmModalProps> = ({ partition, onConfirm, onClose }
   const [manualTurnOff, setManualTurnOff] = useState(false);
   
   const pingAnim = useRef(new Animated.Value(0)).current;
-  // Fix: use any to avoid NodeJS namespace issues in cross-platform environments
   const timeoutRef = useRef<any>(null);
 
   useEffect(() => {
     if (step === AlarmStep.RINGING) {
+      // Animation Loop
       Animated.loop(
         Animated.sequence([
           Animated.timing(pingAnim, {
@@ -42,6 +41,7 @@ const AlarmModal: React.FC<AlarmModalProps> = ({ partition, onConfirm, onClose }
         ])
       ).start();
 
+      // Auto-stop after 60 seconds
       timeoutRef.current = setTimeout(() => {
         handleAutoTimeout();
       }, 60000);
@@ -65,9 +65,10 @@ const AlarmModal: React.FC<AlarmModalProps> = ({ partition, onConfirm, onClose }
 
   const handleConfirmIntake = () => {
     setStep(AlarmStep.SUCCESS);
+    // Wait 1.5s to show success state before closing
     setTimeout(() => {
-        onConfirm();
-    }, 1800);
+        onConfirm(); // This triggers the logic in Dashboard
+    }, 1500);
   };
 
   const scale = pingAnim.interpolate({
@@ -81,7 +82,7 @@ const AlarmModal: React.FC<AlarmModalProps> = ({ partition, onConfirm, onClose }
   });
 
   return (
-    <Modal transparent visible animationType="fade">
+    <Modal transparent visible animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         {step === AlarmStep.RINGING && (
           <View style={styles.pingContainer}>
@@ -93,7 +94,6 @@ const AlarmModal: React.FC<AlarmModalProps> = ({ partition, onConfirm, onClose }
           {step === AlarmStep.RINGING && (
             <View style={styles.content}>
               <View style={styles.alarmIconContainer}>
-                 {/* Fix: use stroke instead of color for lucide-react-native types */}
                  <Volume2 size={48} stroke="#fff" />
               </View>
               <Text style={styles.title}>ALARM RINGING</Text>
@@ -106,14 +106,12 @@ const AlarmModal: React.FC<AlarmModalProps> = ({ partition, onConfirm, onClose }
                   Your MedBox device is ringing. Deactivate the physical buzzer to proceed.
                 </Text>
                 <TouchableOpacity onPress={handleTurnOffAlarm} style={styles.actionButton}>
-                  {/* Fix: use stroke instead of color for lucide-react-native types */}
                   <VolumeX size={28} stroke="#fff" />
                   <Text style={styles.actionButtonText}>TURN OFF ALARM</Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.footerInfo}>
-                 {/* Fix: use stroke instead of color for lucide-react-native types */}
                  <Clock size={12} stroke="#94a3b8" />
                  <Text style={styles.footerText}>AUTO-STOPS IN 1 MINUTE</Text>
               </View>
@@ -123,7 +121,6 @@ const AlarmModal: React.FC<AlarmModalProps> = ({ partition, onConfirm, onClose }
           {step === AlarmStep.CONFIRMING && (
             <View style={styles.content}>
               <View style={[styles.statusIcon, manualTurnOff ? styles.bgGreen : styles.bgAmber]}>
-                {/* Fix: use stroke instead of color for lucide-react-native types */}
                 {manualTurnOff ? <Pill size={40} stroke="#16a34a" /> : <AlertTriangle size={40} stroke="#d97706" />}
               </View>
               
@@ -144,7 +141,6 @@ const AlarmModal: React.FC<AlarmModalProps> = ({ partition, onConfirm, onClose }
                 onPress={handleConfirmIntake} 
                 style={[styles.confirmButton, manualTurnOff ? styles.bgGreenSolid : styles.bgAmberSolid]}
               >
-                {/* Fix: use stroke instead of color for lucide-react-native types */}
                 <Check size={28} stroke="#fff" />
                 <Text style={styles.confirmButtonText}>YES, I TOOK IT</Text>
               </TouchableOpacity>
@@ -158,13 +154,12 @@ const AlarmModal: React.FC<AlarmModalProps> = ({ partition, onConfirm, onClose }
           {step === AlarmStep.SUCCESS && (
             <View style={styles.successContent}>
               <View style={styles.successIcon}>
-                 {/* Fix: use stroke instead of color for lucide-react-native types */}
                  <Check size={60} stroke="#16a34a" strokeWidth={3} />
               </View>
               <Text style={styles.successTitle}>Confirmed!</Text>
               <Text style={styles.successSubtitle}>Syncing with Cloud...</Text>
               <View style={styles.inventoryBadge}>
-                 <Text style={styles.inventoryText}>INVENTORY: {partition.pillCount - 1} REMAINING</Text>
+                 <Text style={styles.inventoryText}>INVENTORY UPDATED</Text>
               </View>
             </View>
           )}
