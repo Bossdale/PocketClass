@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions, ActivityIndicator, ScrollView } from 'react-native';
-import { Battery, Bluetooth, MapPin, Volume2, Clock, Maximize2, X, Check, Calendar, PlusCircle, Smartphone, Box, MapPinOff, RefreshCw } from 'lucide-react-native';
+import { Battery, Bluetooth, MapPin, Volume2, Clock, Maximize2, X, Check, Calendar, PlusCircle, Smartphone, Box, MapPinOff, RefreshCw, Lock } from 'lucide-react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications'; 
+import { Audio } from 'expo-av'; // NEW: Import Audio
 
 // --- IMPORTS ---
-import { PatientRecord, Partition } from '../../types'; // Adjust path
-import PartitionConfig from './PartitionConfig'; // Adjust path
-import AlarmModal from './AlarmModal'; // IMPORT THE NEW MODAL HERE
-import { registerForNotifications } from '@/app/utils/NotificationService'; // Adjust path
+import { PatientRecord, Partition } from '../../types'; 
+import PartitionConfig from './PartitionConfig'; 
+import AlarmModal from './AlarmModal'; 
+import { registerForNotifications } from '@/app/utils/NotificationService'; 
 
 const { width } = Dimensions.get('window');
 const GRID_SPACING = 12;
@@ -22,7 +23,7 @@ export const INITIAL_PATIENT_DATA: PatientRecord = {
   age: 65,
   riskScore: 0,
   lastLocation: { lat: 10.3292, lng: 123.9063 },
-  partitions: Array.from({ length: 6 }).map((_, i) => ({
+  partitions: Array.from({ length: 4 }).map((_, i) => ({
     id: i + 1,
     label: 'Unassigned',
     medicineName: '',
@@ -57,8 +58,9 @@ const Dashboard: React.FC<PatientDashboardProps> = (props) => {
   const [patient, setPatient] = useState<PatientRecord>(INITIAL_PATIENT_DATA);
   const [configPartition, setConfigPartition] = useState<Partition | null>(null);
   
-  // --- NEW: ALARM STATE ---
+  // --- ALARM & TIME STATE ---
   const [activeAlarmPartition, setActiveAlarmPartition] = useState<Partition | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date()); 
 
   // --- MAP / TRACKING STATE ---
   const [showFullMap, setShowFullMap] = useState(false);
@@ -90,13 +92,31 @@ const Dashboard: React.FC<PatientDashboardProps> = (props) => {
     return doses.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
   }, [patient.partitions, takenDoses]);
 
-  const toggleDose = (id: string) => {
+  // --- Handle Dose Action (Take/Undo) & Update Inventory ---
+  const handleDoseAction = (dose: any) => {
+    const isTaking = !takenDoses.has(dose.id);
+    
+    // 1. Update Visual Status
     setTakenDoses(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (isTaking) next.add(dose.id);
+      else next.delete(dose.id);
       return next;
     });
+
+    // 2. Update Inventory (Pill Count)
+    const updatedPartitions = patient.partitions.map(p => {
+      if (p.id === dose.partitionId) {
+        // If taking -> decrease count. If undoing -> increase count.
+        const newCount = isTaking 
+          ? Math.max(0, p.pillCount - 1) 
+          : p.pillCount + 1;
+        return { ...p, pillCount: newCount };
+      }
+      return p;
+    });
+
+    handlePatientUpdate({ ...patient, partitions: updatedPartitions });
   };
 
   const handlePatientUpdate = (updatedPatient: PatientRecord) => {
@@ -104,10 +124,12 @@ const Dashboard: React.FC<PatientDashboardProps> = (props) => {
     if (props.onUpdate) props.onUpdate(updatedPatient);
   };
 
-  // --- 1. HEARTBEAT: CHECK TIME FOR ALARMS ---
+  // --- 1. HEARTBEAT: CHECK TIME & UPDATE CLOCK ---
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
+      setCurrentTime(now); 
+
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
 
@@ -117,7 +139,6 @@ const Dashboard: React.FC<PatientDashboardProps> = (props) => {
             const d = new Date(timeStr);
             const doseId = `${p.id}-${index}`;
 
-            // Check if time matches AND dose is not taken AND alarm is not already active
             if (
               d.getHours() === currentHour && 
               d.getMinutes() === currentMinute && 
@@ -129,40 +150,82 @@ const Dashboard: React.FC<PatientDashboardProps> = (props) => {
           });
         }
       });
-    }, 5000); // Check every 5 seconds
+    }, 5000); 
 
     return () => clearInterval(interval);
   }, [patient, takenDoses, activeAlarmPartition]);
 
 
-  // --- 2. HANDLE ALARM SUCCESS (User clicked "Yes I took it") ---
+  // --- 2. ALARM LOGIC: TIMEOUT & SOUND ---
+  useEffect(() => {
+    let timeoutId: any;
+    let soundObject: Audio.Sound | null = null;
+
+    const playSound = async () => {
+      try {
+        // --- FIXED PATH AND EXTENSION HERE ---
+        const { sound } = await Audio.Sound.createAsync(
+           require('@/assets/audio/alarm.wav') 
+        );
+        soundObject = sound;
+        await sound.setIsLoopingAsync(true);
+        await sound.playAsync();
+      } catch (error) {
+        console.log("Could not play alarm sound. Check if assets/audio/alarm.wav exists.", error);
+      }
+    };
+
+    if (activeAlarmPartition) {
+      // 1. Start Timeout
+      timeoutId = setTimeout(() => {
+        setActiveAlarmPartition(null);
+      }, 60000);
+
+      // 2. Play Sound
+      playSound();
+    }
+
+    // Cleanup: Stop sound & Clear timeout
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (soundObject) {
+        soundObject.stopAsync();
+        soundObject.unloadAsync();
+      }
+    };
+  }, [activeAlarmPartition]);
+
+
+  // --- 3. HANDLE ALARM CONFIRM ---
   const handleAlarmConfirm = () => {
     if (!activeAlarmPartition) return;
 
-    // A. Find the pending dose for this partition
+    // A. Find pending dose
     const doseToMark = todayDoses.find(d => 
       d.partitionId === activeAlarmPartition.id && d.status === 'pending'
     );
 
-    // B. Mark dose as taken visually
+    // B. Mark visually
     if (doseToMark) {
-      toggleDose(doseToMark.id); 
+       // We use the helper logic directly here to update inventory too
+       handleDoseAction(doseToMark);
+    } else {
+       // Fallback if dose not found in list but alarm triggered (rare edge case)
+       // Just update inventory manually
+       const updatedPartitions = patient.partitions.map(p => {
+        if (p.id === activeAlarmPartition.id) {
+          return { ...p, pillCount: Math.max(0, p.pillCount - 1) };
+        }
+        return p;
+      });
+      handlePatientUpdate({ ...patient, partitions: updatedPartitions });
     }
 
-    // C. Update Inventory (Minus 1 pill)
-    const updatedPartitions = patient.partitions.map(p => {
-      if (p.id === activeAlarmPartition.id) {
-        return { ...p, pillCount: Math.max(0, p.pillCount - 1) };
-      }
-      return p;
-    });
-
-    handlePatientUpdate({ ...patient, partitions: updatedPartitions });
-    setActiveAlarmPartition(null);
+    setActiveAlarmPartition(null); // Sound stops automatically due to useEffect cleanup
   };
 
 
-  // --- LOCATION & NOTIFICATION SETUP ---
+  // --- LOCATION & NOTIFICATION ---
   const requestLocationPermission = async () => {
     setPermissionStatus('undetermined'); 
     try {
@@ -184,8 +247,6 @@ const Dashboard: React.FC<PatientDashboardProps> = (props) => {
         longitudeDelta: 0.005,
       };
       setUserLocation(userLoc);
-
-      // Mock Kit Location
       setKitLocation({
         latitude: location.coords.latitude + 0.0003, 
         longitude: location.coords.longitude + 0.0003,
@@ -201,12 +262,9 @@ const Dashboard: React.FC<PatientDashboardProps> = (props) => {
     requestLocationPermission();
     registerForNotifications();
 
-    // Listen for notification taps
     const subscription = Notifications.addNotificationResponseReceivedListener(response => {
        const data = response.notification.request.content.data;
        if (data.screen === 'AlarmModal') {
-          // Logic to open alarm if triggered by notification
-          // For now, just open the first valid partition as fallback
           const validP = patient.partitions.find(p => p.label !== 'Unassigned');
           if(validP) setActiveAlarmPartition(validP);
        }
@@ -346,7 +404,12 @@ const Dashboard: React.FC<PatientDashboardProps> = (props) => {
           ) : (
               <View style={styles.timelineContainer}>
                   <View style={styles.timelineLine} />
-                  {todayDoses.map((dose) => (
+                  {todayDoses.map((dose) => {
+                    const doseTime = new Date(dose.time);
+                    const isTimeNotReached = doseTime > currentTime;
+                    const isButtonDisabled = isTimeNotReached && dose.status !== 'taken';
+
+                    return (
                       <View key={dose.id} style={styles.doseRow}>
                           <View style={[styles.timeDot, dose.status === 'taken' ? styles.timeDotTaken : styles.timeDotPending]}>
                                {dose.status === 'taken' && <Check size={12} stroke="#fff" />}
@@ -358,17 +421,31 @@ const Dashboard: React.FC<PatientDashboardProps> = (props) => {
                                       {dose.medName}
                                   </Text>
                               </View>
+                              
                               <TouchableOpacity 
-                                  onPress={() => toggleDose(dose.id)}
-                                  style={[styles.actionBtn, dose.status === 'taken' ? styles.actionBtnTaken : styles.actionBtnPending]}
+                                  onPress={() => handleDoseAction(dose)} // NEW: Use handleDoseAction
+                                  disabled={isButtonDisabled} 
+                                  style={[
+                                    styles.actionBtn, 
+                                    dose.status === 'taken' ? styles.actionBtnTaken : styles.actionBtnPending,
+                                    isButtonDisabled ? styles.actionBtnDisabled : {}
+                                  ]}
                               >
-                                  <Text style={[styles.actionBtnText, dose.status === 'taken' ? styles.actionTextTaken : styles.actionTextPending]}>
-                                      {dose.status === 'taken' ? 'Undo' : 'Take'}
-                                  </Text>
+                                  {isButtonDisabled ? (
+                                    <View style={{flexDirection: 'row', alignItems: 'center', gap: 4}}>
+                                       <Lock size={10} stroke="#94a3b8" />
+                                       <Text style={styles.actionTextDisabled}>Wait</Text>
+                                    </View>
+                                  ) : (
+                                    <Text style={[styles.actionBtnText, dose.status === 'taken' ? styles.actionTextTaken : styles.actionTextPending]}>
+                                        {dose.status === 'taken' ? 'Undo' : 'Take'}
+                                    </Text>
+                                  )}
                               </TouchableOpacity>
                           </View>
                       </View>
-                  ))}
+                    );
+                  })}
               </View>
           )}
         </View>
@@ -517,7 +594,7 @@ const Dashboard: React.FC<PatientDashboardProps> = (props) => {
         )}
       </ScrollView>
 
-      {/* --- ALARM MODAL (Must be outside ScrollView for full screen overlay) --- */}
+      {/* --- ALARM MODAL --- */}
       {activeAlarmPartition && (
         <AlarmModal 
           partition={activeAlarmPartition}
@@ -529,7 +606,7 @@ const Dashboard: React.FC<PatientDashboardProps> = (props) => {
   );
 };
 
-// --- STYLES (Keep exactly as before) ---
+// --- STYLES ---
 const styles = StyleSheet.create({
   container: { padding: 20 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24 },
@@ -587,12 +664,17 @@ const styles = StyleSheet.create({
   doseTime: { fontSize: 10, fontWeight: '900', color: '#94a3b8', letterSpacing: 0.5, marginBottom: 2 },
   doseMedName: { fontSize: 16, fontWeight: 'bold', color: '#1e293b' },
   textTaken: { textDecorationLine: 'line-through', color: '#94a3b8' },
-  actionBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, borderWidth: 1 },
+  
+  // BUTTON STYLES
+  actionBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, borderWidth: 1, minWidth: 60, alignItems: 'center' },
   actionBtnTaken: { borderColor: 'transparent', backgroundColor: 'transparent' },
   actionBtnPending: { borderColor: '#e2e8f0', backgroundColor: '#fff' },
+  actionBtnDisabled: { borderColor: '#f1f5f9', backgroundColor: '#f8fafc' }, 
+  
   actionBtnText: { fontSize: 12, fontWeight: 'bold' },
   actionTextTaken: { color: '#64748b' },
   actionTextPending: { color: '#2563eb' },
+  actionTextDisabled: { color: '#94a3b8', fontSize: 10 }, 
 
   trackerSection: { backgroundColor: '#fff', borderRadius: 24, padding: 20, borderWidth: 1, borderColor: '#f1f5f9' },
   trackerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
