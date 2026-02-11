@@ -4,24 +4,27 @@
 #include "time.h"
 #include <TinyGPS++.h>
 #include <HardwareSerial.h>
+#include <Preferences.h>
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
 
-// --- USER SETTINGS ---
-const char* ssid       = "Lengering";
-const char* password   = "12345678910";
+Preferences pref;
 
-// --- ALARM TIME ---
-const int alarmHour    = 13; 
-const int alarmMinute  = 51; 
+// --- WIFI SETTINGS ---
+const char* ssid       = "blacknwhite_5";
+const char* password   = "bwpizza8";
 
 // --- TIME SETTINGS ---
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 3600 * 8; 
 const int   daylightOffset_sec = 0;   
 
-// --- HARDWARE ---
+// --- HARDWARE PINS ---
 LiquidCrystal_I2C lcd(0x27, 16, 2);
-const int sensorPin1 = 14; 
-const int sensorPin2 = 27; 
+// 4 Sensors for 4 Compartments
+const int sensorPins[4] = {14, 27, 26, 25}; 
 
 // --- GPS SETTINGS ---
 TinyGPSPlus gps;
@@ -30,169 +33,212 @@ const int RXPin = 16;
 const int TXPin = 17;
 const int GPSBaud = 9600; 
 
-// Variables
-unsigned long time1 = 0; 
-unsigned long time2 = 0; 
-bool lastState1 = HIGH;
-bool lastState2 = HIGH;
-unsigned long lastSerialUpdate = 0; // To control Serial print speed
+// --- BLE SETTINGS ---
+// UUIDs generated for this specific device
+#define SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+#define CHAR_SENSOR_UUID       "6E400002-B5A3-F393-E0A9-E50E24DCCA9E" // Notify App of sensor trigger
+#define CHAR_GPS_UUID          "6E400003-B5A3-F393-E0A9-E50E24DCCA9E" // Read/Notify location
+#define CHAR_ALARM_CONFIG_UUID "6E400004-B5A3-F393-E0A9-E50E24DCCA9E" // Write alarm settings
+
+BLEServer* pServer = NULL;
+BLECharacteristic* pSensorChar = NULL;
+BLECharacteristic* pGPSChar = NULL;
+BLECharacteristic* pAlarmChar = NULL;
+bool deviceConnected = false;
+
+// --- STATE VARIABLES ---
+unsigned long lastSensorTrigger[4] = {0, 0, 0, 0}; // Debounce
+bool lastState[4] = {HIGH, HIGH, HIGH, HIGH};
+unsigned long lastLCDUpdate = 0;
+unsigned long lastGPSUpdate = 0;
+
+// Alarm Storage (4 slots, HH and MM)
+int alarmHours[4] = {-1, -1, -1, -1};
+int alarmMinutes[4] = {-1, -1, -1, -1};
+
+// --- BLE CALLBACKS ---
+class MyServerCallbacks: public BLEServerCallbacks {
+    void onConnect(BLEServer* pServer) {
+      deviceConnected = true;
+      Serial.println("Phone Connected!");
+    };
+    void onDisconnect(BLEServer* pServer) {
+      deviceConnected = false;
+      Serial.println("Phone Disconnected, restarting scan...");
+      BLEDevice::startAdvertising(); // Keep visible
+    }
+};
+
+// Callback to receive Alarms from App
+// Expected Format: "SLOT:HH:MM" (e.g., "1:14:30")
+class AlarmCallbacks: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) {
+      String value = pCharacteristic->getValue().c_str(); 
+      if (value.length() > 0) {
+        int slot = value.substring(0, 1).toInt() - 1; // Convert '1' to index 0
+        int hour = value.substring(2, 4).toInt();
+        int minute = value.substring(5, 7).toInt();
+        
+        if(slot >= 0 && slot < 4) {
+          alarmHours[slot] = hour;
+          alarmMinutes[slot] = minute;
+          
+          // Save to permanent memory
+          char keyH[10], keyM[10];
+          sprintf(keyH, "h%d", slot);
+          sprintf(keyM, "m%d", slot);
+          pref.putInt(keyH, hour);
+          pref.putInt(keyM, minute);
+          
+          Serial.printf("Updated Alarm Slot %d to %02d:%02d\n", slot+1, hour, minute);
+        }
+      }
+    }
+};
 
 void setup() {
   Serial.begin(115200);
-  
-  // 1. Setup GPS Serial
   GPS_Serial.begin(GPSBaud, SERIAL_8N1, RXPin, TXPin);
-  Serial.println("\n--------------------------------");
-  Serial.println("SYSTEM STARTED");
-  Serial.println("GPS Serial Initialized...");
   
-  // 2. Setup LCD & Sensors
+  // 1. Init Storage & Load Alarms
+  pref.begin("medbox-data", false);
+  for(int i=0; i<4; i++) {
+    char keyH[10], keyM[10];
+    sprintf(keyH, "h%d", i);
+    sprintf(keyM, "m%d", i);
+    alarmHours[i] = pref.getInt(keyH, -1);
+    alarmMinutes[i] = pref.getInt(keyM, -1);
+    pinMode(sensorPins[i], INPUT_PULLUP); // Use Pullup for stability
+  }
+  
+  // 2. Init Hardware
   Wire.begin(21, 22);
   lcd.init();
   lcd.backlight();
-  pinMode(sensorPin1, INPUT);
-  pinMode(sensorPin2, INPUT_PULLUP);
-
-  // 3. Connect to Wi-Fi
-  lcd.setCursor(0, 0);
-  lcd.print("Connecting WiFi");
-  WiFi.begin(ssid, password);
   
+  // 3. Init WiFi (For Time)
+  lcd.setCursor(0, 0); lcd.print("WiFi Connecting");
+  WiFi.begin(ssid, password);
   int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 10) { 
-    delay(500);
-    lcd.print(".");
-    Serial.print(".");
-    attempts++;
+  while (WiFi.status() != WL_CONNECTED && attempts < 15) { 
+    delay(300); lcd.print("."); attempts++;
   }
-  Serial.println("\nWiFi Setup Complete (or skipped).");
-
-  // 4. Fetch Time
   if(WiFi.status() == WL_CONNECTED) {
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-    lcd.clear();
-    lcd.print("Syncing Time...");
-    delay(2000); 
   }
+
+  // 4. Init BLE
+  BLEDevice::init("MedBox Device");
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  // Sensor Notify Characteristic
+  pSensorChar = pService->createCharacteristic(
+                      CHAR_SENSOR_UUID,
+                      BLECharacteristic::PROPERTY_NOTIFY
+                    );
+  pSensorChar->addDescriptor(new BLE2902());
+
+  // GPS Notify Characteristic
+  pGPSChar = pService->createCharacteristic(
+                      CHAR_GPS_UUID,
+                      BLECharacteristic::PROPERTY_READ |
+                      BLECharacteristic::PROPERTY_NOTIFY
+                    );
+  
+  // Alarm Config Characteristic
+  pAlarmChar = pService->createCharacteristic(
+                      CHAR_ALARM_CONFIG_UUID,
+                      BLECharacteristic::PROPERTY_WRITE
+                    );
+  pAlarmChar->setCallbacks(new AlarmCallbacks());
+
+  pService->start();
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+  pAdvertising->setMinPreferred(0x06); 
+  BLEDevice::startAdvertising();
   
   lcd.clear();
 }
 
 void loop() {
-  // --- PART 1: FEED THE GPS & DEBUGGING ---
-  while (GPS_Serial.available() > 0) {
-    gps.encode(GPS_Serial.read());
-  }
+  // --- 1. HANDLE GPS & SENSORS (ALWAYS RUNNING) ---
+  while (GPS_Serial.available() > 0) gps.encode(GPS_Serial.read());
 
-  // EVERY 1 SECOND: Print detailed GPS progress to Serial Monitor
-  if (millis() - lastSerialUpdate > 1000) {
-    lastSerialUpdate = millis();
+  // Check all 4 sensors
+  for(int i=0; i<4; i++) {
+    int state = digitalRead(sensorPins[i]);
     
-    Serial.print("GPS STATUS: ");
-    
-    // Check if the wiring is working (Are we receiving ANYTHING?)
-    if (gps.charsProcessed() < 10) {
-      Serial.println("NO DATA! Check Wiring (RX/TX)!");
-    } 
-    else if (!gps.location.isValid()) {
-      // Wiring is good, but no lock yet. Show progress details.
-      Serial.print("Searching... [");
-      Serial.print(gps.satellites.value());
-      Serial.print(" Satellites] ");
-      
-      // Often time works before location. Check if we have time.
-      if (gps.time.isValid()) {
-        Serial.print("Time detected: ");
-        Serial.print(gps.time.hour());
-        Serial.print(":");
-        Serial.print(gps.time.minute());
-      } else {
-        Serial.print("(Waiting for Time data...)");
+    // Detect Falling Edge (Object Removed/Detected)
+    if(state == LOW && lastState[i] == HIGH) {
+      // Debounce (prevent double triggers within 2 seconds)
+      if(millis() - lastSensorTrigger[i] > 2000) {
+        lastSensorTrigger[i] = millis();
+        
+        // Notify App via BLE: "1", "2", "3", or "4"
+        if(deviceConnected) {
+          String msg = String(i + 1);
+          pSensorChar->setValue(msg.c_str());
+          pSensorChar->notify();
+          Serial.printf("Sensor %d Triggered -> Sent to App\n", i+1);
+        }
+        
+        // Show on LCD
+        lcd.clear();
+        lcd.setCursor(0,0); lcd.print("Med Taken!");
+        lcd.setCursor(0,1); lcd.print("Slot "); lcd.print(i+1);
+        delay(1000); // Short pause for user feedback
       }
-      Serial.println();
-    } 
-    else {
-      // FULL SUCCESS
-      Serial.print("LOCKED! Lat: ");
-      Serial.print(gps.location.lat(), 6);
-      Serial.print(" | Lon: ");
-      Serial.println(gps.location.lng(), 6);
     }
+    lastState[i] = state;
   }
 
-  // --- PART 2: GET WIFI TIME ---
-  struct tm timeinfo;
-  bool timeValid = getLocalTime(&timeinfo); 
-  int currentHour   = timeValid ? timeinfo.tm_hour : 0;
-  int currentMinute = timeValid ? timeinfo.tm_min  : 0;
+  // --- 2. PERIODIC UPDATES (Every 250ms) ---
+  if (millis() - lastLCDUpdate > 250) {
+    lastLCDUpdate = millis();
 
-  // --- PART 3: CHECK SENSORS ---
-  int s1 = digitalRead(sensorPin1);
-  int s2 = digitalRead(sensorPin2);
+    // Get Time
+    struct tm timeinfo;
+    bool timeValid = getLocalTime(&timeinfo, 0);
+    int h = timeValid ? timeinfo.tm_hour : 0;
+    int m = timeValid ? timeinfo.tm_min : 0;
 
-  if (s1 == LOW && lastState1 == HIGH) time1 = millis();
-  if (s2 == LOW && lastState2 == HIGH) time2 = millis();
-  lastState1 = s1; lastState2 = s2;
+    // A. Check for Alarms
+    bool alarmRinging = false;
+    int ringingSlot = -1;
+    for(int i=0; i<4; i++) {
+       if(alarmHours[i] == h && alarmMinutes[i] == m && timeinfo.tm_sec < 10) {
+         alarmRinging = true;
+         ringingSlot = i + 1;
+       }
+    }
 
-  // Determine Winner
-  int activeSensor = 0; 
-  if (s1 == LOW && s2 == LOW) {
-    activeSensor = (time1 > time2) ? 1 : 2;
-  } else if (s1 == LOW) activeSensor = 1;
-  else if (s2 == LOW) activeSensor = 2;
+    // B. Update Location over BLE (Every 5 seconds to save battery/bandwidth)
+    if(millis() - lastGPSUpdate > 5000 && deviceConnected && gps.location.isValid()) {
+      lastGPSUpdate = millis();
+      char locData[30];
+      sprintf(locData, "%.6f,%.6f", gps.location.lat(), gps.location.lng());
+      pGPSChar->setValue(locData);
+      pGPSChar->notify();
+    }
 
-  // --- PART 4: DISPLAY CONTROLLER ---
-  bool isAlarm = (currentHour == alarmHour && currentMinute == alarmMinute);
-
-  if (activeSensor > 0) {
-    lcd.setCursor(0, 0); 
-    lcd.print("!! WARNING !!   "); 
-    lcd.setCursor(0, 1);
-    lcd.print("Sensor "); 
-    lcd.print(activeSensor);
-    lcd.print(" Active   "); 
-  }
-  else if (timeValid && isAlarm) {
-    lcd.setCursor(0, 0);
-    lcd.print("!! WAKE UP !!   ");
-    lcd.setCursor(0, 1);
-    lcd.print("ALARM RINGING   ");
-  }
-  else {
-    lcd.setCursor(0, 0); 
-    if (WiFi.status() == WL_CONNECTED) lcd.print("WiFi: ON  ");
-    else lcd.print("WiFi: OFF ");
-    
-    if (gps.location.isValid()) lcd.print("GPS: OK ");
-    else lcd.print("GPS: -- ");
-
-    lcd.setCursor(0, 1);
-    if ((millis() / 3000) % 2 == 0) {
-      if (!timeValid) {
-        lcd.print("Time Unknown    ");
-      } else {
-        lcd.print("Time: ");
-        if(currentHour < 10) lcd.print("0");
-        lcd.print(currentHour);
-        lcd.print(":");
-        if(currentMinute < 10) lcd.print("0");
-        lcd.print(currentMinute);
-        lcd.print(":");
-        if(timeinfo.tm_sec < 10) lcd.print("0");
-        lcd.print(timeinfo.tm_sec);
-        lcd.print("   ");
-      }
+    // C. LCD Display Logic
+    if(alarmRinging) {
+      lcd.setCursor(0, 0); lcd.print("!! ALARM !!     ");
+      lcd.setCursor(0, 1); lcd.print("Take Slot "); lcd.print(ringingSlot);
+      // Here you would also buzz a buzzer if you had one connected
     } else {
-      if (gps.location.isValid()) {
-        lcd.print(gps.location.lat(), 2);
-        lcd.print(",");
-        lcd.print(gps.location.lng(), 2);
-        lcd.print("     ");
-      } else {
-        lcd.print("Sats Found: ");
-        lcd.print(gps.satellites.value()); // Show satellite count on LCD too!
-        lcd.print("   ");
-      }
+      lcd.setCursor(0, 0);
+      deviceConnected ? lcd.print("BT: Connected   ") : lcd.print("BT: Searching...");
+      
+      lcd.setCursor(0, 1);
+      lcd.print("Time: ");
+      if(h<10) lcd.print("0"); lcd.print(h); lcd.print(":");
+      if(m<10) lcd.print("0"); lcd.print(m);
+      lcd.print("   ");
     }
   }
 }
