@@ -10,7 +10,8 @@ import { Audio } from 'expo-av'; // NEW: Import Audio
 import { PatientRecord, Partition } from '../../types'; 
 import PartitionConfig from './PartitionConfig'; 
 import AlarmModal from './AlarmModal'; 
-import { registerForNotifications } from '@/app/utils/NotificationService'; 
+import { registerForNotifications } from '@/app/utils/NotificationService';
+import { BleManager, Device } from 'react-native-ble-plx';
 
 const { width } = Dimensions.get('window');
 const GRID_SPACING = 12;
@@ -54,9 +55,12 @@ interface PatientDashboardProps {
   onUpdate?: (patient: PatientRecord) => void;
 }
 
+const manager = new BleManager();
+
 const Dashboard: React.FC<PatientDashboardProps> = (props) => {
   const [patient, setPatient] = useState<PatientRecord>(INITIAL_PATIENT_DATA);
   const [configPartition, setConfigPartition] = useState<Partition | null>(null);
+  const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
   
   // --- ALARM & TIME STATE ---
   const [activeAlarmPartition, setActiveAlarmPartition] = useState<Partition | null>(null);
@@ -126,34 +130,71 @@ const Dashboard: React.FC<PatientDashboardProps> = (props) => {
 
   // --- 1. HEARTBEAT: CHECK TIME & UPDATE CLOCK ---
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      setCurrentTime(now); 
+    const scanAndConnect = async () => {
+      console.log("Starting Scan...");
 
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
+      // 1. Start Scanning
+      manager.startDeviceScan(null, null, (error: any, foundDevice: { name: string; connect: () => Promise<any>; }) => {
+        if (error) {
+          console.log("Scan error:", error);
+          return;
+        }
 
-      patient.partitions.forEach(p => {
-        if (p.label !== 'Unassigned' && p.schedule) {
-          p.schedule.forEach((timeStr, index) => {
-            const d = new Date(timeStr);
-            const doseId = `${p.id}-${index}`;
+        // 2. Look for your specific ESP32 name
+        if (foundDevice?.name === 'MedBox Device') {
+          console.log("MedBox Found!");
+          manager.stopDeviceScan(); // Stop scanning to save battery
 
-            if (
-              d.getHours() === currentHour && 
-              d.getMinutes() === currentMinute && 
-              !takenDoses.has(doseId) &&
-              activeAlarmPartition?.id !== p.id
-            ) {
-              setActiveAlarmPartition(p);
-            }
-          });
+          // 3. Connect (Now 'foundDevice' exists, so we can use it!)
+          foundDevice.connect()
+              .then((device) => {
+                console.log("Connected to", device.name);
+                setConnectedDevice(device); // Save it to State for later use
+                return device.discoverAllServicesAndCharacteristics();
+              })
+              .then((device) => {
+                // 4. Setup Listeners (Sensors & GPS)
+
+                // Listener for Sensors (UUID ending in ...0002)
+                device.monitorCharacteristicForService(
+                    "6E400001-B5A3-F393-E0A9-E50E24DCCA9E",
+                    "6E400002-B5A3-F393-E0A9-E50E24DCCA9E",
+                    (error: any, characteristic: { value: string; }) => {
+                      if (characteristic?.value) {
+                        const sensorId = atob(characteristic.value);
+                        console.log("Sensor Triggered:", sensorId);
+                        // triggerAppPrompt(sensorId); // Call your modal logic here
+                      }
+                    }
+                );
+
+                // Listener for GPS (UUID ending in ...0003)
+                device.monitorCharacteristicForService(
+                    "6E400001-B5A3-F393-E0A9-E50E24DCCA9E",
+                    "6E400003-B5A3-F393-E0A9-E50E24DCCA9E",
+                    (error: any, characteristic: { value: string; }) => {
+                      if (characteristic?.value) {
+                        const locString = atob(characteristic.value);
+                        const [lat, lng] = locString.split(',');
+                        setKitLocation({ latitude: parseFloat(lat), longitude: parseFloat(lng) });
+                      }
+                    }
+                );
+              })
+              .catch((error) => {
+                console.log("Connection Error:", error);
+              });
         }
       });
-    }, 5000); 
+    };
 
-    return () => clearInterval(interval);
-  }, [patient, takenDoses, activeAlarmPartition]);
+    scanAndConnect();
+
+    // Cleanup when leaving the screen
+    return () => {
+      manager.stopDeviceScan();
+    };
+  }, []);
 
 
   // --- 2. ALARM LOGIC: TIMEOUT & SOUND ---
@@ -299,6 +340,60 @@ const Dashboard: React.FC<PatientDashboardProps> = (props) => {
     displayDate.setMinutes(m);
     return displayDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
   };
+
+  useEffect(() => {
+    const scanAndConnect = async () => {
+      // 1. Scan for device named "MedBox Device"
+      manager.startDeviceScan(null, null, (error, device) => {
+        if (device?.name === 'MedBox Device') {
+          manager.stopDeviceScan();
+
+          // 2. Connect
+          device.connect()
+              .then((device) => device.discoverAllServicesAndCharacteristics())
+              .then((device) => {
+                // 3. Listen for Sensor Triggers (UUID: 6E400002...)
+                device.monitorCharacteristicForService(
+                    "6E400001-B5A3-F393-E0A9-E50E24DCCA9E",
+                    "6E400002-B5A3-F393-E0A9-E50E24DCCA9E",
+                    (error, characteristic) => {
+                      if (characteristic?.value) {
+                        // Decode base64 value (e.g., "1", "2")
+                        const sensorId = atob(characteristic.value);
+                        triggerAppPrompt(sensorId); // Call your modal function here
+                      }
+                    }
+                );
+
+                // 4. Listen for GPS (UUID: 6E400003...)
+                device.monitorCharacteristicForService(
+                    "6E400001-B5A3-F393-E0A9-E50E24DCCA9E",
+                    "6E400003-B5A3-F393-E0A9-E50E24DCCA9E",
+                    (error, characteristic) => {
+                      if (characteristic?.value) {
+                        const locString = atob(characteristic.value); // "10.32,123.90"
+                        const [lat, lng] = locString.split(',');
+                        setKitLocation({ latitude: parseFloat(lat), longitude: parseFloat(lng) });
+                      }
+                    }
+                );
+              });
+        }
+      });
+    };
+
+    scanAndConnect();
+  }, []);
+
+  const triggerAppPrompt = (slotId) => {
+    // Logic to open your "AlarmModal" immediately
+    // and set the auto-confirm timer.
+    const partition = patient.partitions.find(p => p.id === parseInt(slotId));
+    if(partition) {
+      setActiveAlarmPartition(partition);
+      // The AlarmModal already has logic to auto-confirm!
+    }
+  }
 
   return (
     <View style={{ flex: 1 }}>

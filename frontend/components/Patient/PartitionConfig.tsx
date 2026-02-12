@@ -173,6 +173,8 @@ const PartitionConfig: React.FC<PartitionConfigProps> = ({ partition, onSave, on
             timesPerDay: times
         };
 
+
+
         onSave(payload);
     }, 1000);
   };
