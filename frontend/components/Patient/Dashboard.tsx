@@ -316,10 +316,6 @@ const Dashboard: React.FC<PatientDashboardProps> = (props) => {
               <Bluetooth size={14} stroke="#0d9488" />
               <Text style={styles.badgeTextBlue}>LINK</Text>
             </View>
-            <View style={styles.badgeGray}>
-              <Battery size={14} stroke="#475569" />
-              <Text style={styles.badgeTextGray}>100%</Text>
-            </View>
           </View>
         </View>
 
