@@ -8,14 +8,14 @@ const SplashScreen: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.logoWrapper}>
         <Image 
-          source={require('../assets/images/pillsync-logo.png')}
+          source={require('../assets/images/pocketclass_logo.png')}
           style={styles.logoImage}
           resizeMode="contain"
           />
       </View>
       <View style={styles.textContainer}>
-        <Text style={styles.title}>MedSync</Text>
-        <Text style={styles.subtitle}>SMART IOT ECOSYSTEM</Text>
+        <Text style={styles.title}>Pocket Class</Text>
+        <Text style={styles.subtitle}>Education Without Limits</Text>
       </View>
       <View style={styles.loader}>
         <View style={styles.dot} />
