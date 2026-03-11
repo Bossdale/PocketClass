@@ -100,7 +100,7 @@ export default function QuarterlyExam() {
   return (
     <ScrollView className={`flex-1 bg-background ${countryClass}`} contentContainerStyle={{ paddingBottom: 100 }}>
       <View className="px-4 pt-10">
-        <Pressable onPress={() => router.replace(`/subject-view?subjectId=${subjectId}`)} className="flex-row items-center gap-2 mb-4">
+        <Pressable onPress={() => router.replace(`/SubjectView?subjectId=${subjectId}`)} className="flex-row items-center gap-2 mb-4">
           <ArrowLeft size={20} color="#6b7280" />
           <Text className="text-sm text-gray-500">Back</Text>
         </Pressable>
@@ -212,7 +212,7 @@ export default function QuarterlyExam() {
             </View>
             
             <Pressable
-              onPress={() => router.replace(`/subject-view?subjectId=${subjectId}`)}
+              onPress={() => router.replace(`/SubjectView?subjectId=${subjectId}`)}
               className="w-full py-4 rounded-xl bg-blue-500 items-center mb-3"
             >
               <Text className="text-white font-semibold">Back to Subject</Text>

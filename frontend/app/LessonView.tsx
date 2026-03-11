@@ -59,20 +59,25 @@ export default function LessonView() {
     Speech.speak(text, {
       rate: 0.9,
       pitch: 1.0,
-      onDone: async () => {
-        setTtsState('loading');
-        try {
-          const explanation = await getAIExplanation(text, profile.grade);
-          setTtsState('speaking');
-          Speech.speak(explanation, {
-            rate: 0.9,
-            pitch: 1.0,
-            onDone: () => setTtsState('idle'),
-            onError: () => setTtsState('idle'),
-          });
-        } catch (e) {
-          setTtsState('idle');
-        }
+      onDone: () => {
+        // FIX: We wrap the async code in a standard function so TypeScript and Expo are happy!
+        const fetchExplanation = async () => {
+          setTtsState('loading');
+          try {
+            const explanation = await getAIExplanation(text, profile.grade);
+            setTtsState('speaking');
+            Speech.speak(explanation, {
+              rate: 0.9,
+              pitch: 1.0,
+              onDone: () => setTtsState('idle'),
+              onError: () => setTtsState('idle'),
+            });
+          } catch (e) {
+            setTtsState('idle');
+          }
+        };
+        
+        fetchExplanation(); // Trigger the wrapper immediately
       },
       onError: () => setTtsState('idle'),
     });
@@ -181,7 +186,7 @@ export default function LessonView() {
     <View className={`flex-1 bg-background ${countryClass}`}>
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         <View className="px-4 pt-10">
-          <Pressable onPress={() => router.replace(`/subject-view?subjectId=${lesson.subjectId}`)} className="flex-row items-center gap-2 mb-4">
+          <Pressable onPress={() => router.replace(`/SubjectView?subjectId=${lesson.subjectId}`)} className="flex-row items-center gap-2 mb-4">
             <ArrowLeft size={20} color="#6b7280" />
             <Text className="text-sm text-gray-500">Back</Text>
           </Pressable>
@@ -283,7 +288,7 @@ export default function LessonView() {
               </View>
               
               <Pressable
-                onPress={() => router.replace(`/subject-view?subjectId=${lesson.subjectId}`)}
+                onPress={() => router.replace(`/SubjectView?subjectId=${lesson.subjectId}`)}
                 className="w-full py-4 rounded-xl bg-blue-500 items-center"
               >
                 <Text className="text-white font-semibold text-lg">Continue Learning</Text>
