@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
 
-// Assuming these are your local imports
 import type { 
   QuizQuestion, 
   MultipleChoiceQuestion, 
@@ -16,18 +15,75 @@ interface QuizRendererProps {
   onAnswer: (correct: boolean) => void;
 }
 
-// Common color palette for consistency
 const colors = {
   primary: '#2563eb',
   primaryForeground: '#ffffff',
   success: '#16a34a',
+  successLight: 'rgba(22, 163, 74, 0.1)',
   destructive: '#dc2626',
+  destructiveLight: 'rgba(220, 38, 38, 0.1)',
   foreground: '#0f172a',
   mutedForeground: '#64748b',
   border: '#e2e8f0',
+  slate50: '#f8fafc',
+  slate200: '#e2e8f0',
+  slate700: '#334155',
   transparent: 'transparent',
 };
 
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+// ─── Shared Explanation Block ────────────────────────────────────────────────
+function ExplanationBlock({ explanation, isCorrect }: { explanation?: string; isCorrect: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!explanation) return null;
+
+  const accentColor  = isCorrect ? colors.success     : colors.destructive;
+  const accentBg     = isCorrect ? colors.successLight : colors.destructiveLight;
+  const accentBorder = isCorrect ? 'rgba(22,163,74,0.3)' : 'rgba(220,38,38,0.3)';
+
+  const toggle = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpanded(prev => !prev);
+  };
+
+  return (
+    <View style={expStyles.wrapper}>
+      <TouchableOpacity
+        onPress={toggle}
+        activeOpacity={0.75}
+        style={[expStyles.pill, { backgroundColor: accentBg }]}
+      >
+        <Text style={[expStyles.pillIcon]}>💡</Text>
+        <Text style={[expStyles.pillLabel, { color: accentColor }]}>Explanation</Text>
+        <Text style={[expStyles.pillChevron, { color: accentColor }]}>
+          {expanded ? '▲' : '▼'}
+        </Text>
+      </TouchableOpacity>
+
+      {expanded && (
+        <View style={[expStyles.body, { borderColor: accentBorder }]}>
+          <Text style={expStyles.bodyText}>{explanation}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ─── Next Button ─────────────────────────────────────────────────────────────
+function NextButton({ onPress }: { onPress: () => void }) {
+  return (
+    <TouchableOpacity style={nextStyles.button} onPress={onPress} activeOpacity={0.85}>
+      <Text style={nextStyles.label}>Next →</Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Quiz Renderer Router ─────────────────────────────────────────────────────
 const QuizRenderer = ({ question, onAnswer }: QuizRendererProps) => {
   switch (question.type) {
     case 'multiple_choice':
@@ -45,133 +101,130 @@ const QuizRenderer = ({ question, onAnswer }: QuizRendererProps) => {
   }
 };
 
+// ─── Multiple Choice ──────────────────────────────────────────────────────────
 function MCRenderer({ question, onAnswer }: { question: MultipleChoiceQuestion; onAnswer: (c: boolean) => void }) {
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
+
+  const correct = selected === question.correctOption;
 
   const handleSelect = (idx: number) => {
     if (revealed) return;
     setSelected(idx);
     setRevealed(true);
-    const correct = idx === question.correctOption;
-    setTimeout(() => onAnswer(correct), 800);
   };
 
   const getOptionStyle = (idx: number) => {
     if (!revealed) return { borderColor: colors.border, backgroundColor: colors.transparent, color: colors.foreground, opacity: 1 };
-    if (idx === question.correctOption) return { borderColor: colors.success, backgroundColor: 'rgba(22, 163, 74, 0.1)', color: colors.success, opacity: 1 };
-    if (idx === selected) return { borderColor: colors.destructive, backgroundColor: 'rgba(220, 38, 38, 0.1)', color: colors.destructive, opacity: 1 };
-    return { borderColor: colors.border, backgroundColor: colors.transparent, color: colors.foreground, opacity: 0.5 };
+    if (idx === question.correctOption) return { borderColor: colors.success, backgroundColor: colors.successLight, color: colors.success, opacity: 1 };
+    if (idx === selected)               return { borderColor: colors.destructive, backgroundColor: colors.destructiveLight, color: colors.destructive, opacity: 1 };
+    return { borderColor: colors.border, backgroundColor: colors.transparent, color: colors.foreground, opacity: 0.4 };
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.questionText}>{question.questionText}</Text>
+
       <View style={styles.optionsList}>
         {question.options.map((opt, i) => {
-          const dynamicStyle = getOptionStyle(i);
+          const s = getOptionStyle(i);
           return (
             <TouchableOpacity
               key={i}
               activeOpacity={0.7}
               onPress={() => handleSelect(i)}
-              style={[
-                styles.optionButton, 
-                { 
-                  borderColor: dynamicStyle.borderColor, 
-                  backgroundColor: dynamicStyle.backgroundColor,
-                  opacity: dynamicStyle.opacity 
-                }
-              ]}
+              style={[styles.optionButton, { borderColor: s.borderColor, backgroundColor: s.backgroundColor, opacity: s.opacity }]}
             >
-              <Text style={[styles.optionText, { color: dynamicStyle.color }]}>
-                {opt}
-              </Text>
+              <Text style={[styles.optionText, { color: s.color }]}>{opt}</Text>
             </TouchableOpacity>
           );
         })}
       </View>
+
+      {revealed && (
+        <>
+          <ExplanationBlock explanation={question.explanation} isCorrect={correct} />
+          <NextButton onPress={() => onAnswer(correct)} />
+        </>
+      )}
     </View>
   );
 }
 
+// ─── True / False ─────────────────────────────────────────────────────────────
 function TFRenderer({ question, onAnswer }: { question: TrueFalseQuestion; onAnswer: (c: boolean) => void }) {
   const [selected, setSelected] = useState<boolean | null>(null);
   const [revealed, setRevealed] = useState(false);
+
+  const correct = selected === question.correctAnswer;
 
   const handleSelect = (val: boolean) => {
     if (revealed) return;
     setSelected(val);
     setRevealed(true);
-    setTimeout(() => onAnswer(val === question.correctAnswer), 800);
   };
 
   const getBtnStyle = (val: boolean) => {
     if (!revealed) return { borderColor: colors.border, backgroundColor: colors.transparent, color: colors.foreground, opacity: 1 };
-    if (val === question.correctAnswer) return { borderColor: colors.success, backgroundColor: 'rgba(22, 163, 74, 0.1)', color: colors.success, opacity: 1 };
-    if (val === selected) return { borderColor: colors.destructive, backgroundColor: 'rgba(220, 38, 38, 0.1)', color: colors.destructive, opacity: 1 };
-    return { borderColor: colors.border, backgroundColor: colors.transparent, color: colors.foreground, opacity: 0.5 };
+    if (val === question.correctAnswer) return { borderColor: colors.success, backgroundColor: colors.successLight, color: colors.success, opacity: 1 };
+    if (val === selected)               return { borderColor: colors.destructive, backgroundColor: colors.destructiveLight, color: colors.destructive, opacity: 1 };
+    return { borderColor: colors.border, backgroundColor: colors.transparent, color: colors.foreground, opacity: 0.4 };
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.questionText}>{question.questionText}</Text>
+
       <View style={styles.tfGrid}>
-        {[true, false].map(val => {
-          const dynamicStyle = getBtnStyle(val);
+        {([true, false] as boolean[]).map(val => {
+          const s = getBtnStyle(val);
           return (
             <TouchableOpacity
               key={String(val)}
               activeOpacity={0.7}
               onPress={() => handleSelect(val)}
-              style={[
-                styles.optionButton, 
-                styles.tfButton,
-                { 
-                  borderColor: dynamicStyle.borderColor, 
-                  backgroundColor: dynamicStyle.backgroundColor,
-                  opacity: dynamicStyle.opacity
-                }
-              ]}
+              style={[styles.optionButton, styles.tfButton, { borderColor: s.borderColor, backgroundColor: s.backgroundColor, opacity: s.opacity }]}
             >
-              <Text style={[styles.tfText, { color: dynamicStyle.color }]}>
-                {val ? 'True' : 'False'}
-              </Text>
+              <Text style={[styles.tfText, { color: s.color }]}>{val ? 'True' : 'False'}</Text>
             </TouchableOpacity>
           );
         })}
       </View>
+
+      {revealed && (
+        <>
+          <ExplanationBlock explanation={question.explanation} isCorrect={correct} />
+          <NextButton onPress={() => onAnswer(correct)} />
+        </>
+      )}
     </View>
   );
 }
 
+// ─── Fill in the Blank ────────────────────────────────────────────────────────
 function FBRenderer({ question, onAnswer }: { question: FillBlankQuestion; onAnswer: (c: boolean) => void }) {
-  const [answer, setAnswer] = useState('');
+  const [answer, setAnswer]     = useState('');
   const [revealed, setRevealed] = useState(false);
   const [showHint, setShowHint] = useState(false);
+
   const isCorrect = answer.trim().toLowerCase() === question.correctAnswer.toLowerCase();
 
   const handleSubmit = () => {
     if (revealed || !answer.trim()) return;
     setRevealed(true);
-    setTimeout(() => onAnswer(isCorrect), 800);
   };
 
-  // Split text at ___
   const parts = question.questionText.split('___');
 
-  // Determine input styling
-  let inputColor = colors.primary;
+  let inputColor  = colors.primary;
   let inputBorder = colors.primary;
   if (revealed) {
-    inputColor = isCorrect ? colors.success : colors.destructive;
-    inputBorder = isCorrect ? colors.success : colors.destructive;
+    inputColor  = isCorrect ? colors.success     : colors.destructive;
+    inputBorder = isCorrect ? colors.success     : colors.destructive;
   }
 
   return (
     <View style={styles.container}>
-      
-      {/* Inline Text & Input Simulation */}
       <View style={styles.fbSentenceContainer}>
         <Text style={styles.questionText}>{parts[0]}</Text>
         <TextInput
@@ -182,23 +235,18 @@ function FBRenderer({ question, onAnswer }: { question: FillBlankQuestion; onAns
           returnKeyType="done"
           autoCapitalize="none"
           autoCorrect={false}
-          style={[
-            styles.fbInput, 
-            { color: inputColor, borderBottomColor: inputBorder }
-          ]}
+          style={[styles.fbInput, { color: inputColor, borderBottomColor: inputBorder }]}
         />
-        <Text style={styles.questionText}>{parts[1]}</Text>
+        {parts[1] ? <Text style={styles.questionText}>{parts[1]}</Text> : null}
       </View>
 
       {revealed && !isCorrect && (
-        <Text style={styles.correctAnswerText}>Correct answer: {question.correctAnswer}</Text>
+        <Text style={styles.correctAnswerText}>✓ Correct answer: {question.correctAnswer}</Text>
       )}
 
       {question.hint && !revealed && (
         <TouchableOpacity onPress={() => setShowHint(!showHint)} style={styles.hintButton}>
-          <Text style={styles.hintText}>
-            💡 {showHint ? question.hint : 'Show hint'}
-          </Text>
+          <Text style={styles.hintText}>💡 {showHint ? question.hint : 'Show hint'}</Text>
         </TouchableOpacity>
       )}
 
@@ -211,10 +259,18 @@ function FBRenderer({ question, onAnswer }: { question: FillBlankQuestion; onAns
           <Text style={styles.submitButtonText}>Submit</Text>
         </TouchableOpacity>
       )}
+
+      {revealed && (
+        <>
+          <ExplanationBlock explanation={question.explanation} isCorrect={isCorrect} />
+          <NextButton onPress={() => onAnswer(isCorrect)} />
+        </>
+      )}
     </View>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     width: '100%',
@@ -226,10 +282,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     lineHeight: 24,
   },
-  
-  // Options (Multiple Choice & True/False)
   optionsList: {
-    gap: 8, // Requires React Native 0.71+
+    gap: 8,
   },
   optionButton: {
     width: '100%',
@@ -247,18 +301,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   tfButton: {
-    flex: 1, // Makes the True and False buttons take equal width side-by-side
+    flex: 1,
     alignItems: 'center',
   },
   tfText: {
     fontSize: 14,
     fontWeight: '500',
   },
-
-  // Fill in the Blank
   fbSentenceContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap', // Allows the sentence to wrap to the next line naturally
+    flexWrap: 'wrap',
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -299,6 +351,61 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   submitButtonText: {
+    color: colors.primaryForeground,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+});
+
+const expStyles = StyleSheet.create({
+  wrapper: {
+    marginTop: 16,
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 20,
+    gap: 6,
+  },
+  pillIcon: {
+    fontSize: 14,
+  },
+  pillLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  pillChevron: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  body: {
+    marginTop: 8,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    backgroundColor: colors.slate50,
+  },
+  bodyText: {
+    fontSize: 14,
+    color: colors.slate700,
+    lineHeight: 22,
+  },
+});
+
+const nextStyles = StyleSheet.create({
+  button: {
+    marginTop: 16,
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: {
     color: colors.primaryForeground,
     fontWeight: '600',
     fontSize: 16,

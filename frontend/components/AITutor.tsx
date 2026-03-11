@@ -6,7 +6,7 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   ScrollView, 
-  KeyboardAvoidingView, 
+  Keyboard, 
   Platform 
 } from 'react-native';
 import { MessageCircle, X, Bot, Send, Mic } from 'lucide-react-native';
@@ -27,6 +27,17 @@ const AITutor: React.FC<AITutorProps> = ({ lessonId, lessonTitle }) => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+      const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+     const onShow = (e: any) => setKeyboardHeight(e.endCoordinates.height);
+     const onHide = () => setKeyboardHeight(0);
+     const showSub = Keyboard.addListener(showEvent, onShow);
+     const hideSub = Keyboard.addListener(hideEvent, onHide);
+   return () => { showSub.remove(); hideSub.remove(); };
+ }, []);
 
   useEffect(() => {
     async function loadHistory() {
@@ -97,11 +108,8 @@ const AITutor: React.FC<AITutorProps> = ({ lessonId, lessonTitle }) => {
 
   // 2. The Chat Modal (Open State)
   return (
-    <View style={styles.modalContainer}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.card}
-      >
+    <View style={[styles.modalContainer, { bottom: 24 + keyboardHeight }]}>
+      <View style={styles.card}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerIconContainer}>
@@ -186,7 +194,7 @@ const AITutor: React.FC<AITutorProps> = ({ lessonId, lessonTitle }) => {
             <Send color="#ffffff" size={18} />
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </View>
   );
 };

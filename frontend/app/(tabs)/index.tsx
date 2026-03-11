@@ -1,21 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BookOpen, Trophy, Flame, TrendingUp, AlertTriangle, LogOut} from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { 
+  LogOut, 
+  Library, 
+  Target, 
+  Zap, 
+  BookOpen, 
+  BarChart3, 
+  ClipboardCheck, 
+  AlertTriangle, 
+  Sparkles, 
+  Trophy 
+} from 'lucide-react-native';
 
-// Assuming these are your local imports
 import { 
   getProfile, getSubjectProgress, getDiagnosticResults, 
   getLessonQuizResults, getQuarterlyExamResults, getLessonsBySubject 
 } from '../../lib/store';
 import { SUBJECTS, QUARTER_TOPICS } from '../../lib/types';
-// Note: getCountryClass typically returns a Tailwind string, so it's omitted from RN styling
 import type { SubjectProgress, Profile, DiagnosticResult, LessonQuizResult, QuarterlyExamResult } from '../../lib/types';
 
 import SubjectTile from '../../components/SubjectTile';
 import ProgressRing from '../../components/ProgressRing';
 
-// Color Palette replacing Tailwind variables
 const colors = {
   primary: '#3b82f6',
   primaryLight: '#dbeafe',
@@ -27,12 +36,12 @@ const colors = {
   border: '#e2e8f0',
   gray100: '#f3f4f6',
   gray200: '#e5e7eb',
-  gray500: '#6b7280',
-  success: '#16a34a',
-  successLight: '#dcfce7',
-  warning: '#ca8a04',
-  warningLight: '#fef9c3',
-  destructive: '#dc2626',
+  gray500: '#64748b',
+  success: '#10b981',
+  successLight: '#d1fae5',
+  warning: '#f59e0b',
+  warningLight: '#fef3c7',
+  destructive: '#ef4444',
   destructiveLight: '#fee2e2',
   orange50: '#fff7ed',
   orange100: '#ffedd5',
@@ -42,16 +51,17 @@ const colors = {
 
 export default function Dashboard() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'learn' | 'progress' | 'assess'>('learn');
-  const [subjectProgress, setSubjectProgress] = useState<SubjectProgress[]>([]);
+  const[activeTab, setActiveTab] = useState<'learn' | 'progress' | 'assess'>('learn');
+  const[subjectProgress, setSubjectProgress] = useState<SubjectProgress[]>([]);
   const [assessSubject, setAssessSubject] = useState(SUBJECTS[0].id);
 
-  // Async Data States for Assess Tab
   const [diagResults, setDiagResults] = useState<DiagnosticResult[]>([]);
   const [quizResults, setQuizResults] = useState<LessonQuizResult[]>([]);
-  const [examResults, setExamResults] = useState<QuarterlyExamResult[]>([]);
+  const[examResults, setExamResults] = useState<QuarterlyExamResult[]>([]);
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -62,11 +72,7 @@ export default function Dashboard() {
             return; 
           }
         setProfile(userProfile);
-        
-        const sp = await getSubjectProgress();
-        setSubjectProgress(sp);
-        
-        // Load Assessment Data based on selected subject
+        setSubjectProgress(await getSubjectProgress());
         setDiagResults(await getDiagnosticResults(assessSubject));
         setQuizResults(await getLessonQuizResults());
         setExamResults(await getQuarterlyExamResults(assessSubject));
@@ -93,22 +99,23 @@ export default function Dashboard() {
     ? Math.round(subjectProgress.reduce((s, p) => s + p.masteryScore, 0) / subjectProgress.length) 
     : 0;
 
-  const tabs = [
-    { id: 'learn' as const, label: '📚 Learn' },
-    { id: 'progress' as const, label: '📊 Progress' },
-    { id: 'assess' as const, label: '📝 Assess' },
+  // Upgraded Tabs with Lucide Icons instead of Emojis
+  const tabs =[
+    { id: 'learn' as const, label: 'Learn', icon: BookOpen },
+    { id: 'progress' as const, label: 'Progress', icon: BarChart3 },
+    { id: 'assess' as const, label: 'Assess', icon: ClipboardCheck },
   ];
 
   return (
-    <ScrollView 
-      style={styles.container} 
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 20) }]}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.welcomeText}>Welcome back</Text>
+            <Text style={styles.welcomeText}>Welcome back,</Text>
             <Text style={styles.nameText}>{profile.name} 👋</Text>
           </View>
 
@@ -117,20 +124,21 @@ export default function Dashboard() {
             onPress={() => router.replace('/Onboarding')}
             activeOpacity={0.7}
           >
-            <LogOut size={16} color={colors.destructive} />
-            <Text style={styles.logoutText}>Logout</Text>
+            <LogOut size={18} color={colors.destructive} />
           </TouchableOpacity>
         </View>
 
-        {/* Stats */}
+        {/* Upgraded Vibrant Stats Boxes */}
         <View style={styles.statsContainer}>
           {[
-            { icon: BookOpen, value: `${completedLessons}/${totalLessons}`, label: 'LESSONS' },
-            { icon: TrendingUp, value: `${avgMastery}%`, label: 'MASTERY' },
-            { icon: Flame, value: '3 days', label: 'STREAK' },
-          ].map(({ icon: Icon, value, label }) => (
+            { icon: Library, value: `${completedLessons}/${totalLessons}`, label: 'LESSONS', color: '#3b82f6', bg: '#eff6ff' }, // Blue
+            { icon: Target, value: `${avgMastery}%`, label: 'MASTERY', color: '#8b5cf6', bg: '#f5f3ff' }, // Violet
+            { icon: Zap, value: '3 days', label: 'STREAK', color: '#f59e0b', bg: '#fffbeb' }, // Amber
+          ].map(({ icon: Icon, value, label, color, bg }) => (
             <View key={label} style={styles.statBox}>
-              <Icon size={20} color={colors.primary} style={{ marginBottom: 4 }} />
+              <View style={[styles.statIconWrapper, { backgroundColor: bg }]}>
+                <Icon size={22} color={color} strokeWidth={2.5} />
+              </View>
               <Text style={styles.statValue}>{value}</Text>
               <Text style={styles.statLabel}>{label}</Text>
             </View>
@@ -139,36 +147,37 @@ export default function Dashboard() {
 
         {/* Tabs */}
         <View style={styles.tabsContainer}>
-          {tabs.map(tab => (
-            <TouchableOpacity
-              key={tab.id}
-              activeOpacity={0.8}
-              onPress={() => setActiveTab(tab.id)}
-              style={[
-                styles.tabButton,
-                activeTab === tab.id && styles.tabButtonActive
-              ]}
-            >
-              <Text style={[
-                styles.tabText,
-                activeTab === tab.id && styles.tabTextActive
-              ]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                activeOpacity={0.8}
+                onPress={() => setActiveTab(tab.id)}
+                style={[styles.tabButton, isActive && styles.tabButtonActive]}
+              >
+                <View style={styles.tabContentRow}>
+                  <Icon size={16} color={isActive ? colors.primary : colors.gray500} strokeWidth={isActive ? 2.5 : 2} />
+                  <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                    {tab.label}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )
+          })}
         </View>
 
         {/* Tab Content */}
         {activeTab === 'learn' && (
-          <View style={styles.learnGrid}>
+          <View style={styles.learnStack}>
             {SUBJECTS.map((subject, i) => {
               const progress = subjectProgress.find(p => p.subjectId === subject.id) || {
                 subjectId: subject.id, lessonsCompleted: 0, totalLessons: subject.totalLessons,
-                masteryScore: 0, quarterProgress: [0, 0, 0, 0], diagnosticCompleted: false,
+                masteryScore: 0, quarterProgress:[0, 0, 0, 0], diagnosticCompleted: false,
               };
               return (
-                <View key={subject.id} style={styles.learnGridItem}>
+                <View key={subject.id} style={styles.learnStackItem}>
                   <SubjectTile subject={subject} progress={progress} index={i} />
                 </View>
               );
@@ -188,7 +197,8 @@ export default function Dashboard() {
             subjectProgress={subjectProgress}
           />
         )}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -203,19 +213,25 @@ function ProgressTab({ subjectProgress }: { subjectProgress: SubjectProgress[] }
       <View>
         {weakSubjects.length > 0 ? (
           <View style={styles.warningBox}>
-            <Text style={styles.warningTitle}>⚠️ Focus Areas</Text>
+            <View style={styles.alertHeader}>
+              <AlertTriangle size={18} color={colors.warning} strokeWidth={2.5} />
+              <Text style={styles.warningTitle}>Focus Areas</Text>
+            </View>
             {weakSubjects.map(p => {
               const subject = SUBJECTS.find(s => s.id === p.subjectId);
               return (
                 <Text key={p.subjectId} style={styles.warningText}>
-                  ⚠️ {subject?.emoji} {subject?.name} — {p.masteryScore}% mastery. Review weak quarters.
+                  • {subject?.name} — {p.masteryScore}% mastery. Review weak quarters.
                 </Text>
               );
             })}
           </View>
         ) : (
           <View style={styles.successBox}>
-            <Text style={styles.successTitle}>🌟 Great Progress!</Text>
+            <View style={styles.alertHeader}>
+              <Sparkles size={18} color={colors.success} strokeWidth={2.5} />
+              <Text style={styles.successTitle}>Great Progress!</Text>
+            </View>
             <Text style={styles.successText}>All subjects are on track. Keep it up!</Text>
           </View>
         )}
@@ -224,17 +240,17 @@ function ProgressTab({ subjectProgress }: { subjectProgress: SubjectProgress[] }
       {/* Mastery Overview */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <TrendingUp size={16} color={colors.primary} />
+          <Target size={18} color={colors.primary} strokeWidth={2.5} />
           <Text style={styles.cardTitle}>Mastery Overview</Text>
         </View>
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: 14 }}>
           {SUBJECTS.map(subject => {
             const progress = subjectProgress.find(p => p.subjectId === subject.id);
             const score = progress?.masteryScore || 0;
             return (
               <View key={subject.id} style={styles.masteryRow}>
                 <Text style={styles.masterySubjectName} numberOfLines={1}>
-                  {subject.emoji} {subject.name}
+                  {subject.name}
                 </Text>
                 <View style={styles.progressBarTrack}>
                   <View style={[styles.progressBarFill, { width: `${score}%` }]} />
@@ -248,7 +264,10 @@ function ProgressTab({ subjectProgress }: { subjectProgress: SubjectProgress[] }
 
       {/* Quarterly Progress */}
       <View style={styles.card}>
-        <Text style={[styles.cardTitle, { marginBottom: 16 }]}>Quarterly Progress</Text>
+        <View style={styles.cardHeader}>
+          <BarChart3 size={18} color={colors.primary} strokeWidth={2.5} />
+          <Text style={styles.cardTitle}>Quarterly Progress</Text>
+        </View>
         <View style={styles.quarterlyGrid}>
           {[0, 1, 2, 3].map(qi => {
             const avg = subjectProgress.length > 0
@@ -294,7 +313,7 @@ function AssessTab({
   return (
     <View>
       {/* Subject selector pills */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
         <View style={styles.pillContainer}>
           {SUBJECTS.map(s => (
             <TouchableOpacity
@@ -309,7 +328,7 @@ function AssessTab({
                 styles.pillText,
                 selectedSubject === s.id ? styles.pillTextActive : styles.pillTextInactive
               ]}>
-                {s.emoji} {s.name}
+                {s.name}
               </Text>
             </TouchableOpacity>
           ))}
@@ -319,8 +338,8 @@ function AssessTab({
       {/* Diagnostic */}
       <View style={[styles.card, { marginBottom: 16 }]}>
         <View style={styles.diagHeader}>
-          <View style={styles.diagIcon}>
-            <BookOpen size={20} color={colors.primary} />
+          <View style={styles.diagIconBox}>
+            <ClipboardCheck size={22} color={colors.primaryDark} strokeWidth={2.5} />
           </View>
           <View style={styles.diagTextContainer}>
             <Text style={styles.diagTitle}>Diagnostic Test</Text>
@@ -337,8 +356,11 @@ function AssessTab({
             );
           })()}
         </View>
-        <TouchableOpacity onPress={() => router.push(`/DiagnosticTest?subjectId=${selectedSubject}`)} style={{ marginTop: 12 }}>
-          <Text style={styles.actionText}>{latestDiag ? 'Retake' : 'Take Test'}</Text>
+        <TouchableOpacity 
+          onPress={() => router.push(`/DiagnosticTest?subjectId=${selectedSubject}`)} 
+          style={styles.actionButton}
+        >
+          <Text style={styles.actionButtonText}>{latestDiag ? 'Retake Diagnostic' : 'Take Diagnostic'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -349,7 +371,7 @@ function AssessTab({
         const latestExam = qExams.length > 0 ? qExams[qExams.length - 1] : null;
 
         return (
-          <View key={quarter} style={{ marginBottom: 20 }}>
+          <View key={quarter} style={{ marginBottom: 24 }}>
             <Text style={styles.quarterHeaderTitle}>Quarter {quarter}</Text>
             
             <View style={styles.lessonListCard}>
@@ -375,16 +397,16 @@ function AssessTab({
                     })()}
                     
                     <TouchableOpacity onPress={() => router.push(`/LessonView?lessonId=${lesson.id}`)}>
-                      <Text style={[styles.actionText, { marginLeft: 8 }]}>{latest ? 'Retry' : 'Start'}</Text>
+                      <Text style={[styles.actionTextLink, { marginLeft: 12 }]}>{latest ? 'Retry' : 'Start'}</Text>
                     </TouchableOpacity>
                   </View>
                 );
               })}
 
-              {/* Quarterly Exam Row */}
+              {/* Quarterly Exam Row - Upgraded Trophy Icon */}
               <View style={[styles.lessonRow, styles.examRow]}>
-                <View style={styles.examIcon}>
-                  <Text>🏆</Text>
+                <View style={styles.examIconBox}>
+                  <Trophy size={18} color="#d97706" strokeWidth={2.5} />
                 </View>
                 <Text style={styles.examTitle}>Quarter {quarter} Exam</Text>
                 
@@ -399,7 +421,7 @@ function AssessTab({
                 })()}
                 
                 <TouchableOpacity onPress={() => router.push(`/QuarterlyExam?subjectId=${selectedSubject}&quarter=${quarter}`)}>
-                  <Text style={[styles.actionText, { marginLeft: 8 }]}>{latestExam ? 'Retake' : 'Take Exam'}</Text>
+                  <Text style={[styles.actionTextLink, { marginLeft: 12 }]}>{latestExam ? 'Retake' : 'Take Exam'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -410,13 +432,13 @@ function AssessTab({
       {/* Mastery Breakdown */}
       {currentProgress && (
         <View style={[styles.card, styles.masteryBreakdownCard]}>
-          <Text style={[styles.cardTitle, { marginBottom: 12 }]}>Subject Mastery</Text>
+          <Text style={[styles.cardTitle, { marginBottom: 16 }]}>Subject Mastery</Text>
           <View style={styles.masteryPillsRow}>
-            <Text style={styles.masteryPill}>Diagnostic 20%</Text>
-            <Text style={styles.masteryPill}>Quizzes 40%</Text>
-            <Text style={styles.masteryPill}>Exams 40%</Text>
+            <View style={styles.masteryPill}><Text style={styles.masteryPillText}>Diagnostic 20%</Text></View>
+            <View style={styles.masteryPill}><Text style={styles.masteryPillText}>Quizzes 40%</Text></View>
+            <View style={styles.masteryPill}><Text style={styles.masteryPillText}>Exams 40%</Text></View>
           </View>
-          <ProgressRing progress={currentProgress.masteryScore} size={80} strokeWidth={6}>
+          <ProgressRing progress={currentProgress.masteryScore} size={88} strokeWidth={6}>
             <Text style={styles.progressRingText}>{currentProgress.masteryScore}%</Text>
           </ProgressRing>
           <Text style={styles.masteryFooterText}>Overall Mastery</Text>
@@ -440,9 +462,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 100,
+    paddingHorizontal: 20, 
+    paddingBottom: 40, // Reduced from 120 since the bottom bar is now removed
   },
   
   // Header
@@ -450,33 +471,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: 28,
     marginTop: 12,
   },
   welcomeText: {
-    fontSize: 12,
+    fontSize: 15,
     color: colors.gray500,
-    textTransform: 'uppercase',
+    fontWeight: '500',
     letterSpacing: 0.5,
   },
   nameText: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '800',
     color: colors.foreground,
+    letterSpacing: -0.5,
   },
   logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.destructiveLight,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 6,
-  },
-  logoutText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.destructive,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // Stats Top Row
@@ -484,135 +500,159 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
-    marginBottom: 24,
+    marginBottom: 28,
   },
   statBox: {
     flex: 1,
     backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 20,
+    padding: 16,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.gray100,
+  },
+  statIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
   },
   statValue: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: colors.foreground,
   },
   statLabel: {
     fontSize: 10,
+    fontWeight: '700',
     color: colors.gray500,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginTop: 2,
   },
 
   // Tabs
   tabsContainer: {
     flexDirection: 'row',
     backgroundColor: colors.gray100,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 4,
     marginBottom: 24,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 10,
     alignItems: 'center',
     backgroundColor: colors.transparent,
   },
   tabButtonActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.white,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 2,
+  },
+  tabContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.gray500,
   },
   tabTextActive: {
-    color: colors.white,
+    color: colors.primary,
   },
 
   // Learn Tab
-  learnGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 12,
+  learnStack: {
+    flexDirection: 'column',
+    width: '100%',
   },
-  learnGridItem: {
-    width: '48%',
+  learnStackItem: {
+    width: '100%',
+    marginBottom: 12,
   },
 
   // Progress Tab
   tabContentGap: {
-    gap: 16,
+    gap: 20,
+  },
+  alertHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
   },
   warningBox: {
-    backgroundColor: colors.orange50,
-    borderColor: colors.orange200,
+    backgroundColor: colors.warningLight,
+    borderColor: '#fcd34d',
     borderWidth: 1,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
   },
   warningTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.foreground,
-    marginBottom: 8,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#92400e',
   },
   warningText: {
     fontSize: 14,
-    color: colors.gray500,
+    color: '#92400e',
     marginBottom: 4,
+    fontWeight: '500',
   },
   successBox: {
     backgroundColor: colors.successLight,
-    borderColor: '#bbf7d0',
+    borderColor: '#6ee7b7',
     borderWidth: 1,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
   },
   successTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.foreground,
-    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#064e3b',
   },
   successText: {
     fontSize: 14,
-    color: colors.gray500,
+    color: '#064e3b',
+    fontWeight: '500',
   },
 
   // General Card
   card: {
     backgroundColor: colors.white,
     padding: 20,
-    borderRadius: 16,
+    borderRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.gray100,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   cardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: colors.foreground,
   },
 
@@ -624,25 +664,27 @@ const styles = StyleSheet.create({
   },
   masterySubjectName: {
     fontSize: 14,
+    fontWeight: '600',
+    color: colors.foreground,
     width: 96,
   },
   progressBarTrack: {
     flex: 1,
-    height: 8,
-    backgroundColor: colors.gray200,
-    borderRadius: 4,
+    height: 10,
+    backgroundColor: colors.gray100,
+    borderRadius: 5,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
     backgroundColor: colors.primary,
-    borderRadius: 4,
+    borderRadius: 5,
   },
   masteryScoreText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '700',
     color: colors.foreground,
-    width: 32,
+    width: 36,
     textAlign: 'right',
   },
 
@@ -650,55 +692,65 @@ const styles = StyleSheet.create({
   quarterlyGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingHorizontal: 10,
   },
   quarterlyColumn: {
     alignItems: 'center',
     flex: 1,
   },
   verticalBarTrack: {
-    height: 96,
-    width: 32,
-    backgroundColor: colors.gray200,
-    borderRadius: 8,
+    height: 100,
+    width: 36,
+    backgroundColor: colors.gray100,
+    borderRadius: 10,
     overflow: 'hidden',
     justifyContent: 'flex-end',
   },
   verticalBarFill: {
     width: '100%',
     backgroundColor: colors.primary,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   quarterlyLabel: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '700',
     color: colors.foreground,
-    marginTop: 8,
+    marginTop: 10,
   },
   quarterlyValue: {
     fontSize: 12,
+    fontWeight: '600',
     color: colors.gray500,
+    marginTop: 2,
   },
 
   // Assess Tab
   pillContainer: {
     flexDirection: 'row',
-    gap: 8,
-    paddingRight: 16,
+    gap: 10,
+    paddingRight: 20,
   },
   pill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     borderRadius: 9999,
   },
   pillActive: {
     backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   pillInactive: {
-    backgroundColor: colors.gray200,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.gray200,
   },
   pillText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '700',
   },
   pillTextActive: {
     color: colors.white,
@@ -709,13 +761,13 @@ const styles = StyleSheet.create({
   diagHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
   },
-  diagIcon: {
-    width: 40,
-    height: 40,
+  diagIconBox: {
+    width: 48,
+    height: 48,
     backgroundColor: colors.primaryLight,
-    borderRadius: 20,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -723,123 +775,142 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   diagTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: colors.foreground,
   },
   diagSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.gray500,
+    marginTop: 2,
   },
   scoreBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 9999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   scoreBadgeText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '700',
   },
-  actionText: {
-    fontSize: 12,
+  actionButton: {
+    marginTop: 16,
+    backgroundColor: colors.primaryLight,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  actionButtonText: {
+    fontSize: 14,
+    color: colors.primaryDark,
+    fontWeight: '700',
+  },
+  actionTextLink: {
+    fontSize: 13,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: '700',
   },
 
   // Lessons List
   quarterHeaderTitle: {
-    fontSize: 12,
+    fontSize: 13,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     color: colors.gray500,
-    fontWeight: '500',
-    marginBottom: 8,
-    marginTop: 8,
+    fontWeight: '700',
+    marginBottom: 12,
+    marginLeft: 4,
   },
   lessonListCard: {
     backgroundColor: colors.white,
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.gray100,
   },
   lessonRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray100,
   },
   lessonNumber: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
     backgroundColor: colors.gray100,
     alignItems: 'center',
     justifyContent: 'center',
   },
   lessonNumberText: {
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 13,
+    fontWeight: '800',
     color: colors.gray500,
   },
   lessonTitle: {
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '600',
     color: colors.foreground,
     flex: 1,
   },
   examRow: {
-    backgroundColor: 'rgba(255, 247, 237, 0.5)', // orange50/50
+    backgroundColor: colors.orange50,
     borderBottomWidth: 0,
   },
-  examIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: colors.orange100,
+  examIconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: '#fef3c7',
     alignItems: 'center',
     justifyContent: 'center',
   },
   examTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.foreground,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#92400e', // Dark orange text for exam
     flex: 1,
   },
 
   // Mastery Breakdown
   masteryBreakdownCard: {
     alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 32,
+    paddingVertical: 30,
   },
   masteryPillsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   masteryPill: {
-    fontSize: 10,
     backgroundColor: colors.primaryLight,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  masteryPillText: {
+    fontSize: 11,
+    fontWeight: '700',
     color: colors.primaryDark,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 9999,
   },
   progressRingText: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 26,
+    fontWeight: '800',
     color: colors.primary,
   },
   masteryFooterText: {
-    fontSize: 12,
+    fontSize: 14,
+    fontWeight: '600',
     color: colors.gray500,
-    marginTop: 8,
+    marginTop: 12,
   },
 });

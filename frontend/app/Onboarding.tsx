@@ -12,11 +12,10 @@ import {
 import { useRouter } from 'expo-router';
 import { User, Globe, GraduationCap, ArrowRight } from 'lucide-react-native';
 
-// Assuming these are your local imports
 import { saveProfile, initializeSubjectProgress, generateId } from '../lib/store';
 import { getCurriculumName, type Country } from '../lib/types';
 
-const COUNTRIES: { id: Country; name: string; flag: string }[] = [
+const COUNTRIES: { id: Country; name: string; flag: string }[] =[
   { id: 'indonesia', name: 'Indonesia', flag: '🇮🇩' },
   { id: 'malaysia', name: 'Malaysia', flag: '🇲🇾' },
   { id: 'brunei', name: 'Brunei', flag: '🇧🇳' },
@@ -24,13 +23,14 @@ const COUNTRIES: { id: Country; name: string; flag: string }[] = [
 
 const colors = {
   primary: '#3b82f6',
-  primaryLight: 'rgba(59, 130, 246, 0.1)',
-  primaryMuted: 'rgba(59, 130, 246, 0.5)',
-  foreground: '#111827',
-  mutedForeground: '#6b7280',
-  border: '#e5e7eb',
-  background: '#f9fafb',
-  cardBackground: '#ffffff', // Maps to secondary/20 or white depending on theme
+  primaryLight: '#eff6ff',
+  primaryDark: '#1d4ed8',
+  primaryMuted: '#93c5fd',
+  foreground: '#0f172a',
+  mutedForeground: '#64748b',
+  border: '#e2e8f0',
+  background: '#f8fafc',
+  cardBackground: '#ffffff',
   white: '#ffffff',
 };
 
@@ -39,7 +39,7 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [country, setCountry] = useState<Country | null>(null);
-  const [grade, setGrade] = useState<number | null>(null);
+  const[grade, setGrade] = useState<number | null>(null);
 
   const canContinue = step === 0 ? name.trim().length > 0 : step === 1 ? country !== null : grade !== null;
 
@@ -76,7 +76,7 @@ export default function Onboarding() {
           <View style={styles.logoContainer}>
             <View style={styles.logoTitleRow}>
               <View style={styles.logoIconBox}>
-                <GraduationCap size={24} color={colors.primary} />
+                <GraduationCap size={28} color={colors.primary} strokeWidth={2.5} />
               </View>
               <Text style={styles.logoTitle}>PocketClass</Text>
             </View>
@@ -89,7 +89,7 @@ export default function Onboarding() {
             {step === 0 && (
               <View>
                 <View style={styles.stepHeader}>
-                  <User size={20} color={colors.primary} />
+                  <User size={22} color={colors.primary} strokeWidth={2.5} />
                   <Text style={styles.stepTitle}>What's your name?</Text>
                 </View>
                 <TextInput
@@ -108,7 +108,7 @@ export default function Onboarding() {
             {step === 1 && (
               <View>
                 <View style={styles.stepHeader}>
-                  <Globe size={20} color={colors.primary} />
+                  <Globe size={22} color={colors.primary} strokeWidth={2.5} />
                   <Text style={styles.stepTitle}>Where are you from?</Text>
                 </View>
                 <View style={styles.listContainer}>
@@ -121,13 +121,19 @@ export default function Onboarding() {
                         onPress={() => setCountry(c.id)}
                         style={[
                           styles.listItem,
-                          isSelected ? styles.listItemSelected : styles.listItemUnselected
+                          isSelected && styles.listItemSelected
                         ]}
                       >
-                        <Text style={styles.flagText}>{c.flag}</Text>
+                        <View style={styles.flagBox}>
+                          <Text style={styles.flagText}>{c.flag}</Text>
+                        </View>
                         <View>
-                          <Text style={styles.countryName}>{c.name}</Text>
-                          <Text style={styles.curriculumText}>{getCurriculumName(c.id)}</Text>
+                          <Text style={[styles.countryName, isSelected && styles.textSelected]}>
+                            {c.name}
+                          </Text>
+                          <Text style={[styles.curriculumText, isSelected && styles.subTextSelected]}>
+                            {getCurriculumName(c.id)}
+                          </Text>
                         </View>
                       </TouchableOpacity>
                     );
@@ -139,9 +145,11 @@ export default function Onboarding() {
             {step === 2 && (
               <View>
                 <View style={styles.stepHeader}>
-                  <GraduationCap size={20} color={colors.primary} />
+                  <GraduationCap size={22} color={colors.primary} strokeWidth={2.5} />
                   <Text style={styles.stepTitle}>Select your grade</Text>
                 </View>
+                
+                {/* UPGRADED UNIFORM GRID */}
                 <View style={styles.gridContainer}>
                   {[7, 8, 9, 10, 11, 12].map(g => {
                     const isSelected = grade === g;
@@ -152,12 +160,12 @@ export default function Onboarding() {
                         onPress={() => setGrade(g)}
                         style={[
                           styles.gridItem,
-                          isSelected ? styles.listItemSelected : styles.listItemUnselected
+                          isSelected && styles.gridItemSelected
                         ]}
                       >
                         <Text style={[
                           styles.gradeText, 
-                          { color: isSelected ? colors.primary : colors.foreground }
+                          isSelected && styles.gradeTextSelected
                         ]}>
                           Grade {g}
                         </Text>
@@ -182,7 +190,7 @@ export default function Onboarding() {
             <Text style={styles.continueButtonText}>
               {step === 2 ? 'Start Learning' : 'Continue'}
             </Text>
-            {step === 2 && <ArrowRight size={20} color={colors.white} />}
+            {step === 2 && <ArrowRight size={20} color={colors.white} strokeWidth={2.5} />}
           </TouchableOpacity>
 
         </View>
@@ -213,7 +221,7 @@ const styles = StyleSheet.create({
   // Logo
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 40,
   },
   logoTitleRow: {
     flexDirection: 'row',
@@ -222,21 +230,23 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   logoIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(59, 130, 246, 0.2)', // blue-500/20
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '800',
     color: colors.foreground,
+    letterSpacing: -0.5,
   },
   logoSubtitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.mutedForeground,
+    fontWeight: '500',
   },
 
   // Main Card
@@ -246,97 +256,137 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 2,
   },
   stepHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 20,
   },
   stepTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.foreground,
   },
 
   // Step 0: Name Input
   textInput: {
     width: '100%',
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
     fontSize: 16,
+    fontWeight: '500',
     color: colors.foreground,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border,
   },
 
   // Step 1: Country List
   listContainer: {
-    gap: 8, // Requires RN 0.71+
+    gap: 12,
   },
   listItem: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
   },
   listItemSelected: {
     borderColor: colors.primary,
     backgroundColor: colors.primaryLight,
   },
-  listItemUnselected: {
-    borderColor: colors.border,
-    backgroundColor: 'transparent',
+  flagBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   flagText: {
-    fontSize: 24,
+    fontSize: 22,
   },
   countryName: {
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
     color: colors.foreground,
   },
   curriculumText: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.mutedForeground,
+    marginTop: 2,
+  },
+  textSelected: {
+    color: colors.primaryDark,
+    fontWeight: '700',
+  },
+  subTextSelected: {
+    color: colors.primary,
   },
 
-  // Step 2: Grade Grid
+  // Step 2: Upgraded Grade Grid
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8, // Requires RN 0.71+
+    gap: 12, 
     justifyContent: 'space-between',
   },
   gridItem: {
-    padding: 16,
-    borderRadius: 12,
+    width: '48%', // Ensures exactly 2 columns
+    height: 72,   // Fixed height guarantees all boxes are strictly the same size
+    backgroundColor: colors.white,
+    borderRadius: 16,
     borderWidth: 2,
-    width: '31%', // Fits 3 in a row with gap
+    borderColor: colors.border,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridItemSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
   },
   gradeText: {
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.mutedForeground,
+  },
+  gradeTextSelected: {
+    color: colors.primaryDark,
+    fontWeight: '800',
+    fontSize: 17, // Slight pop effect when selected
   },
 
   // Continue Button
   continueButton: {
     width: '100%',
-    marginTop: 24,
-    paddingVertical: 16,
-    borderRadius: 12,
+    marginTop: 32,
+    paddingVertical: 18,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   continueButtonText: {
     color: colors.white,
-    fontWeight: '600',
-    fontSize: 18,
+    fontWeight: '700',
+    fontSize: 16,
   },
 });
