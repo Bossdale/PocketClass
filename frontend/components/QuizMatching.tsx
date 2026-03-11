@@ -1,11 +1,32 @@
-import { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import type { MatchingQuestion } from '../lib/types';
 
 interface QuizMatchingProps {
   question: MatchingQuestion;
   onAnswer: (correct: boolean) => void;
 }
+
+// Color palette extracted from your Tailwind classes
+const colors = {
+  foreground: '#0f172a',
+  gray200: '#e5e7eb',
+  gray500: '#6b7280',
+  blue500: '#3b82f6',
+  blue300: '#93c5fd',
+  blue50: '#eff6ff',
+  blue700: '#1d4ed8',
+  green500: '#22c55e',
+  green50: '#f0fdf4',
+  green700: '#15803d',
+  green600: '#16a34a',
+  red500: '#ef4444',
+  red50: '#fef2f2',
+  red700: '#b91c1c',
+  red600: '#dc2626',
+  transparent: 'transparent',
+  white: '#ffffff',
+};
 
 export default function QuizMatching({ question, onAnswer }: QuizMatchingProps) {
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
@@ -36,56 +57,103 @@ export default function QuizMatching({ question, onAnswer }: QuizMatchingProps) 
   const isRightUsed = (idx: number) => Array.from(pairs.values()).includes(idx);
   const getPairedRight = (leftIdx: number) => pairs.get(leftIdx);
 
+  // Helper to determine styles for Left Column items
+  const getLeftItemStyle = (index: number, paired?: number) => {
+    if (selectedLeft === index) {
+      return { 
+        borderColor: colors.blue500, 
+        backgroundColor: colors.blue50, 
+        textColor: colors.blue700,
+        pairTextColor: colors.gray500 
+      };
+    }
+    if (paired !== undefined) {
+      if (revealed) {
+        if (question.correctPairs[index] === paired) {
+          return { 
+            borderColor: colors.green500, 
+            backgroundColor: colors.green50, 
+            textColor: colors.green700, 
+            pairTextColor: colors.green600 
+          };
+        } else {
+          return { 
+            borderColor: colors.red500, 
+            backgroundColor: colors.red50, 
+            textColor: colors.red700, 
+            pairTextColor: colors.red600 
+          };
+        }
+      } else {
+        return { 
+          borderColor: colors.blue300, 
+          backgroundColor: 'rgba(239, 246, 255, 0.5)', // blue-50/50
+          textColor: colors.foreground,
+          pairTextColor: colors.gray500
+        };
+      }
+    }
+    return { 
+      borderColor: colors.gray200, 
+      backgroundColor: colors.transparent, 
+      textColor: colors.foreground,
+      pairTextColor: colors.gray500
+    };
+  };
+
+  // Helper to determine styles for Right Column items
+  const getRightItemStyle = (index: number, used: boolean) => {
+    if (used) {
+      return { 
+        borderColor: colors.blue300, 
+        backgroundColor: 'rgba(239, 246, 255, 0.5)', // blue-50/50
+        opacity: 0.6 
+      };
+    }
+    if (selectedLeft === null) {
+      return { 
+        borderColor: colors.gray200, 
+        backgroundColor: colors.transparent, 
+        opacity: 0.6 
+      };
+    }
+    return { 
+      borderColor: colors.gray200, 
+      backgroundColor: colors.transparent, 
+      opacity: 1 
+    };
+  };
+
   return (
-    <View className="gap-4">
-      <Text className="text-base font-semibold text-foreground mb-4">{question.instruction}</Text>
+    <View style={styles.container}>
+      <Text style={styles.instructionText}>{question.instruction}</Text>
       
-      {/* Two Columns using Flexbox instead of Grid */}
-      <View className="flex-row gap-3 mb-4">
+      {/* Two Columns */}
+      <View style={styles.columnsContainer}>
         
         {/* Left Column */}
-        <View className="flex-1 gap-2">
+        <View style={styles.column}>
           {question.leftItems.map((item, i) => {
             const paired = getPairedRight(i);
-            
-            // Determine styling based on state
-            let borderClass = 'border-gray-200 dark:border-gray-700';
-            let bgClass = 'bg-transparent';
-            let textClass = 'text-foreground';
-            let pairTextClass = 'text-gray-500';
-
-            if (selectedLeft === i) {
-              borderClass = 'border-blue-500';
-              bgClass = 'bg-blue-50 dark:bg-blue-900/20';
-              textClass = 'text-blue-700 dark:text-blue-400';
-            } else if (paired !== undefined) {
-              if (revealed) {
-                if (question.correctPairs[i] === paired) {
-                  borderClass = 'border-green-500';
-                  bgClass = 'bg-green-50 dark:bg-green-900/20';
-                  textClass = 'text-green-700 dark:text-green-400';
-                  pairTextClass = 'text-green-600 dark:text-green-500';
-                } else {
-                  borderClass = 'border-red-500';
-                  bgClass = 'bg-red-50 dark:bg-red-900/20';
-                  textClass = 'text-red-700 dark:text-red-400';
-                  pairTextClass = 'text-red-600 dark:text-red-500';
-                }
-              } else {
-                borderClass = 'border-blue-300 dark:border-blue-700';
-                bgClass = 'bg-blue-50/50 dark:bg-blue-900/10';
-              }
-            }
+            const dynamicStyles = getLeftItemStyle(i, paired);
 
             return (
               <Pressable
                 key={i}
                 onPress={() => !revealed && setSelectedLeft(i)}
-                className={`w-full p-3 rounded-xl border-2 ${borderClass} ${bgClass}`}
+                style={[
+                  styles.itemBase, 
+                  { 
+                    borderColor: dynamicStyles.borderColor, 
+                    backgroundColor: dynamicStyles.backgroundColor 
+                  }
+                ]}
               >
-                <Text className={`text-sm font-medium ${textClass}`}>{item}</Text>
+                <Text style={[styles.itemText, { color: dynamicStyles.textColor }]}>
+                  {item}
+                </Text>
                 {paired !== undefined && (
-                  <Text className={`text-xs mt-1 ${pairTextClass}`}>
+                  <Text style={[styles.pairText, { color: dynamicStyles.pairTextColor }]}>
                     → {question.rightItems[paired]}
                   </Text>
                 )}
@@ -95,30 +163,26 @@ export default function QuizMatching({ question, onAnswer }: QuizMatchingProps) 
         </View>
 
         {/* Right Column */}
-        <View className="flex-1 gap-2">
+        <View style={styles.column}>
           {question.rightItems.map((item, i) => {
             const used = isRightUsed(i);
-            
-            let borderClass = 'border-gray-200 dark:border-gray-700';
-            let bgClass = 'bg-transparent';
-            let opacityClass = 'opacity-100';
-
-            if (used) {
-              borderClass = 'border-blue-300 dark:border-blue-700';
-              bgClass = 'bg-blue-50/50 dark:bg-blue-900/10';
-              opacityClass = 'opacity-60';
-            } else if (selectedLeft === null) {
-              opacityClass = 'opacity-60';
-            }
+            const dynamicStyles = getRightItemStyle(i, used);
 
             return (
               <Pressable
                 key={i}
                 onPress={() => handleRightClick(i)}
                 disabled={revealed || selectedLeft === null}
-                className={`w-full p-3 rounded-xl border-2 ${borderClass} ${bgClass} ${opacityClass}`}
+                style={[
+                  styles.itemBase, 
+                  { 
+                    borderColor: dynamicStyles.borderColor, 
+                    backgroundColor: dynamicStyles.backgroundColor,
+                    opacity: dynamicStyles.opacity
+                  }
+                ]}
               >
-                <Text className="text-sm font-medium text-foreground">{item}</Text>
+                <Text style={styles.itemText}>{item}</Text>
               </Pressable>
             );
           })}
@@ -131,13 +195,67 @@ export default function QuizMatching({ question, onAnswer }: QuizMatchingProps) 
         <Pressable
           onPress={checkAnswer}
           disabled={pairs.size !== question.leftItems.length}
-          className={`w-full py-4 rounded-xl items-center ${
-            pairs.size === question.leftItems.length ? 'bg-blue-500' : 'bg-blue-500/50'
-          }`}
+          style={[
+            styles.confirmButton,
+            { 
+              backgroundColor: pairs.size === question.leftItems.length 
+                ? colors.blue500 
+                : 'rgba(59, 130, 246, 0.5)' // blue-500/50
+            }
+          ]}
         >
-          <Text className="text-white font-semibold text-lg">Confirm Matches</Text>
+          <Text style={styles.confirmButtonText}>Confirm Matches</Text>
         </Pressable>
       )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 16,
+  },
+  instructionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.foreground,
+    marginBottom: 16,
+  },
+  columnsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  column: {
+    flex: 1,
+    gap: 8,
+  },
+  itemBase: {
+    width: '100%',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    justifyContent: 'center',
+  },
+  itemText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.foreground,
+  },
+  pairText: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  confirmButton: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmButtonText: {
+    color: colors.white,
+    fontWeight: '600',
+    fontSize: 18,
+  },
+});

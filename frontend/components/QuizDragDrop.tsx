@@ -1,104 +1,168 @@
-import { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { ArrowUp, ArrowDown } from 'lucide-react-native';
-import type { DragDropQuestion } from '../lib/types';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
+
+// Assuming this is your local import
+import type { DragDropQuestion } from '@/lib/types';
 
 interface QuizDragDropProps {
   question: DragDropQuestion;
   onAnswer: (correct: boolean) => void;
 }
 
-export default function QuizDragDrop({ question, onAnswer }: QuizDragDropProps) {
-  // Initialize items with their original index so we can check the order later
-  const [items, setItems] = useState(
+// Define our local Item type based on how we structure it in state
+type ListItem = {
+  id: string;
+  text: string;
+  originalIndex: number;
+};
+
+// Theme colors to match your web version
+const colors = {
+  primary: '#2563eb',
+  primaryForeground: '#ffffff',
+  accent: '#f1f5f9',
+  foreground: '#0f172a',
+  border: '#e2e8f0',
+  success: '#16a34a',
+  destructive: '#dc2626',
+};
+
+const QuizDragDrop: React.FC<QuizDragDropProps> = ({ question, onAnswer }) => {
+  const [items, setItems] = useState<ListItem[]>(
     question.items.map((item, i) => ({ id: `item-${i}`, text: item, originalIndex: i }))
   );
   const [revealed, setRevealed] = useState(false);
 
-  // Mobile-friendly sorting function using Up/Down arrows
-  const moveItem = (index: number, direction: 'up' | 'down') => {
-    if ((direction === 'up' && index === 0) || (direction === 'down' && index === items.length - 1)) {
-      return; // Can't move up if at top, can't move down if at bottom
-    }
-
-    const newItems = [...items];
-    const swapIndex = direction === 'up' ? index - 1 : index + 1;
-    
-    // Swap the items
-    const temp = newItems[index];
-    newItems[index] = newItems[swapIndex];
-    newItems[swapIndex] = temp;
-
-    setItems(newItems);
-  };
-
   const checkOrder = () => {
     const currentOrder = items.map(i => i.originalIndex);
-    const correct = JSON.stringify(currentOrder) === JSON.stringify(question.correctOrder);
-    setRevealed(true);
+    const isCorrect = JSON.stringify(currentOrder) === JSON.stringify(question.correctOrder);
     
-    // Wait a second before moving to the next question
-    setTimeout(() => onAnswer(correct), 1200);
+    setRevealed(true);
+    setTimeout(() => onAnswer(isCorrect), 800);
   };
 
-  const isCorrect = JSON.stringify(items.map(i => i.originalIndex)) === JSON.stringify(question.correctOrder);
+  const isCurrentlyCorrect = JSON.stringify(items.map(i => i.originalIndex)) === JSON.stringify(question.correctOrder);
+
+  // Render function for the Draggable FlatList
+  const renderItem = ({ item, drag, isActive }: RenderItemParams<ListItem>) => {
+    return (
+      // ScaleDecorator adds the "pop out" effect when dragging (like your web scale-105)
+      <ScaleDecorator>
+        <TouchableOpacity
+          activeOpacity={1}
+          onLongPress={drag} // Drag starts when user long-presses the item
+          disabled={revealed} // Disable dragging after checking answer
+          style={[
+            styles.sortableItem,
+            isActive && styles.sortableItemActive,
+          ]}
+        >
+          <Text style={styles.itemText}>{item.text}</Text>
+        </TouchableOpacity>
+      </ScaleDecorator>
+    );
+  };
 
   return (
-    <View className="gap-4">
-      <Text className="text-base font-semibold text-foreground mb-2">
-        {question.instruction}
-      </Text>
+    <View style={styles.container}>
+      <Text style={styles.instructionText}>{question.instruction}</Text>
       
-      <View className="gap-2 mb-4">
-        {items.map((item, index) => (
-          <View 
-            key={item.id} 
-            className="bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-3 border border-gray-200 dark:border-gray-700 flex-row items-center justify-between"
-          >
-            <Text className="text-sm font-medium text-foreground flex-1 pr-4">
-              {item.text}
-            </Text>
-            
-            {/* Control Arrows */}
-            {!revealed && (
-              <View className="flex-row gap-2">
-                <Pressable 
-                  onPress={() => moveItem(index, 'up')}
-                  disabled={index === 0}
-                  className={`p-2 rounded-lg ${index === 0 ? 'opacity-30' : 'bg-gray-200 dark:bg-gray-700 active:bg-gray-300'}`}
-                >
-                  <ArrowUp size={16} color="#4b5563" />
-                </Pressable>
-                
-                <Pressable 
-                  onPress={() => moveItem(index, 'down')}
-                  disabled={index === items.length - 1}
-                  className={`p-2 rounded-lg ${index === items.length - 1 ? 'opacity-30' : 'bg-gray-200 dark:bg-gray-700 active:bg-gray-300'}`}
-                >
-                  <ArrowDown size={16} color="#4b5563" />
-                </Pressable>
-              </View>
-            )}
-          </View>
-        ))}
+      {/* We use a wrapper View with a specific height or flex:1 
+        so the FlatList has room to scroll and drag 
+      */}
+      <View style={styles.listContainer}>
+        <DraggableFlatList
+          data={items}
+          onDragEnd={({ data }) => setItems(data)}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          // containerStyle adds the space between items (like web space-y-2)
+          contentContainerStyle={styles.flatListContent}
+        />
       </View>
 
-      {!revealed && (
-        <Pressable 
-          onPress={checkOrder} 
-          className="w-full py-4 rounded-xl bg-blue-500 items-center"
+      {!revealed ? (
+        <TouchableOpacity style={styles.checkButton} onPress={checkOrder}>
+          <Text style={styles.checkButtonText}>Check Order</Text>
+        </TouchableOpacity>
+      ) : (
+        <Text 
+          style={[
+            styles.feedbackText, 
+            { color: isCurrentlyCorrect ? colors.success : colors.destructive }
+          ]}
         >
-          <Text className="text-white font-semibold text-lg">Check Order</Text>
-        </Pressable>
-      )}
-
-      {revealed && (
-        <View className={`py-3 rounded-xl items-center ${isCorrect ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
-          <Text className={`text-sm font-bold ${isCorrect ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
-            {isCorrect ? '✓ Correct!' : '✗ Not quite right'}
-          </Text>
-        </View>
+          {isCurrentlyCorrect ? '✓ Correct!' : '✗ Not quite right'}
+        </Text>
       )}
     </View>
   );
-}
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1, // Ensure the container can grow to fit the Draggable list
+  },
+  instructionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.foreground,
+    marginBottom: 16,
+  },
+  listContainer: {
+    // If this list is inside a ScrollView, you might need a fixed height here
+    // e.g., height: 300, depending on your parent layout.
+    marginBottom: 16,
+  },
+  flatListContent: {
+    gap: 8, // Requires React Native 0.71+ (replaces space-y-2)
+    paddingBottom: 8, 
+  },
+  sortableItem: {
+    backgroundColor: colors.accent,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sortableItemActive: {
+    // Styling applied when the item is picked up
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    backgroundColor: '#ffffff',
+    borderColor: colors.primary,
+  },
+  itemText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.foreground,
+  },
+  checkButton: {
+    width: '100%',
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkButtonText: {
+    color: colors.primaryForeground,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  feedbackText: {
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+});
+
+export default QuizDragDrop;

@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { getProfile } from '../lib/store';
 
 export default function Index() {
@@ -20,7 +20,7 @@ export default function Index() {
   // Show a loading spinner while checking the mobile hard drive
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
+      <View style={styles.container}>
         <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
@@ -33,3 +33,12 @@ export default function Index() {
   
   return <Redirect href="/Onboarding" />; // Goes to Setup
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff', // Use '#111827' if you want the dark mode color
+  },
+});
