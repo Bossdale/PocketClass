@@ -121,7 +121,7 @@ export default function DiagnosticTest() {
     >
       <TouchableOpacity 
         style={styles.backButton} 
-        onPress={() => router.replace('/(tabs)')}
+        onPress={() => router.back()}
       >
         <ArrowLeft size={20} color={colors.mutedForeground} />
         <Text style={styles.backText}>Back</Text>
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 40,
+    paddingTop: 64,
     paddingBottom: 100,
   },
   backButton: {

@@ -4,7 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Star, CheckCircle2 } from 'lucide-react-native';
 
 // Assuming local imports
-import { getProfile, saveQuarterlyExamResult, getQuarterlyExamResults, generateId } from '../lib/store';
+import { getProfile, saveQuarterlyExamResult, getQuarterlyExamResults, generateId, getLessonsBySubject } from '../lib/store';
 import { SUBJECTS, QUARTER_TOPICS } from '../lib/types';
 // Note: getCountryClass typically returns a Tailwind string, so it's omitted from RN styling
 import { generateQuarterlyExam } from '../lib/quizService';
@@ -69,7 +69,9 @@ export default function QuarterlyExam() {
   const startExam = async () => {
     setLoading(true);
     setMode('exam');
-    const qs = await generateQuarterlyExam(subject.name, quarter, topic, profile.grade, profile.country);
+    const lessonCount = getLessonsBySubject(subjectId as string)
+      .filter(l => l.quarter === quarter && !l.isQuarterlyExam).length;
+    const qs = await generateQuarterlyExam(subject.name, quarter, topic, profile.grade, profile.country, lessonCount);
     setQuestions(qs);
     setCurrentQ(0);
     setScore(0);
@@ -137,7 +139,8 @@ export default function QuarterlyExam() {
         {/* Back Button */}
         <TouchableOpacity 
           style={styles.backButton} 
-          onPress={() => router.replace(`/SubjectView?subjectId=${subjectId}`)}
+          onPress={() => router.back()}
+
         >
           <ArrowLeft size={20} color={colors.mutedForeground} />
           <Text style={styles.backText}>Back</Text>
@@ -287,7 +290,7 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     paddingHorizontal: 16,
-    paddingTop: 40,
+    paddingTop: 64,
   },
   
   // Navigation

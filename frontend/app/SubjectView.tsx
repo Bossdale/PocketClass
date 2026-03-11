@@ -105,7 +105,7 @@ export default function SubjectView() {
     >
       {/* Header Navigation */}
       <TouchableOpacity 
-        onPress={() => router.replace('/(tabs)')} 
+        onPress={() => router.back()}
         style={styles.backButton}
       >
         <ArrowLeft size={20} color={colors.mutedForeground} />
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 40,
+    paddingTop: 64,
     paddingBottom: 100,
   },
   backButton: {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Volume2, CheckCircle2, Star } from 'lucide-react-native';
-import * as Speech from 'expo-speech';
+import { speak, stopSpeaking } from '../lib/tts';
 
 import { getLessonById, completeLesson, getProfile, saveLessonQuizResult, getLessonQuizResults, generateId } from '../lib/store';
 // Note: getCountryClass typically returns a Tailwind string, so it's omitted from RN styling here
@@ -60,6 +60,9 @@ export default function LessonView() {
       setProfile(p);
     }
     load();
+    return () => {
+      stopSpeaking();
+    };
   }, []);
 
   if (!lesson || !profile || !lessonId) return <View style={styles.container} />;
@@ -68,39 +71,35 @@ export default function LessonView() {
     text.replace(/^#{1,2}\s*/gm, '').replace(/\*\*/g, '').replace(/^>\s*/gm, '').replace(/^-\s*/gm, '').trim();
 
   const handleTTS = async () => {
-    if (ttsState !== 'idle') {
-      Speech.stop();
-      setTtsState('idle');
-      return;
-    }
-    
-    const text = stripMarkdown(lesson.sections[currentSection].content);
-    setTtsState('speaking');
-    
-    Speech.speak(text, {
-      rate: 0.9,
-      pitch: 1.0,
-      onDone: () => {
-        const fetchExplanation = async () => {
-          setTtsState('loading');
-          try {
-            const explanation = await getAIExplanation(text, profile.grade);
-            setTtsState('speaking');
-            Speech.speak(explanation, {
-              rate: 0.9,
-              pitch: 1.0,
-              onDone: () => setTtsState('idle'),
-              onError: () => setTtsState('idle'),
-            });
-          } catch (e) {
-            setTtsState('idle');
-          }
-        };
-        fetchExplanation();
-      },
-      onError: () => setTtsState('idle'),
-    });
-  };
+  if (ttsState !== 'idle') {
+    stopSpeaking();
+    setTtsState('idle');
+    return;
+  }
+
+  const text = stripMarkdown(lesson.sections[currentSection].content);
+  setTtsState('speaking');
+
+  speak(text, {
+    onDone: () => {
+      const fetchExplanation = async () => {
+        setTtsState('loading');
+        try {
+          const explanation = await getAIExplanation(text, profile.grade);
+          setTtsState('speaking');
+          speak(explanation, {
+            onDone: () => setTtsState('idle'),
+            onError: () => setTtsState('idle'),
+          });
+        } catch {
+          setTtsState('idle');
+        }
+      };
+      fetchExplanation();
+    },
+    onError: () => setTtsState('idle'),
+  });
+};
 
   const startQuiz = async () => {
     setLoadingQuiz(true);
@@ -209,7 +208,7 @@ export default function LessonView() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
         <TouchableOpacity 
-          onPress={() => router.replace(`/SubjectView?subjectId=${lesson.subjectId}`)} 
+          onPress={() => router.back()}
           style={styles.backButton}
         >
           <ArrowLeft size={20} color={colors.mutedForeground} />
@@ -321,7 +320,7 @@ export default function LessonView() {
             </View>
             
             <TouchableOpacity
-              onPress={() => router.replace(`/SubjectView?subjectId=${lesson.subjectId}`)}
+              onPress={() => router.back()}
               style={styles.primaryButtonFull}
             >
               <Text style={styles.primaryButtonTextFull}>Continue Learning</Text>
@@ -346,7 +345,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 40,
+    paddingTop: 64,
     paddingBottom: 100,
   },
   backButton: {
@@ -526,8 +525,12 @@ const styles = StyleSheet.create({
   // AI Tutor FAB Container
   tutorContainer: {
     position: 'absolute',
-    bottom: 16,
-    right: 16,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 50,
+    pointerEvents: 'box-none',
   },
 
   // Markdown Styles

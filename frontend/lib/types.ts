@@ -53,6 +53,7 @@ export interface BaseQuestion {
   id: string;
   difficulty: Difficulty;
   type: QuizType;
+  explanation?: string;
 }
 
 export interface MultipleChoiceQuestion extends BaseQuestion {
