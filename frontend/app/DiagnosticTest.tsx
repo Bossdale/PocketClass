@@ -183,7 +183,7 @@ export default function DiagnosticTest() {
             <DiagnosticResultCard result={finalResult} />
             
             <Pressable
-              onPress={() => router.replace(`/subject-view?subjectId=${subjectId}`)}
+              onPress={() => router.replace(`/SubjectView?subjectId=${subjectId}`)}
               className="w-full mt-6 py-4 rounded-xl bg-blue-500 items-center"
             >
               <Text className="text-white font-semibold text-lg">

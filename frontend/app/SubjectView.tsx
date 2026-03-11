@@ -131,7 +131,7 @@ export default function SubjectView() {
                     return (
                       <Pressable
                         key={lesson.id}
-                        onPress={() => router.push(`/lesson-view?lessonId=${lesson.id}`)}
+                        onPress={() => router.push(`/LessonView?lessonId=${lesson.id}`)}
                         className="flex-row items-center gap-3 px-4 py-4 border-b border-gray-100 dark:border-gray-700 active:bg-gray-50 dark:active:bg-gray-700"
                       >
                         <View className={`w-8 h-8 rounded-lg items-center justify-center ${
@@ -155,7 +155,7 @@ export default function SubjectView() {
 
                   {/* Quarterly Exam Row */}
                   <Pressable
-                    onPress={() => examUnlocked && router.push(`/exam?subjectId=${subjectId}&quarter=${quarter}`)}
+                    onPress={() => examUnlocked && router.push(`/QuarterlyExam?subjectId=${subjectId}&quarter=${quarter}`)}
                     disabled={!examUnlocked}
                     className={`flex-row items-center gap-3 px-4 py-4 ${
                       examUnlocked ? 'bg-orange-50 dark:bg-orange-900/20 active:bg-orange-100' : 'bg-gray-50 dark:bg-gray-800/50 opacity-60'

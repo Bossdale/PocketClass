@@ -27,22 +27,27 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function loadDashboardData() {
-      const userProfile = await getProfile();
-      if (!userProfile) { 
-        router.replace('/'); 
-        return; 
+      try {
+        const userProfile = await getProfile();
+        if (!userProfile) { 
+            router.replace('/Onboarding'); 
+            return; 
+          }
+        setProfile(userProfile);
+        
+        const sp = await getSubjectProgress();
+        setSubjectProgress(sp);
+        
+        // Load Assessment Data based on selected subject
+        setDiagResults(await getDiagnosticResults(assessSubject));
+        setQuizResults(await getLessonQuizResults());
+        setExamResults(await getQuarterlyExamResults(assessSubject));
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+      } finally {
+        // FIX 2: Always turn off the spinner, even if something fails
+        setLoading(false);
       }
-      setProfile(userProfile);
-      
-      const sp = await getSubjectProgress();
-      setSubjectProgress(sp);
-      
-      // Load Assessment Data based on selected subject
-      setDiagResults(await getDiagnosticResults(assessSubject));
-      setQuizResults(await getLessonQuizResults());
-      setExamResults(await getQuarterlyExamResults(assessSubject));
-
-      setLoading(false);
     }
     loadDashboardData();
   }, [assessSubject]);
@@ -282,7 +287,7 @@ function AssessTab({
             </View>
           )}
         </View>
-        <Pressable onPress={() => router.push(`/diagnostic-test?subjectId=${selectedSubject}`)} className="mt-3">
+        <Pressable onPress={() => router.push(`/DiagnosticTest?subjectId=${selectedSubject}`)} className="mt-3">
           <Text className="text-xs text-blue-500 font-medium">{latestDiag ? 'Retake' : 'Take Test'}</Text>
         </Pressable>
       </View>
@@ -320,7 +325,7 @@ function AssessTab({
                       </View>
                     )}
                     
-                    <Pressable onPress={() => router.push(`/lesson-view?lessonId=${lesson.id}`)}>
+                    <Pressable onPress={() => router.push(`/LessonView?lessonId=${lesson.id}`)}>
                       <Text className="text-xs text-blue-500 ml-2">{latest ? 'Retry' : 'Start'}</Text>
                     </Pressable>
                   </View>
@@ -342,7 +347,7 @@ function AssessTab({
                   </View>
                 )}
                 
-                <Pressable onPress={() => router.push(`/exam?subjectId=${selectedSubject}&quarter=${quarter}`)}>
+                <Pressable onPress={() => router.push(`/QuarterlyExam?subjectId=${selectedSubject}&quarter=${quarter}`)}>
                   <Text className="text-xs text-blue-500 ml-2">{latestExam ? 'Retake' : 'Take Exam'}</Text>
                 </Pressable>
               </View>
