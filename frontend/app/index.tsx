@@ -1,7 +1,7 @@
 import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { getProfile } from '../lib/store';
+import { View, ActivityIndicator, StyleSheet} from 'react-native';
+import { getProfile } from '../lib/store';  // ← one level up from (tabs)
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
@@ -9,7 +9,6 @@ export default function Index() {
 
   useEffect(() => {
     async function checkUser() {
-      // We must AWAIT the profile because mobile storage is asynchronous
       const profile = await getProfile();
       setHasProfile(!!profile);
       setIsLoading(false);
@@ -17,7 +16,6 @@ export default function Index() {
     checkUser();
   }, []);
 
-  // Show a loading spinner while checking the mobile hard drive
   if (isLoading) {
     return (
       <View style={styles.container}>
