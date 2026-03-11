@@ -1,17 +1,40 @@
-import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Volume2, CheckCircle2, Star } from 'lucide-react-native';
-import * as Speech from 'expo-speech'; // Use native text-to-speech!
+import * as Speech from 'expo-speech';
 
 import { getLessonById, completeLesson, getProfile, saveLessonQuizResult, getLessonQuizResults, generateId } from '../lib/store';
-import { getCountryClass } from '../lib/types';
+// Note: getCountryClass typically returns a Tailwind string, so it's omitted from RN styling here
 import { generateLessonQuiz, getAIExplanation } from '../lib/quizService';
 import type { QuizQuestion, Profile } from '../lib/types';
 
-// We will convert these in the final step!
 import QuizRenderer from '../components/QuizRenderer';
 import AITutor from '../components/AITutor';
+
+const colors = {
+  primary: '#3b82f6',
+  primaryLight: '#dbeafe',
+  foreground: '#111827',
+  mutedForeground: '#6b7280',
+  border: '#e5e7eb',
+  background: '#f9fafb',
+  white: '#ffffff',
+  gray100: '#f3f4f6',
+  gray200: '#e5e7eb',
+  gray300: '#d1d5db',
+  gray500: '#6b7280',
+  gray700: '#374151',
+  green100: '#dcfce7',
+  green500: '#22c55e',
+  green700: '#15803d',
+  yellow100: '#fef9c3',
+  yellow500: '#eab308',
+  yellow700: '#a16207',
+  red100: '#fee2e2',
+  red700: '#b91c1c',
+  success: '#16a34a',
+};
 
 export default function LessonView() {
   const { lessonId } = useLocalSearchParams<{ lessonId: string }>();
@@ -31,7 +54,6 @@ export default function LessonView() {
 
   const lesson = lessonId ? getLessonById(lessonId as string) : undefined;
 
-  // Load the async profile
   useEffect(() => {
     async function load() {
       const p = await getProfile();
@@ -40,8 +62,7 @@ export default function LessonView() {
     load();
   }, []);
 
-  if (!lesson || !profile || !lessonId) return <View className="flex-1 bg-background" />;
-  const countryClass = getCountryClass(profile.country);
+  if (!lesson || !profile || !lessonId) return <View style={styles.container} />;
 
   const stripMarkdown = (text: string) =>
     text.replace(/^#{1,2}\s*/gm, '').replace(/\*\*/g, '').replace(/^>\s*/gm, '').replace(/^-\s*/gm, '').trim();
@@ -60,7 +81,6 @@ export default function LessonView() {
       rate: 0.9,
       pitch: 1.0,
       onDone: () => {
-        // FIX: We wrap the async code in a standard function so TypeScript and Expo are happy!
         const fetchExplanation = async () => {
           setTtsState('loading');
           try {
@@ -76,8 +96,7 @@ export default function LessonView() {
             setTtsState('idle');
           }
         };
-        
-        fetchExplanation(); // Trigger the wrapper immediately
+        fetchExplanation();
       },
       onError: () => setTtsState('idle'),
     });
@@ -115,7 +134,6 @@ export default function LessonView() {
     if (currentQ + 1 < questions.length) {
       setCurrentQ(currentQ + 1);
     } else {
-      // Quiz complete - Use async storage updates!
       const totalScore = Math.round(((correct ? score + 1 : score) / questions.length) * 100);
       const prevResults = await getLessonQuizResults(lessonId as string);
       
@@ -140,170 +158,432 @@ export default function LessonView() {
   const totalScore = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
   const stars = totalScore >= 80 ? 3 : totalScore >= 50 ? 2 : 1;
 
-  // Native Markdown Parser
+  // Native Markdown Parser using StyleSheet
   const renderContent = (content: string) => {
     return content.split('\n').map((line, i) => {
       if (line.startsWith('# ')) {
-        return <Text key={i} className="text-2xl font-bold mb-3 mt-4 text-foreground">{line.substring(2)}</Text>;
+        return <Text key={i} style={styles.markdownH1}>{line.substring(2)}</Text>;
       }
       if (line.startsWith('## ')) {
-        return <Text key={i} className="text-xl font-semibold mt-4 mb-2 text-foreground">{line.substring(3)}</Text>;
+        return <Text key={i} style={styles.markdownH2}>{line.substring(3)}</Text>;
       }
       if (line.startsWith('> ')) {
         return (
-          <View key={i} className="border-l-4 border-blue-500 pl-3 bg-blue-50 dark:bg-blue-900/20 rounded-r-lg py-3 my-3">
-            <Text className="text-sm text-gray-700 dark:text-gray-300 italic">{line.substring(2)}</Text>
+          <View key={i} style={styles.markdownBlockquote}>
+            <Text style={styles.markdownBlockquoteText}>{line.substring(2)}</Text>
           </View>
         );
       }
       if (line.startsWith('- ')) {
         return (
-          <View key={i} className="flex-row items-start my-1 pl-2">
-            <Text className="text-foreground mr-2">•</Text>
-            <Text className="text-sm text-foreground flex-1">{line.substring(2)}</Text>
+          <View key={i} style={styles.markdownListItem}>
+            <Text style={styles.markdownListBullet}>•</Text>
+            <Text style={styles.markdownListText}>{line.substring(2)}</Text>
           </View>
         );
       }
-      if (line.trim() === '') return <View key={i} className="h-2" />;
+      if (line.trim() === '') return <View key={i} style={styles.markdownSpacer} />;
       
-      return <Text key={i} className="text-sm text-foreground my-2 leading-relaxed">{line}</Text>;
+      return <Text key={i} style={styles.markdownParagraph}>{line}</Text>;
     });
   };
 
   const getDifficultyBadge = () => {
     if (!questions[currentQ]) return null;
     const d = questions[currentQ].difficulty;
-    const bg = d === 'easy' ? 'bg-green-100' : d === 'medium' ? 'bg-yellow-100' : 'bg-red-100';
-    const text = d === 'easy' ? 'text-green-700' : d === 'medium' ? 'text-yellow-700' : 'text-red-700';
+    
+    let bg = colors.green100;
+    let text = colors.green700;
+    if (d === 'medium') { bg = colors.yellow100; text = colors.yellow700; }
+    if (d === 'hard') { bg = colors.red100; text = colors.red700; }
+
     return (
-      <View className={`px-3 py-1 rounded-full ${bg}`}>
-        <Text className={`text-xs font-medium ${text}`}>{d}</Text>
+      <View style={[styles.difficultyBadge, { backgroundColor: bg }]}>
+        <Text style={[styles.difficultyText, { color: text }]}>{d}</Text>
       </View>
     );
   };
 
   return (
-    <View className={`flex-1 bg-background ${countryClass}`}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        <View className="px-4 pt-10">
-          <Pressable onPress={() => router.replace(`/SubjectView?subjectId=${lesson.subjectId}`)} className="flex-row items-center gap-2 mb-4">
-            <ArrowLeft size={20} color="#6b7280" />
-            <Text className="text-sm text-gray-500">Back</Text>
-          </Pressable>
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        <TouchableOpacity 
+          onPress={() => router.replace(`/SubjectView?subjectId=${lesson.subjectId}`)} 
+          style={styles.backButton}
+        >
+          <ArrowLeft size={20} color={colors.mutedForeground} />
+          <Text style={styles.backText}>Back</Text>
+        </TouchableOpacity>
 
-          <Text className="text-2xl font-bold text-foreground mb-6">{lesson.title}</Text>
+        <Text style={styles.lessonTitle}>{lesson.title}</Text>
 
-          {mode === 'content' && (
-            <View>
-              {/* Section progress */}
-              <View className="flex-row gap-1 mb-6">
-                {lesson.sections.map((_, i) => (
-                  <View key={i} className={`h-1.5 flex-1 rounded-full ${i <= currentSection ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
-                ))}
-              </View>
+        {mode === 'content' && (
+          <View>
+            {/* Section progress */}
+            <View style={styles.progressContainer}>
+              {lesson.sections.map((_, i) => (
+                <View 
+                  key={i} 
+                  style={[
+                    styles.progressSegment, 
+                    { backgroundColor: i <= currentSection ? colors.primary : colors.gray200 }
+                  ]} 
+                />
+              ))}
+            </View>
 
-              <View className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm">
-                <View className="flex-row items-center justify-between mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
-                  <Text className="text-xs text-gray-500 uppercase tracking-wider">
-                    Section {currentSection + 1} of {lesson.sections.length}
-                  </Text>
-                  <Pressable
-                    onPress={handleTTS}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${ttsState === 'speaking' ? 'bg-blue-100' : 'bg-gray-100 dark:bg-gray-700'}`}
-                  >
-                    {ttsState === 'loading' ? (
-                      <ActivityIndicator size="small" color="#3b82f6" />
-                    ) : (
-                      <Volume2 size={20} color={ttsState === 'speaking' ? '#3b82f6' : '#6b7280'} />
-                    )}
-                  </Pressable>
-                </View>
-                
-                {renderContent(lesson.sections[currentSection].content)}
-              </View>
-
-              <View className="flex-row gap-3 mt-6">
-                {currentSection > 0 && (
-                  <Pressable
-                    onPress={() => setCurrentSection(currentSection - 1)}
-                    className="flex-1 py-4 rounded-xl bg-gray-200 dark:bg-gray-800 items-center"
-                  >
-                    <Text className="text-gray-700 dark:text-gray-300 font-semibold">← Previous</Text>
-                  </Pressable>
-                )}
-                <Pressable
-                  onPress={() => {
-                    if (currentSection < lesson.sections.length - 1) setCurrentSection(currentSection + 1);
-                    else startQuiz();
-                  }}
-                  className="flex-1 py-4 rounded-xl bg-blue-500 items-center"
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.sectionTrackerText}>
+                  Section {currentSection + 1} of {lesson.sections.length}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleTTS}
+                  style={[
+                    styles.ttsButton, 
+                    { backgroundColor: ttsState === 'speaking' ? colors.primaryLight : colors.gray100 }
+                  ]}
                 >
-                  <Text className="text-white font-semibold">
-                    {currentSection < lesson.sections.length - 1 ? 'Next Section →' : '🎯 Take Quiz'}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          )}
-
-          {mode === 'quiz' && (
-            <View>
-              {loadingQuiz ? (
-                <View className="bg-white dark:bg-gray-800 p-8 rounded-2xl items-center shadow-sm">
-                  <ActivityIndicator size="large" color="#3b82f6" />
-                  <Text className="text-gray-500 mt-4 text-center">Generating adaptive quiz based on the lesson...</Text>
-                </View>
-              ) : questions.length > 0 && currentQ < questions.length ? (
-                <View>
-                  <View className="flex-row justify-center mb-4">{getDifficultyBadge()}</View>
-                  <Text className="text-xs text-gray-500 text-center mb-4">
-                    Question {currentQ + 1} of {questions.length}
-                  </Text>
-                  <View className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm">
-                    {/* Requires QuizRenderer to be converted! */}
-                    <QuizRenderer question={questions[currentQ]} onAnswer={handleAnswer} />
-                  </View>
-                </View>
-              ) : null}
-            </View>
-          )}
-
-          {mode === 'complete' && (
-            <View className="bg-white dark:bg-gray-800 p-8 rounded-2xl items-center shadow-sm">
-              <View className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 items-center justify-center mb-4">
-                <CheckCircle2 size={40} color="#22c55e" />
-              </View>
-              <Text className="text-2xl font-bold text-foreground mb-2">Lesson Complete! 🎉</Text>
-              <Text className="text-4xl font-bold text-blue-500 mb-4">{totalScore}%</Text>
-              
-              <View className="flex-row justify-center gap-2 mb-8">
-                {[1, 2, 3].map(s => (
-                  <Star 
-                    key={s} 
-                    size={32} 
-                    color={s <= stars ? "#eab308" : "#d1d5db"} 
-                    fill={s <= stars ? "#eab308" : "transparent"} 
-                  />
-                ))}
+                  {ttsState === 'loading' ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Volume2 size={20} color={ttsState === 'speaking' ? colors.primary : colors.mutedForeground} />
+                  )}
+                </TouchableOpacity>
               </View>
               
-              <Pressable
-                onPress={() => router.replace(`/SubjectView?subjectId=${lesson.subjectId}`)}
-                className="w-full py-4 rounded-xl bg-blue-500 items-center"
+              {renderContent(lesson.sections[currentSection].content)}
+            </View>
+
+            <View style={styles.navigationButtons}>
+              {currentSection > 0 && (
+                <TouchableOpacity
+                  onPress={() => setCurrentSection(currentSection - 1)}
+                  style={styles.secondaryButton}
+                >
+                  <Text style={styles.secondaryButtonText}>← Previous</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                onPress={() => {
+                  if (currentSection < lesson.sections.length - 1) setCurrentSection(currentSection + 1);
+                  else startQuiz();
+                }}
+                style={styles.primaryButton}
               >
-                <Text className="text-white font-semibold text-lg">Continue Learning</Text>
-              </Pressable>
+                <Text style={styles.primaryButtonText}>
+                  {currentSection < lesson.sections.length - 1 ? 'Next Section →' : '🎯 Take Quiz'}
+                </Text>
+              </TouchableOpacity>
             </View>
-          )}
-        </View>
+          </View>
+        )}
+
+        {mode === 'quiz' && (
+          <View>
+            {loadingQuiz ? (
+              <View style={styles.cardCentered}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={styles.loadingText}>Generating adaptive quiz based on the lesson...</Text>
+              </View>
+            ) : questions.length > 0 && currentQ < questions.length ? (
+              <View>
+                <View style={styles.badgeContainer}>{getDifficultyBadge()}</View>
+                <Text style={styles.questionTrackerText}>
+                  Question {currentQ + 1} of {questions.length}
+                </Text>
+                <View style={styles.card}>
+                  <QuizRenderer question={questions[currentQ]} onAnswer={handleAnswer} />
+                </View>
+              </View>
+            ) : null}
+          </View>
+        )}
+
+        {mode === 'complete' && (
+          <View style={styles.cardCentered}>
+            <View style={styles.successIconContainer}>
+              <CheckCircle2 size={40} color={colors.success} />
+            </View>
+            <Text style={styles.completeTitle}>Lesson Complete! 🎉</Text>
+            <Text style={styles.completeScore}>{totalScore}%</Text>
+            
+            <View style={styles.starsContainer}>
+              {[1, 2, 3].map(s => (
+                <Star 
+                  key={s} 
+                  size={32} 
+                  color={s <= stars ? colors.yellow500 : colors.gray300} 
+                  fill={s <= stars ? colors.yellow500 : "transparent"} 
+                />
+              ))}
+            </View>
+            
+            <TouchableOpacity
+              onPress={() => router.replace(`/SubjectView?subjectId=${lesson.subjectId}`)}
+              style={styles.primaryButtonFull}
+            >
+              <Text style={styles.primaryButtonTextFull}>Continue Learning</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
       {mode !== 'complete' && (
-        <View className="absolute bottom-4 right-4">
-           {/* Requires AITutor to be converted! */}
+        <View style={styles.tutorContainer}>
           <AITutor lessonId={lessonId as string} lessonTitle={lesson.title} />
         </View>
       )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 40,
+    paddingBottom: 100,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  backText: {
+    fontSize: 14,
+    color: colors.mutedForeground,
+  },
+  lessonTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.foreground,
+    marginBottom: 24,
+  },
+  
+  // Section Progress Bar
+  progressContainer: {
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: 24,
+  },
+  progressSegment: {
+    height: 6,
+    flex: 1,
+    borderRadius: 3,
+  },
+
+  // Main Card
+  card: {
+    backgroundColor: colors.white,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  cardCentered: {
+    backgroundColor: colors.white,
+    padding: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray100,
+  },
+  sectionTrackerText: {
+    fontSize: 12,
+    color: colors.gray500,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  ttsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Navigation Buttons
+  navigationButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  primaryButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: colors.white,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  secondaryButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: colors.gray200,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: colors.gray700,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+
+  // Quiz State
+  loadingText: {
+    color: colors.gray500,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  difficultyBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 9999,
+  },
+  difficultyText: {
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'capitalize',
+  },
+  questionTrackerText: {
+    fontSize: 12,
+    color: colors.gray500,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+
+  // Complete State
+  successIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.green100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  completeTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.foreground,
+    marginBottom: 8,
+  },
+  completeScore: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 16,
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 32,
+  },
+  primaryButtonFull: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+  },
+  primaryButtonTextFull: {
+    color: colors.white,
+    fontWeight: '600',
+    fontSize: 18,
+  },
+
+  // AI Tutor FAB Container
+  tutorContainer: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+  },
+
+  // Markdown Styles
+  markdownH1: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.foreground,
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  markdownH2: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.foreground,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  markdownBlockquote: {
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+    paddingLeft: 12,
+    backgroundColor: colors.primaryLight,
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+    paddingVertical: 12,
+    marginVertical: 12,
+  },
+  markdownBlockquoteText: {
+    fontSize: 14,
+    color: colors.gray700,
+    fontStyle: 'italic',
+  },
+  markdownListItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginVertical: 4,
+    paddingLeft: 8,
+  },
+  markdownListBullet: {
+    color: colors.foreground,
+    marginRight: 8,
+    fontSize: 14,
+  },
+  markdownListText: {
+    fontSize: 14,
+    color: colors.foreground,
+    flex: 1,
+    lineHeight: 20,
+  },
+  markdownParagraph: {
+    fontSize: 14,
+    color: colors.foreground,
+    marginVertical: 8,
+    lineHeight: 22,
+  },
+  markdownSpacer: {
+    height: 8,
+  },
+});

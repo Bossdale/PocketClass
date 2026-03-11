@@ -1,17 +1,39 @@
-import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, CheckCircle2, Lock } from 'lucide-react-native';
+
 import { 
-  getLessonsBySubject, getLessonProgress, getSubjectProgress, 
+  getLessonsBySubject, getLessonProgress, 
   quarterlyExamUnlocked, getQuarterlyExamResults, getProfile 
 } from '../lib/store';
-import { SUBJECTS, QUARTER_TOPICS, getCountryClass } from '../lib/types';
+import { SUBJECTS, QUARTER_TOPICS } from '../lib/types';
 import type { Profile, Lesson, LessonProgress } from '../lib/types';
 
 import ProgressRing from '../components/ProgressRing';
 
-// Interface to hold our complex quarter data state
+const colors = {
+  primary: '#3b82f6',
+  primaryLight: '#dbeafe',
+  primaryDark: '#2563eb',
+  foreground: '#111827',
+  mutedForeground: '#6b7280',
+  border: '#e5e7eb',
+  background: '#f9fafb',
+  white: '#ffffff',
+  gray50: '#f9fafb',
+  gray100: '#f3f4f6',
+  gray200: '#e5e7eb',
+  gray700: '#374151',
+  success: '#22c55e',
+  successLight: '#dcfce7',
+  successDark: '#15803d',
+  orange50: '#fff7ed',
+  orange100: '#ffedd5',
+  orange200: '#fed7aa',
+  orange600: '#ea580c',
+};
+
 interface QuarterData {
   quarter: number;
   lessons: Lesson[];
@@ -33,11 +55,9 @@ export default function SubjectView() {
   const [loading, setLoading] = useState(true);
   const [quarterData, setQuarterData] = useState<QuarterData[]>([]);
 
-  // We must load all this data asynchronously now!
   useEffect(() => {
     async function loadSubjectData() {
       if (!subjectId) return;
-
       const p = await getProfile();
       setProfile(p);
 
@@ -46,13 +66,11 @@ export default function SubjectView() {
       
       const qData: QuarterData[] = [];
       
-      // Loop through the 4 quarters and build the async data
       for (const q of [1, 2, 3, 4]) {
         const qLessons = allLessons.filter(l => l.quarter === q && !l.isQuarterlyExam);
         const completed = qLessons.filter(l => lp.some(prog => prog.lessonId === l.id && prog.completed)).length;
         const pct = qLessons.length > 0 ? Math.round((completed / qLessons.length) * 100) : 0;
         
-        // Await the storage calls
         const examUnlocked = await quarterlyExamUnlocked(subjectId, q);
         const examResults = await getQuarterlyExamResults(subjectId, q);
         const latestExam = examResults.length > 0 ? examResults[examResults.length - 1] : null;
@@ -72,119 +90,292 @@ export default function SubjectView() {
       setQuarterData(qData);
       setLoading(false);
     }
-    
     loadSubjectData();
   }, [subjectId]);
 
   if (!subject || !subjectId || !profile) {
-    return <View className="flex-1 bg-background" />;
+    return <View style={styles.container} />;
   }
 
-  const countryClass = getCountryClass(profile.country);
-
   return (
-    <ScrollView className={`flex-1 bg-background ${countryClass}`} contentContainerStyle={{ paddingBottom: 100 }}>
-      <View className="px-4 pt-10">
-        
-        {/* Header */}
-        <Pressable onPress={() => router.replace('/(tabs)')} className="flex-row items-center gap-2 mb-4">
-          <ArrowLeft size={20} color="#6b7280" />
-          <Text className="text-sm text-gray-500">Back</Text>
-        </Pressable>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Header Navigation */}
+      <TouchableOpacity 
+        onPress={() => router.replace('/(tabs)')} 
+        style={styles.backButton}
+      >
+        <ArrowLeft size={20} color={colors.mutedForeground} />
+        <Text style={styles.backText}>Back</Text>
+      </TouchableOpacity>
 
-        <View className="flex-row items-center gap-4 mb-6">
-          <Text className="text-5xl">{subject.emoji}</Text>
-          <View>
-            <Text className="text-2xl font-bold text-foreground">{subject.name}</Text>
-            <Text className="text-sm text-gray-500">{subject.totalLessons} lessons · 4 quarters</Text>
-          </View>
+      <View style={styles.header}>
+        <Text style={styles.headerEmoji}>{subject.emoji}</Text>
+        <View>
+          <Text style={styles.headerTitle}>{subject.name}</Text>
+          <Text style={styles.headerSubtitle}>{subject.totalLessons} lessons · 4 quarters</Text>
         </View>
-
-        {loading ? (
-          <View className="py-20 items-center justify-center">
-            <ActivityIndicator size="large" color="#3b82f6" />
-          </View>
-        ) : (
-          <View className="gap-5">
-            {quarterData.map(({ quarter, lessons, completed, total, pct, examUnlocked, latestExam, lessonProgress }) => (
-              <View key={quarter} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800">
-                
-                {/* Quarter Header */}
-                <View className="p-4 flex-row items-center gap-4 border-b border-gray-100 dark:border-gray-700">
-                  <ProgressRing progress={pct} size={48} strokeWidth={4}>
-                    <Text className="text-xs font-bold text-foreground">{pct}%</Text>
-                  </ProgressRing>
-                  <View className="flex-1">
-                    <Text className="font-semibold text-foreground text-lg">Quarter {quarter}</Text>
-                    <Text className="text-xs text-gray-500">{QUARTER_TOPICS[subjectId]?.[quarter - 1]}</Text>
-                    <Text className="text-xs text-blue-500 mt-1">{completed}/{total} lessons</Text>
-                  </View>
-                  {pct === 100 && <CheckCircle2 size={24} color="#22c55e" />}
-                </View>
-
-                {/* Lesson List */}
-                <View>
-                  {lessons.map(lesson => {
-                    const lp = lessonProgress.find(p => p.lessonId === lesson.id);
-                    const isCompleted = lp?.completed;
-                    
-                    return (
-                      <Pressable
-                        key={lesson.id}
-                        onPress={() => router.push(`/LessonView?lessonId=${lesson.id}`)}
-                        className="flex-row items-center gap-3 px-4 py-4 border-b border-gray-100 dark:border-gray-700 active:bg-gray-50 dark:active:bg-gray-700"
-                      >
-                        <View className={`w-8 h-8 rounded-lg items-center justify-center ${
-                          isCompleted ? 'bg-green-100 dark:bg-green-900/30' : 'bg-blue-100 dark:bg-blue-900/30'
-                        }`}>
-                          {isCompleted ? (
-                            <Text className="text-green-600 dark:text-green-400 font-bold">✓</Text>
-                          ) : (
-                            <Text className="text-blue-600 dark:text-blue-400 font-bold text-xs">{lesson.order}</Text>
-                          )}
-                        </View>
-                        <Text className="text-sm text-foreground flex-1" numberOfLines={1}>
-                          {lesson.title.split(' — ')[1] || lesson.title}
-                        </Text>
-                        {lp?.quizScore !== undefined && (
-                          <Text className="text-xs text-gray-500">{lp.quizScore}%</Text>
-                        )}
-                      </Pressable>
-                    );
-                  })}
-
-                  {/* Quarterly Exam Row */}
-                  <Pressable
-                    onPress={() => examUnlocked && router.push(`/QuarterlyExam?subjectId=${subjectId}&quarter=${quarter}`)}
-                    disabled={!examUnlocked}
-                    className={`flex-row items-center gap-3 px-4 py-4 ${
-                      examUnlocked ? 'bg-orange-50 dark:bg-orange-900/20 active:bg-orange-100' : 'bg-gray-50 dark:bg-gray-800/50 opacity-60'
-                    }`}
-                  >
-                    <View className="w-8 h-8 rounded-lg bg-orange-200 dark:bg-orange-900/50 items-center justify-center">
-                      <Text>🏆</Text>
-                    </View>
-                    <Text className="text-sm font-semibold text-foreground flex-1">Quarter {quarter} Exam</Text>
-                    
-                    {latestExam ? (
-                      <View className="bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-full">
-                        <Text className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                          {Math.round((latestExam.score / latestExam.totalQuestions) * 100)}%
-                        </Text>
-                      </View>
-                    ) : examUnlocked ? (
-                      <Text className="text-xs text-orange-600 font-medium">Take Exam</Text>
-                    ) : (
-                      <Lock size={16} color="#9ca3af" />
-                    )}
-                  </Pressable>
-
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
       </View>
+
+      {loading ? (
+        <View style={styles.loadingWrapper}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
+        <View style={styles.quarterGap}>
+          {quarterData.map(({ quarter, lessons, completed, total, pct, examUnlocked, latestExam, lessonProgress }) => (
+            <View key={quarter} style={styles.quarterCard}>
+              
+              {/* Quarter Header */}
+              <View style={styles.quarterHeader}>
+                <ProgressRing progress={pct} size={48} strokeWidth={4}>
+                  <Text style={styles.pctText}>{pct}%</Text>
+                </ProgressRing>
+                <View style={styles.headerTextContainer}>
+                  <Text style={styles.quarterTitle}>Quarter {quarter}</Text>
+                  <Text style={styles.topicText}>{QUARTER_TOPICS[subjectId]?.[quarter - 1]}</Text>
+                  <Text style={styles.lessonCountText}>{completed}/{total} lessons</Text>
+                </View>
+                {pct === 100 && <CheckCircle2 size={24} color={colors.success} />}
+              </View>
+
+              {/* Lesson List */}
+              <View>
+                {lessons.map(lesson => {
+                  const lp = lessonProgress.find(p => p.lessonId === lesson.id);
+                  const isCompleted = lp?.completed;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={lesson.id}
+                      onPress={() => router.push(`/LessonView?lessonId=${lesson.id}`)}
+                      style={styles.lessonRow}
+                    >
+                      <View style={[
+                        styles.lessonIconBox,
+                        { backgroundColor: isCompleted ? colors.successLight : colors.primaryLight }
+                      ]}>
+                        {isCompleted ? (
+                          <Text style={styles.checkMark}>✓</Text>
+                        ) : (
+                          <Text style={styles.lessonOrder}>{lesson.order}</Text>
+                        )}
+                      </View>
+                      <Text style={styles.lessonTitleText} numberOfLines={1}>
+                        {lesson.title.split(' — ')[1] || lesson.title}
+                      </Text>
+                      {lp?.quizScore !== undefined && (
+                        <Text style={styles.lessonScoreText}>{lp.quizScore}%</Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+
+                {/* Quarterly Exam Row */}
+                <TouchableOpacity
+                  onPress={() => examUnlocked && router.push(`/QuarterlyExam?subjectId=${subjectId}&quarter=${quarter}`)}
+                  disabled={!examUnlocked}
+                  style={[
+                    styles.examRow,
+                    examUnlocked ? styles.examRowUnlocked : styles.examRowLocked
+                  ]}
+                >
+                  <View style={styles.examIconBox}>
+                    <Text>🏆</Text>
+                  </View>
+                  <Text style={styles.examTitleText}>Quarter {quarter} Exam</Text>
+                  
+                  {latestExam ? (
+                    <View style={styles.examScoreBadge}>
+                      <Text style={styles.examScoreText}>
+                        {Math.round((latestExam.score / latestExam.totalQuestions) * 100)}%
+                      </Text>
+                    </View>
+                  ) : examUnlocked ? (
+                    <Text style={styles.takeExamText}>Take Exam</Text>
+                  ) : (
+                    <Lock size={16} color={colors.mutedForeground} />
+                  )}
+                </TouchableOpacity>
+
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 40,
+    paddingBottom: 100,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  backText: {
+    fontSize: 14,
+    color: colors.mutedForeground,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 24,
+  },
+  headerEmoji: {
+    fontSize: 48,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.foreground,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: colors.mutedForeground,
+  },
+  loadingWrapper: {
+    paddingVertical: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quarterGap: {
+    gap: 20,
+  },
+  quarterCard: {
+    backgroundColor: colors.white,
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.gray100,
+  },
+  quarterHeader: {
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray100,
+  },
+  pctText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: colors.foreground,
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  quarterTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.foreground,
+  },
+  topicText: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+  },
+  lessonCountText: {
+    fontSize: 12,
+    color: colors.primary,
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  lessonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray100,
+  },
+  lessonIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkMark: {
+    color: colors.successDark,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  lessonOrder: {
+    color: colors.primaryDark,
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  lessonTitleText: {
+    fontSize: 14,
+    color: colors.foreground,
+    flex: 1,
+  },
+  lessonScoreText: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+  },
+  examRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  examRowUnlocked: {
+    backgroundColor: colors.orange50,
+  },
+  examRowLocked: {
+    backgroundColor: colors.gray50,
+    opacity: 0.6,
+  },
+  examIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: colors.orange200,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  examTitleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.foreground,
+    flex: 1,
+  },
+  examScoreBadge: {
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 9999,
+  },
+  examScoreText: {
+    fontSize: 12,
+    color: colors.primaryDark,
+    fontWeight: '500',
+  },
+  takeExamText: {
+    fontSize: 12,
+    color: colors.orange600,
+    fontWeight: '500',
+  },
+});
