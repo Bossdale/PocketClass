@@ -187,7 +187,6 @@ export default function QuizMatching({ question, onAnswer }: QuizMatchingProps) 
             );
           })}
         </View>
-        
       </View>
 
       {/* Confirm Button */}
