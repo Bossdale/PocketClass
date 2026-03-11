@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { BookOpen, Trophy, Flame, TrendingUp, AlertTriangle } from 'lucide-react-native';
+import { BookOpen, Trophy, Flame, TrendingUp, AlertTriangle, LogOut} from 'lucide-react-native';
 
 // Assuming these are your local imports
 import { 
@@ -111,6 +111,15 @@ export default function Dashboard() {
             <Text style={styles.welcomeText}>Welcome back</Text>
             <Text style={styles.nameText}>{profile.name} 👋</Text>
           </View>
+
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={() => router.replace('/Onboarding')}
+            activeOpacity={0.7}
+          >
+            <LogOut size={16} color={colors.destructive} />
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Stats */}
@@ -442,6 +451,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     marginBottom: 24,
+    marginTop: 12,
   },
   welcomeText: {
     fontSize: 12,
@@ -453,6 +463,20 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.foreground,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.destructiveLight,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+  },
+  logoutText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.destructive,
   },
 
   // Stats Top Row
