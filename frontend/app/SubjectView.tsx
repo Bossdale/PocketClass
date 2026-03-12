@@ -55,6 +55,8 @@ export default function SubjectView() {
   const [loading, setLoading] = useState(true);
   const [quarterData, setQuarterData] = useState<QuarterData[]>([]);
 
+  const [diagnosticDone, setDiagnosticDone] = useState(false);
+  
   useEffect(() => {
     async function loadSubjectData() {
       if (!subjectId) return;

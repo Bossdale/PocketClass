@@ -1,4 +1,4 @@
-import type { QuizQuestion, DiagnosticQuestion } from './types';
+import type { QuizQuestion, DiagnosticQuestion, StudyPlan  } from './types';
 
 const API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
 
@@ -22,7 +22,7 @@ async function callAnthropic(system: string, user: string): Promise<string> {
   return data.content?.[0]?.text || '';
 }
 
-function parseJsonResponse(text: string): any[] {
+function parseJsonResponse(text: string): any {
   // Strip markdown fences
   let cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
   return JSON.parse(cleaned);
@@ -331,5 +331,44 @@ export async function getAITutorResponse(
     return data.content?.[0]?.text || "I'm here to help! Could you rephrase your question?";
   } catch {
     return "I'm having trouble connecting right now. Please try again in a moment!";
+  }
+}
+
+// ── AIFeature: Study Plan (ported from AIFeatures/getStudyTips.ts) ────────────
+export async function getStudyPlan(
+  q1Score: number, q1Lessons: string[],
+  q2Score: number, q2Lessons: string[],
+  q3Score: number, q3Lessons: string[],
+  q4Score: number, q4Lessons: string[],
+): Promise<StudyPlan | null> {
+  const system = `You are an AI tutor creating a personalized study plan. Return ONLY a valid JSON object. No markdown, no explanation.`;
+
+  const user = `Create a study plan based on these diagnostic scores.
+
+Rules:
+- Score 0–50   → is_need_review: true  (High Priority)
+- Score 51–75  → is_need_review: true  (Moderate Priority)
+- Score 76–100 → is_need_review: false (Low Priority)
+- Focus more on low-scoring quarters.
+- how_to_get_high_scores must have exactly 5 numbered tips.
+
+Quarter 1 Score: ${q1Score} | Lessons: ${q1Lessons.join(', ')}
+Quarter 2 Score: ${q2Score} | Lessons: ${q2Lessons.join(', ')}
+Quarter 3 Score: ${q3Score} | Lessons: ${q3Lessons.join(', ')}
+Quarter 4 Score: ${q4Score} | Lessons: ${q4Lessons.join(', ')}
+
+Return ONLY this JSON:
+{
+  "quarter1": {"lessons":"...","is_need_review":true,"how_to_get_high_scores":"1. ... 2. ... 3. ... 4. ... 5. ..."},
+  "quarter2": {"lessons":"...","is_need_review":false,"how_to_get_high_scores":"1. ... 2. ... 3. ... 4. ... 5. ..."},
+  "quarter3": {"lessons":"...","is_need_review":true,"how_to_get_high_scores":"1. ... 2. ... 3. ... 4. ... 5. ..."},
+  "quarter4": {"lessons":"...","is_need_review":true,"how_to_get_high_scores":"1. ... 2. ... 3. ... 4. ... 5. ..."}
+}`;
+
+  try {
+    const text = await callAnthropic(system, user);
+    return parseJsonResponse(text) as StudyPlan;
+  } catch {
+    return null;
   }
 }

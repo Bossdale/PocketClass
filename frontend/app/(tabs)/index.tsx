@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { 
   LogOut, 
@@ -17,13 +17,15 @@ import {
 
 import { 
   getProfile, getSubjectProgress, getDiagnosticResults, 
-  getLessonQuizResults, getQuarterlyExamResults, getLessonsBySubject 
+  getLessonQuizResults, getQuarterlyExamResults, getLessonsBySubject,
+  getStudyPlanForSubject
 } from '../../lib/store';
-import { SUBJECTS, QUARTER_TOPICS } from '../../lib/types';
-import type { SubjectProgress, Profile, DiagnosticResult, LessonQuizResult, QuarterlyExamResult } from '../../lib/types';
+import { SUBJECTS } from '../../lib/types';
+import type { SubjectProgress, Profile, DiagnosticResult, LessonQuizResult, QuarterlyExamResult, StudyPlan } from '../../lib/types';
 
 import SubjectTile from '../../components/SubjectTile';
 import ProgressRing from '../../components/ProgressRing';
+import DiagnosticResultCard from '../../components/DiagnosticResultCard';
 
 const colors = {
   primary: '#3b82f6',
@@ -54,36 +56,47 @@ export default function Dashboard() {
   const insets = useSafeAreaInsets();
   
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const[activeTab, setActiveTab] = useState<'learn' | 'progress' | 'assess'>('learn');
-  const[subjectProgress, setSubjectProgress] = useState<SubjectProgress[]>([]);
+  const[loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'learn' | 'progress' | 'assess'>('learn');
+  const [subjectProgress, setSubjectProgress] = useState<SubjectProgress[]>([]);
   const [assessSubject, setAssessSubject] = useState(SUBJECTS[0].id);
 
   const [diagResults, setDiagResults] = useState<DiagnosticResult[]>([]);
-  const [quizResults, setQuizResults] = useState<LessonQuizResult[]>([]);
-  const[examResults, setExamResults] = useState<QuarterlyExamResult[]>([]);
+  const[quizResults, setQuizResults] = useState<LessonQuizResult[]>([]);
+  const [examResults, setExamResults] = useState<QuarterlyExamResult[]>([]);
+  const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(null);
 
-  useEffect(() => {
-    async function loadDashboardData() {
-      try {
-        const userProfile = await getProfile();
-        if (!userProfile) { 
-            router.replace('/Onboarding'); 
-            return; 
+  // useFocusEffect seamlessly handles refreshing data immediately after returning from the Quiz/Test
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      async function loadDashboardData() {
+        try {
+          const userProfile = await getProfile();
+          if (!userProfile) { 
+              router.replace('/Onboarding'); 
+              return; 
+            }
+          if (isActive) {
+            setProfile(userProfile);
+            setSubjectProgress(await getSubjectProgress());
+            setDiagResults(await getDiagnosticResults(assessSubject));
+            setQuizResults(await getLessonQuizResults());
+            setExamResults(await getQuarterlyExamResults(assessSubject));
+            setStudyPlan(await getStudyPlanForSubject(assessSubject));
           }
-        setProfile(userProfile);
-        setSubjectProgress(await getSubjectProgress());
-        setDiagResults(await getDiagnosticResults(assessSubject));
-        setQuizResults(await getLessonQuizResults());
-        setExamResults(await getQuarterlyExamResults(assessSubject));
-      } catch (error) {
-        console.error("Error loading dashboard data:", error);
-      } finally {
-        setLoading(false);
+        } catch (error) {
+          console.error("Error loading dashboard data:", error);
+        } finally {
+          if (isActive) setLoading(false);
+        }
       }
-    }
-    loadDashboardData();
-  }, [assessSubject]);
+      loadDashboardData();
+      return () => {
+        isActive = false;
+      };
+    }, [assessSubject])
+  );
 
   if (loading || !profile) {
     return (
@@ -99,7 +112,6 @@ export default function Dashboard() {
     ? Math.round(subjectProgress.reduce((s, p) => s + p.masteryScore, 0) / subjectProgress.length) 
     : 0;
 
-  // Upgraded Tabs with Lucide Icons instead of Emojis
   const tabs =[
     { id: 'learn' as const, label: 'Learn', icon: BookOpen },
     { id: 'progress' as const, label: 'Progress', icon: BarChart3 },
@@ -128,12 +140,12 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
-        {/* Upgraded Vibrant Stats Boxes */}
+        {/* Stats Boxes */}
         <View style={styles.statsContainer}>
           {[
-            { icon: Library, value: `${completedLessons}/${totalLessons}`, label: 'LESSONS', color: '#3b82f6', bg: '#eff6ff' }, // Blue
-            { icon: Target, value: `${avgMastery}%`, label: 'MASTERY', color: '#8b5cf6', bg: '#f5f3ff' }, // Violet
-            { icon: Zap, value: '3 days', label: 'STREAK', color: '#f59e0b', bg: '#fffbeb' }, // Amber
+            { icon: Library, value: `${completedLessons}/${totalLessons}`, label: 'LESSONS', color: '#3b82f6', bg: '#eff6ff' },
+            { icon: Target, value: `${avgMastery}%`, label: 'MASTERY', color: '#8b5cf6', bg: '#f5f3ff' },
+            { icon: Zap, value: '3 days', label: 'STREAK', color: '#f59e0b', bg: '#fffbeb' },
           ].map(({ icon: Icon, value, label, color, bg }) => (
             <View key={label} style={styles.statBox}>
               <View style={[styles.statIconWrapper, { backgroundColor: bg }]}>
@@ -174,7 +186,7 @@ export default function Dashboard() {
             {SUBJECTS.map((subject, i) => {
               const progress = subjectProgress.find(p => p.subjectId === subject.id) || {
                 subjectId: subject.id, lessonsCompleted: 0, totalLessons: subject.totalLessons,
-                masteryScore: 0, quarterProgress:[0, 0, 0, 0], diagnosticCompleted: false,
+                masteryScore: 0, quarterProgress: [0, 0, 0, 0], diagnosticCompleted: false,
               };
               return (
                 <View key={subject.id} style={styles.learnStackItem}>
@@ -195,6 +207,7 @@ export default function Dashboard() {
             quizResults={quizResults}
             examResults={examResults}
             subjectProgress={subjectProgress}
+            studyPlan={studyPlan}
           />
         )}
       </ScrollView>
@@ -290,7 +303,7 @@ function ProgressTab({ subjectProgress }: { subjectProgress: SubjectProgress[] }
 }
 
 function AssessTab({ 
-  selectedSubject, onSelectSubject, diagResults, quizResults, examResults, subjectProgress 
+  selectedSubject, onSelectSubject, diagResults, quizResults, examResults, subjectProgress, studyPlan 
 }: {
   selectedSubject: string;
   onSelectSubject: (id: string) => void;
@@ -298,6 +311,7 @@ function AssessTab({
   quizResults: LessonQuizResult[];
   examResults: QuarterlyExamResult[];
   subjectProgress: SubjectProgress[];
+  studyPlan: StudyPlan | null;
 }) {
   const router = useRouter();
   const latestDiag = diagResults.length > 0 ? diagResults[diagResults.length - 1] : null;
@@ -335,34 +349,30 @@ function AssessTab({
         </View>
       </ScrollView>
 
-      {/* Diagnostic */}
-      <View style={[styles.card, { marginBottom: 16 }]}>
-        <View style={styles.diagHeader}>
-          <View style={styles.diagIconBox}>
-            <ClipboardCheck size={22} color={colors.primaryDark} strokeWidth={2.5} />
-          </View>
-          <View style={styles.diagTextContainer}>
-            <Text style={styles.diagTitle}>Diagnostic Test</Text>
-            <Text style={styles.diagSubtitle}>
-              {latestDiag ? `Attempt #${latestDiag.attemptNumber} · ${new Date(latestDiag.completedAt).toLocaleDateString()}` : 'Not taken yet'}
-            </Text>
-          </View>
-          {latestDiag && (() => {
-            const scoreStyle = getScoreStyle(latestDiag.overallScore);
-            return (
-              <View style={[styles.scoreBadge, { backgroundColor: scoreStyle.bg }]}>
-                <Text style={[styles.scoreBadgeText, { color: scoreStyle.text }]}>{latestDiag.overallScore}%</Text>
-              </View>
-            );
-          })()}
+      {/* Diagnostic View Block */}
+      {latestDiag ? (
+        <View style={{ marginBottom: 24 }}>
+          <DiagnosticResultCard result={latestDiag} studyPlan={studyPlan} />
         </View>
-        <TouchableOpacity 
-          onPress={() => router.push(`/DiagnosticTest?subjectId=${selectedSubject}`)} 
-          style={styles.actionButton}
-        >
-          <Text style={styles.actionButtonText}>{latestDiag ? 'Retake Diagnostic' : 'Take Diagnostic'}</Text>
-        </TouchableOpacity>
-      </View>
+      ) : (
+        <View style={[styles.card, { marginBottom: 16 }]}>
+          <View style={styles.diagHeader}>
+            <View style={styles.diagIconBox}>
+              <ClipboardCheck size={22} color={colors.primaryDark} strokeWidth={2.5} />
+            </View>
+            <View style={styles.diagTextContainer}>
+              <Text style={styles.diagTitle}>Diagnostic Test</Text>
+              <Text style={styles.diagSubtitle}>Not taken yet</Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            onPress={() => router.push(`/DiagnosticTest?subjectId=${selectedSubject}`)} 
+            style={styles.actionButton}
+          >
+            <Text style={styles.actionButtonText}>Take Diagnostic</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Quarters */}
       {[1, 2, 3, 4].map(quarter => {
@@ -403,7 +413,7 @@ function AssessTab({
                 );
               })}
 
-              {/* Quarterly Exam Row - Upgraded Trophy Icon */}
+              {/* Quarterly Exam Row */}
               <View style={[styles.lessonRow, styles.examRow]}>
                 <View style={styles.examIconBox}>
                   <Trophy size={18} color="#d97706" strokeWidth={2.5} />
@@ -434,9 +444,8 @@ function AssessTab({
         <View style={[styles.card, styles.masteryBreakdownCard]}>
           <Text style={[styles.cardTitle, { marginBottom: 16 }]}>Subject Mastery</Text>
           <View style={styles.masteryPillsRow}>
-            <View style={styles.masteryPill}><Text style={styles.masteryPillText}>Diagnostic 20%</Text></View>
             <View style={styles.masteryPill}><Text style={styles.masteryPillText}>Quizzes 40%</Text></View>
-            <View style={styles.masteryPill}><Text style={styles.masteryPillText}>Exams 40%</Text></View>
+            <View style={styles.masteryPill}><Text style={styles.masteryPillText}>Exams 60%</Text></View>
           </View>
           <ProgressRing progress={currentProgress.masteryScore} size={88} strokeWidth={6}>
             <Text style={styles.progressRingText}>{currentProgress.masteryScore}%</Text>
@@ -463,7 +472,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20, 
-    paddingBottom: 40, // Reduced from 120 since the bottom bar is now removed
+    paddingBottom: 40,
   },
   
   // Header
@@ -876,7 +885,7 @@ const styles = StyleSheet.create({
   examTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#92400e', // Dark orange text for exam
+    color: '#92400e',
     flex: 1,
   },
 
