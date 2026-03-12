@@ -33,7 +33,7 @@ import type {
   QuarterlyExamResult,
   LessonQuizResult,
   ChatMessage,
-} from '@/lib/types';
+} from './types';
 
 // ─── Singleton connection ────────────────────────────────────────────────────
 
