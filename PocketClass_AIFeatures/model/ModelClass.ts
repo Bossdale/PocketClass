@@ -7,7 +7,7 @@ export class ModelClass {
 
     private constructor(temperature: number){
         this.temperature = temperature
-        this.model = new ChatOllama({model: "gemma:2b", temperature: this.temperature})
+        this.model = new ChatOllama({model: "gemma2:2b", temperature: this.temperature})
     }
 
     public static getInstance(): ChatOllama {
