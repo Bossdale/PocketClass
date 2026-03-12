@@ -3,6 +3,7 @@
     "@langchain/community": "^1.1.22",
     "@langchain/core": "^1.1.31",
     "@langchain/ollama": "^1.2.6",
+    "expo-sqlite": "^55.0.10",
     "langchain": "^1.2.30",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
