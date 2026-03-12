@@ -2,6 +2,19 @@ export type Country = 'indonesia' | 'malaysia' | 'brunei';
 export type QuizType = 'multiple_choice' | 'true_false' | 'drag_drop' | 'matching' | 'fill_blank';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
+export interface StudyPlan {
+  quarter1: StudyPlanQuarter;
+  quarter2: StudyPlanQuarter;
+  quarter3: StudyPlanQuarter;
+  quarter4: StudyPlanQuarter;
+}
+
+export interface StudyPlanQuarter {
+  lessons: string;
+  is_need_review: boolean;
+  how_to_get_high_scores: string;
+}
+
 export interface Profile {
   id: string;
   name: string;

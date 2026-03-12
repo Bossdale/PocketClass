@@ -150,8 +150,8 @@ export default function Onboarding() {
                 </View>
                 
                 {/* UPGRADED UNIFORM GRID */}
-                <View style={styles.gridContainer}>
-                  {[7, 8, 9, 10, 11, 12].map(g => {
+                <View style={styles.gradeGrid}>
+                  {[7, 8, 9, 10, 11, 12].map((g) => {
                     const isSelected = grade === g;
                     return (
                       <TouchableOpacity
@@ -159,12 +159,12 @@ export default function Onboarding() {
                         activeOpacity={0.7}
                         onPress={() => setGrade(g)}
                         style={[
-                          styles.gridItem,
-                          isSelected && styles.gridItemSelected
+                          styles.gradeCard,
+                          isSelected && styles.gradeCardSelected
                         ]}
                       >
                         <Text style={[
-                          styles.gradeText, 
+                          styles.gradeText,
                           isSelected && styles.gradeTextSelected
                         ]}>
                           Grade {g}
@@ -336,36 +336,36 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
 
-  // Step 2: Upgraded Grade Grid
-  gridContainer: {
+  gradeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12, 
-    justifyContent: 'space-between',
+    justifyContent: 'space-between', // Pushes the 48% cards to the edges, creating a middle gap
+    width: '100%',
+    marginTop: 20,
   },
-  gridItem: {
-    width: '48%', // Ensures exactly 2 columns
-    height: 72,   // Fixed height guarantees all boxes are strictly the same size
-    backgroundColor: colors.white,
+  gradeCard: {
+    width: '48%', // Exactly 2 columns
+    backgroundColor: colors.white, // Or whatever your default background is
+    paddingVertical: 24,
     borderRadius: 16,
-    borderWidth: 2,
-    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 16, // The vertical gap between rows
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
-  gridItemSelected: {
-    borderColor: colors.primary,
+  gradeCardSelected: {
     backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
   },
   gradeText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.mutedForeground,
   },
   gradeTextSelected: {
     color: colors.primaryDark,
-    fontWeight: '800',
-    fontSize: 17, // Slight pop effect when selected
+    fontWeight: '700',
   },
 
   // Continue Button

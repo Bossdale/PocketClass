@@ -5,7 +5,6 @@ import { ArrowLeft, Volume2, CheckCircle2, Star } from 'lucide-react-native';
 import { speak, stopSpeaking } from '../lib/tts';
 
 import { getLessonById, completeLesson, getProfile, saveLessonQuizResult, getLessonQuizResults, generateId } from '../lib/store';
-// Note: getCountryClass typically returns a Tailwind string, so it's omitted from RN styling here
 import { generateLessonQuiz, getAIExplanation } from '../lib/quizService';
 import type { QuizQuestion, Profile } from '../lib/types';
 
@@ -48,7 +47,7 @@ export default function LessonView() {
   const [score, setScore] = useState(0);
   const [easyScore, setEasyScore] = useState(0);
   const [mediumScore, setMediumScore] = useState(0);
-  const [hardScore, setHardScore] = useState(0);
+  const[hardScore, setHardScore] = useState(0);
   const [loadingQuiz, setLoadingQuiz] = useState(false);
   const [ttsState, setTtsState] = useState<'idle' | 'speaking' | 'loading'>('idle');
 
@@ -63,7 +62,7 @@ export default function LessonView() {
     return () => {
       stopSpeaking();
     };
-  }, []);
+  },[]);
 
   if (!lesson || !profile || !lessonId) return <View style={styles.container} />;
 
@@ -329,7 +328,8 @@ export default function LessonView() {
         )}
       </ScrollView>
 
-      {mode !== 'complete' && (
+      {/* Show AI Tutor ONLY during 'content' mode */}
+      {mode === 'content' && (
         <View style={styles.tutorContainer}>
           <AITutor lessonId={lessonId as string} lessonTitle={lesson.title} />
         </View>

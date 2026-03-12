@@ -4,7 +4,12 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 
 import { useDiagnostic } from '../hooks/use-diagnostic';
-import { saveDiagnosticResult, getProfile, getDiagnosticResults, generateId } from '../lib/store';
+
+import { saveDiagnosticResult, getProfile, getDiagnosticResults, generateId, saveStudyPlan } from '../lib/store';
+import { getLessonsBySubject } from '../lib/store'; // or wherever this is exported
+import { getStudyPlan } from '../lib/quizService';
+import type { StudyPlan } from '../lib/types';
+
 import { SUBJECTS, QUARTER_TOPICS } from '../lib/types';
 // Note: getCountryClass typically returns a Tailwind string, so it's omitted from RN styling here
 import DiagnosticResultCard from '../components/DiagnosticResultCard';
@@ -35,14 +40,24 @@ export default function DiagnosticTest() {
   const [finalResult, setFinalResult] = useState<DiagnosticResult | null>(null);
 
   const subject = SUBJECTS.find(s => s.id === subjectId);
-
+  const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(null);
+  
   useEffect(() => {
-    async function loadProfile() {
-      const p = await getProfile();
-      setProfile(p);
+  async function loadProfile() {
+    const p = await getProfile();
+    setProfile(p);
+
+    // Block retakes — diagnostic can only be taken once per subject
+    if (subjectId) {
+      const existing = await getDiagnosticResults(subjectId as string);
+      if (existing.length > 0) {
+        router.replace(`/SubjectView?subjectId=${subjectId}`);
+        return;
+      }
     }
-    loadProfile();
-  }, []);
+  }
+  loadProfile();
+}, []);
 
   const {
     questions, loading, currentIndex, answers, showQuarterIntro,
@@ -72,7 +87,25 @@ export default function DiagnosticTest() {
         
         await saveDiagnosticResult(result);
         setFinalResult(result);
-      }
+
+        // Generate and save study plan
+        const allLessons = getLessonsBySubject(subjectId);
+        const q1Lessons = allLessons.filter(l => l.quarter === 1).map(l => l.title);
+        const q2Lessons = allLessons.filter(l => l.quarter === 2).map(l => l.title);
+        const q3Lessons = allLessons.filter(l => l.quarter === 3).map(l => l.title);
+        const q4Lessons = allLessons.filter(l => l.quarter === 4).map(l => l.title);
+
+        const plan = await getStudyPlan(
+          scores.q1, q1Lessons,
+          scores.q2, q2Lessons,
+          scores.q3, q3Lessons,
+          scores.q4, q4Lessons,
+        );
+        if (plan) {
+          await saveStudyPlan(subjectId, plan);
+          setStudyPlan(plan);
+        }
+        }
     }
     processResults();
   }, [isCompleted, profile, finalResult, subjectId]);
@@ -219,7 +252,7 @@ export default function DiagnosticTest() {
       {/* Completion State */}
       {isCompleted && finalResult && (
         <View>
-          <DiagnosticResultCard result={finalResult} />
+          <DiagnosticResultCard result={finalResult} studyPlan={studyPlan} />
           
           <TouchableOpacity
             style={[styles.primaryButton, { marginTop: 24 }]}

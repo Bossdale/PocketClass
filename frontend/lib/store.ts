@@ -2,9 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   type Profile, type SubjectProgress, type LessonProgress, type Lesson, type LessonSection,
   type ChatMessage, type DiagnosticResult, type QuarterlyExamResult, type LessonQuizResult,
+  type StudyPlan, // <--- Add this here
   SUBJECTS, QUARTER_TOPICS
 } from './types';
-import { recomputeMastery } from './masteryService';
+
+
+// ── Study Plan Storage ────────────────────────────────────────────────────────
 
 // AsyncStorage keys
 const KEYS = {
@@ -296,3 +299,73 @@ export function getLessonById(lessonId: string): Lesson | undefined {
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
+
+const STUDY_PLANS_KEY = 'pocketclass_study_plans';
+
+export async function saveStudyPlan(subjectId: string, plan: StudyPlan): Promise<void> {
+  const existing = await AsyncStorage.getItem(STUDY_PLANS_KEY);
+  const plans: Record<string, StudyPlan> = existing ? JSON.parse(existing) : {};
+  plans[subjectId] = plan;
+  await AsyncStorage.setItem(STUDY_PLANS_KEY, JSON.stringify(plans));
+}
+
+export async function getStudyPlanForSubject(subjectId: string): Promise<StudyPlan | null> {
+  const existing = await AsyncStorage.getItem(STUDY_PLANS_KEY);
+  if (!existing) return null;
+  const plans: Record<string, StudyPlan> = JSON.parse(existing);
+  return plans[subjectId] ?? null;
+}
+
+export async function recomputeMastery(subjectId: string): Promise<number> {
+  const diagResults = await getDiagnosticResults(subjectId);
+  const latestDiag = diagResults.length > 0 ? diagResults[diagResults.length - 1] : null;
+
+  const subject = SUBJECTS.find(s => s.id === subjectId);
+  if (!subject) return 0;
+
+  const allQuizResults = await getLessonQuizResults();
+  const subjectQuizResults = allQuizResults.filter(r => r.lessonId.startsWith(subjectId));
+
+  const latestPerLesson = new Map<string, number>();
+  for (const r of subjectQuizResults) {
+    const existing = latestPerLesson.get(r.lessonId);
+    if (existing === undefined || r.attemptNumber > existing) {
+      latestPerLesson.set(r.lessonId, r.score);
+    }
+  }
+  const quizScores = Array.from(latestPerLesson.values());
+  const avgQuizScore = quizScores.length > 0 ? quizScores.reduce((a, b) => a + b, 0) / quizScores.length : 0;
+
+  const allExamResults = await getQuarterlyExamResults(subjectId);
+  const latestPerQuarter = new Map<number, number>();
+  for (const r of allExamResults) {
+    const existing = latestPerQuarter.get(r.quarter);
+    if (existing === undefined || r.attemptNumber > (latestPerQuarter.get(r.quarter) || 0)) {
+      latestPerQuarter.set(r.quarter, Math.round((r.score / r.totalQuestions) * 100));
+    }
+  }
+  const examScores = Array.from(latestPerQuarter.values());
+  const avgExamScore = examScores.length > 0 ? examScores.reduce((a, b) => a + b, 0) / examScores.length : 0;
+
+  const hasAnyData = latestDiag || quizScores.length > 0 || examScores.length > 0;
+  if (!hasAnyData) return 0;
+
+  let totalWeight = 0;
+  let weightedSum = 0;
+
+  if (latestDiag) {
+    weightedSum += latestDiag.overallScore * 0.2;
+    totalWeight += 0.2;
+  }
+  if (quizScores.length > 0) {
+    weightedSum += avgQuizScore * 0.4;
+    totalWeight += 0.4;
+  }
+  if (examScores.length > 0) {
+    weightedSum += avgExamScore * 0.4;
+    totalWeight += 0.4;
+  }
+
+  return totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
+}
+
