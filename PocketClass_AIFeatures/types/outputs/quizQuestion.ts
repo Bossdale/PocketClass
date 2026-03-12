@@ -38,10 +38,10 @@
  */
 
 export type Difficulty   = 'easy' | 'medium' | 'hard';
-export type QuestionType = 'multiple_choice' | 'true_false' | 'fill_blank' | 'drag_drop' | 'matching';
+export type QuestionType = 'multiple_choice' | 'true_false' | 'fill_blank';
 
 // ── Base (never used directly — always one of the five subtypes below) ────────
-interface BaseQuestion {
+export interface BaseQuestion {
   type:       QuestionType;
   difficulty: Difficulty;
 }
@@ -71,30 +71,3 @@ export interface FillBlankQuestion extends BaseQuestion {
   correctAnswer: string;
   hint?:         string;  // optional — shown via "💡 Show hint" in FBRenderer
 }
-
-// ── 4. Drag & Drop (reorder items) ────────────────────────────────────────────
-// Used in: QuarterlyExamService only (even-indexed lessons)
-export interface DragDropQuestion extends BaseQuestion {
-  type:         'drag_drop';
-  instruction:  string;
-  items:        string[];   // items in their initial shuffled order
-  correctOrder: number[];   // correctOrder[position] = original items[] index
-}
-
-// ── 5. Matching ───────────────────────────────────────────────────────────────
-// Used in: QuarterlyExamService only (odd-indexed lessons)
-export interface MatchingQuestion extends BaseQuestion {
-  type:         'matching';
-  instruction:  string;
-  leftItems:    string[];
-  rightItems:   string[];
-  correctPairs: number[];  // correctPairs[leftIndex] = rightIndex
-}
-
-// ── Union exported as the canonical quiz question type ────────────────────────
-export type QuizQuestion =
-  | MultipleChoiceQuestion
-  | TrueFalseQuestion
-  | FillBlankQuestion
-  | DragDropQuestion
-  | MatchingQuestion;

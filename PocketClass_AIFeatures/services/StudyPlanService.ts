@@ -2,8 +2,8 @@ import { ModelClass }      from '../model/ModelClass';
 import { PromptTemplates } from '../templates/promptTemplates';
 import { jsonParser }      from '../utils/jsonParser';
 import { jsonToString }    from '../utils/jsonToString';
-import type { DiagnosticScoreInput } from '../types/input';
-import type { StudyPlan }            from '../types/output';
+import type { diagnosticScoreInterface } from '../types/input/diagnosticScoreInterface';
+import type { StudyPlan }            from '../types/outputs/StudyPlan';
 
 /**
  * StudyPlanService
@@ -26,7 +26,7 @@ import type { StudyPlan }            from '../types/output';
  *     ← StudyPlan  →  DiagnosticResultCard renders is_need_review + tips
  */
 export class StudyPlanService {
-  async generateStudyPlan(input: DiagnosticScoreInput): Promise<StudyPlan> {
+  async generateStudyPlan(input: diagnosticScoreInterface): Promise<StudyPlan> {
     const model = ModelClass.getInstance();
 
     const chain = PromptTemplates.diagnosticStudyPlanPrompt.pipe(model);

@@ -72,39 +72,36 @@
  *   0.2 — exam answers must be factually unambiguous and consistent
  */
 
-import { ModelClass }      from '../model/ModelClass';
-import { PromptTemplates } from '../templates/promptTemplates';
-import { jsonParser }      from '../utils/jsonParser';
+// import { ModelClass }      from '../model/ModelClass';
+// import { PromptTemplates } from '../templates/promptTemplates';
+// import { jsonParser }      from '../utils/jsonParser';
 
-import type { QuarterlyExamInput } from '../types/input/quarterlyExamInput';
-import type { Difficulty, QuestionType, QuizQuestion } from '../types/outputs/quizQuestion';
+// import type { QuarterlyExamInput } from '../types/input/quarterlyExamInput';
+// import type { Difficulty, QuestionType, QuizQuestion } from '../types/outputs/quizQuestion'; // also commented 
 
 // ── Question generation plan ──────────────────────────────────────────────────
 // 5 questions per lesson. The last entry's type is overridden per lesson index
 // to alternate between drag_drop (even lessons) and matching (odd lessons).
-const EXAM_QUESTION_PLAN: ReadonlyArray<{ difficulty: Difficulty; type: QuestionType }> = [
-  { difficulty: 'easy',   type: 'multiple_choice' },
-  { difficulty: 'easy',   type: 'true_false'      },
-  { difficulty: 'medium', type: 'fill_blank'      },
-  { difficulty: 'medium', type: 'multiple_choice' },
-  { difficulty: 'hard',   type: 'drag_drop'       }, // overridden per lesson below
-];
+// const EXAM_QUESTION_PLAN: ReadonlyArray<{ difficulty: Difficulty; type: QuestionType }> = [
+//   { difficulty: 'easy',   type: 'multiple_choice' },
+//   { difficulty: 'easy',   type: 'true_false'      },
+//   { difficulty: 'medium', type: 'fill_blank'      },
+//   { difficulty: 'medium', type: 'multiple_choice' },
+// ];
 
 // Hard question types alternated per lesson for variety across the full exam
-const HARD_TYPES: ReadonlyArray<QuestionType> = ['drag_drop', 'matching'];
+// const HARD_TYPES: ReadonlyArray<QuestionType> = ['fill_blank'];
 
 // ── Prompt map ────────────────────────────────────────────────────────────────
 // Each type routes to its own prompt so the model sees only the schema it needs.
 // questionType is no longer passed as an invoke variable.
-const EXAM_PROMPT_MAP = {
-  multiple_choice: PromptTemplates.quarterlyExamMCQPrompt,
-  true_false:      PromptTemplates.quarterlyExamTFPrompt,
-  fill_blank:      PromptTemplates.quarterlyExamFBPrompt,
-  drag_drop:       PromptTemplates.quarterlyExamDragDropPrompt,
-  matching:        PromptTemplates.quarterlyExamMatchingPrompt,
-} as const;
+// const EXAM_PROMPT_MAP = {
+//   multiple_choice: PromptTemplates.quarterlyExamMCQPrompt,
+//   true_false:      PromptTemplates.quarterlyExamTFPrompt,
+//   fill_blank:      PromptTemplates.quarterlyExamFBPrompt,
+// } as const;
 
-export class QuarterlyExamService {
+// export class QuarterlyExamService {
 
   /**
    * Generates 5 questions per lesson across all lessons in the quarter.
@@ -114,67 +111,67 @@ export class QuarterlyExamService {
    * @param input  subjectName, quarter, topic, per-lesson content, grade, country
    * @returns      QuizQuestion[] of length lessons.length × 5
    */
-  static async generateExam(input: QuarterlyExamInput): Promise<QuizQuestion[]> {
-    ModelClass.setTemperature(0.2);
-    const model        = ModelClass.getInstance();
-    const allQuestions: QuizQuestion[] = [];
+  // static async generateExam(input: QuarterlyExamInput): Promise<QuizQuestion[]> {
+  //   ModelClass.setTemperature(0.2);
+  //   const model        = ModelClass.getInstance();
+  //   const allQuestions: QuizQuestion[] = [];
 
-    for (let lessonIdx = 0; lessonIdx < input.lessons.length; lessonIdx++) {
-      const lesson          = input.lessons[lessonIdx];
-      const lessonQuestions: QuizQuestion[] = [];
+  //   for (let lessonIdx = 0; lessonIdx < input.lessons.length; lessonIdx++) {
+  //     const lesson          = input.lessons[lessonIdx];
+  //     const lessonQuestions: QuizQuestion[] = [];
 
-      for (let i = 0; i < EXAM_QUESTION_PLAN.length; i++) {
-        let { difficulty, type } = EXAM_QUESTION_PLAN[i];
+  //     for (let i = 0; i < EXAM_QUESTION_PLAN.length; i++) {
+  //       let { difficulty, type } = EXAM_QUESTION_PLAN[i];
 
-        // Alternate the hard question type per lesson so the full exam
-        // contains both drag_drop and matching across different lessons.
-        if (difficulty === 'hard') {
-          type = HARD_TYPES[lessonIdx % HARD_TYPES.length];
-        }
+  //       // Alternate the hard question type per lesson so the full exam
+  //       // contains both drag_drop and matching across different lessons.
+  //       if (difficulty === 'hard') {
+  //         type = HARD_TYPES[lessonIdx % HARD_TYPES.length];
+  //       }
 
-        // Select the prompt for this type — no schema noise from other types.
-        const chain = EXAM_PROMPT_MAP[type].pipe(model);
+  //       // Select the prompt for this type — no schema noise from other types.
+  //       const chain = EXAM_PROMPT_MAP[type].pipe(model);
 
-        // alreadyAsked resets per lesson — cross-lesson content differs enough
-        // that global deduplication adds complexity without meaningful benefit.
-        const alreadyAsked = lessonQuestions.length > 0
-          ? lessonQuestions
-              .map((q, idx) => `${idx + 1}. ${QuarterlyExamService.getQuestionLabel(q)}`)
-              .join('\n')
-          : 'None';
+  //       // alreadyAsked resets per lesson — cross-lesson content differs enough
+  //       // that global deduplication adds complexity without meaningful benefit.
+  //       const alreadyAsked = lessonQuestions.length > 0
+  //         ? lessonQuestions
+  //             .map((q, idx) => `${idx + 1}. ${QuarterlyExamService.getQuestionLabel(q)}`)
+  //             .join('\n')
+  //         : 'None';
 
-        const raw = await chain.invoke({
-          subjectName:    input.subjectName,
-          quarter:        String(input.quarter),
-          topic:          input.topic,
-          lessonTitle:    lesson.title,
-          lessonContent:  lesson.content,
-          grade:          String(input.grade),
-          country:        input.country,
-          questionNumber: String(i + 1),
-          difficulty,
-          alreadyAsked,
-          // questionType is NOT passed — it is baked into the selected prompt
-        });
+  //       const raw = await chain.invoke({
+  //         subjectName:    input.subjectName,
+  //         quarter:        String(input.quarter),
+  //         topic:          input.topic,
+  //         lessonTitle:    lesson.title,
+  //         lessonContent:  lesson.content,
+  //         grade:          String(input.grade),
+  //         country:        input.country,
+  //         questionNumber: String(i + 1),
+  //         difficulty,
+  //         alreadyAsked,
+  //         // questionType is NOT passed — it is baked into the selected prompt
+  //       });
 
-        const [question] = jsonParser<QuizQuestion[]>(raw.content);
-        lessonQuestions.push(question);
-      }
+  //       const [question] = jsonParser<QuizQuestion[]>(raw.content);
+  //       lessonQuestions.push(question);
+  //     }
 
-      allQuestions.push(...lessonQuestions);
-    }
+  //     allQuestions.push(...lessonQuestions);
+  //   }
 
-    ModelClass.setTemperature(0.5);
-    return allQuestions;
-  }
+  //   ModelClass.setTemperature(0.5);
+  //   return allQuestions;
+  // }
 
-  /**
-   * Extracts a short display label from a question for use in alreadyAsked.
-   * MCQ / TF / FB expose questionText; drag_drop / matching expose instruction.
-   */
-  private static getQuestionLabel(q: QuizQuestion): string {
-    if ('questionText' in q) return q.questionText;
-    if ('instruction'  in q) return q.instruction;
-    return '(unknown)';
-  }
-}
+  // /**
+  //  * Extracts a short display label from a question for use in alreadyAsked.
+  //  * MCQ / TF / FB expose questionText; drag_drop / matching expose instruction.
+  //  */
+  // private static getQuestionLabel(q: QuizQuestion): string {
+  //   if ('questionText' in q) return q.questionText;
+  //   if ('instruction'  in q) return q.instruction;
+  //   return '(unknown)';
+  // }
+// }

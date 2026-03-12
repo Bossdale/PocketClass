@@ -205,105 +205,141 @@ No extra text before or after the JSON.
   //   #5  medium lessonQuizTFPrompt     #10 hard    lessonQuizMCQPrompt
 
   // 4a. Lesson Quiz — Multiple Choice
-  static lessonQuizMCQPrompt = new PromptTemplate({
-    inputVariables: [
-      'lessonTitle', 'content', 'grade', 'country',
-      'questionNumber', 'totalQuestions', 'difficulty', 'alreadyAsked',
-    ],
-    template: `
-You are a multiple-choice question generator for a school tutoring app.
+static lessonQuizMCQPrompt = new PromptTemplate({
+  inputVariables: [
+    'grade',
+    'country',
+    'difficulty',
+    'question_number',
+    'questions'
+  ],
+  template: `
+You are rewriting existing quiz questions for a school tutoring app.
 
-Lesson : {lessonTitle}
-Grade  : {grade}  |  Country: {country}
-Task   : Generate question {questionNumber} of {totalQuestions}.  Difficulty: {difficulty}
+Grade  : {grade}
+Country: {country}
+Target Difficulty: {difficulty}
 
-Curriculum Content:
-{content}
+Task:
+Paraphrase exactly {question_number} multiple-choice questions.
 
-Questions already generated — do NOT test the same fact or reuse the same correct answer:
-{alreadyAsked}
+Existing Questions:
+{questions}
+
+Difficulty Guidelines:
+- easy → simpler wording and direct questions
+- medium → slightly more descriptive wording
+- hard → more analytical or scenario-based wording
 
 Rules:
-1. Base the question strictly on the Curriculum Content above.
-2. Write 4 distinct, plausible options — no obviously absurd distractors.
-3. Do NOT prefix options with letters (A, B, C, D) — write the text only.
-4. Place the correct answer at a varied index (0, 1, 2, or 3) — NOT always 0.
-5. correctOption is the 0-based index of the correct option in the array.
-6. Double-check: options[correctOption] must be the factually correct answer.
+1. DO NOT change the meaning of the question.
+2. DO NOT change the options.
+3. Preserve the correct answer from the input question.
+4. The correctAnswer should refer to the correct answer string
+5. Only rewrite the questionText wording.
+6. Keep exactly 4 options per question.
+7. Return exactly {question_number} questions.
 
-Return ONLY a valid JSON array containing exactly 1 object:
-[{{"type":"multiple_choice","difficulty":"{difficulty}","questionText":"...","options":["...","...","...","..."],"correctOption":2}}]
+Return ONLY JSON:
 
-Output only the JSON array. No extra text.
-    `,
-  });
+[
+  {{
+    "type": "multiple_choice",
+    "difficulty": "{difficulty}",
+    "questionText": "rewritten question",
+    "options": ["option1","option2","option3","option4"],
+    "correctAnswer": option1
+  }}
+]
+`
+});
 
   // 4b. Lesson Quiz — True / False
-  static lessonQuizTFPrompt = new PromptTemplate({
-    inputVariables: [
-      'lessonTitle', 'content', 'grade', 'country',
-      'questionNumber', 'totalQuestions', 'difficulty', 'alreadyAsked',
-    ],
-    template: `
-You are a true/false question generator for a school tutoring app.
+static lessonQuizTFPrompt = new PromptTemplate({
+  inputVariables: [
+    'grade',
+    'country',
+    'difficulty',
+    'question_number',
+    'questions'
+  ],
+  template: `
+You are rewriting existing True/False questions.
 
-Lesson : {lessonTitle}
-Grade  : {grade}  |  Country: {country}
-Task   : Generate question {questionNumber} of {totalQuestions}.  Difficulty: {difficulty}
+Grade  : {grade}
+Country: {country}
+Target Difficulty: {difficulty}
 
-Curriculum Content:
-{content}
+Task:
+Paraphrase exactly {question_number} true/false questions.
 
-Questions already generated — do NOT test the same fact:
-{alreadyAsked}
+Existing Questions:
+{questions}
 
 Rules:
-1. Base the statement strictly on the Curriculum Content above.
-2. The statement must be clearly and unambiguously true or false — no edge cases.
-3. Vary correctAnswer across calls — do not always return true.
-4. The statement must test a meaningful concept, not a trivially obvious fact.
+1. DO NOT change the meaning of the statement.
+2. Preserve the correctAnswer value from the input question.
+3. Only rewrite the wording of questionText.
+4. Maintain the same fact being tested.
+5. Return exactly {question_number} questions.
 
-Return ONLY a valid JSON array containing exactly 1 object:
-[{{"type":"true_false","difficulty":"{difficulty}","questionText":"...","correctAnswer":true}}]
+Return ONLY JSON:
 
-Output only the JSON array. No extra text.
-    `,
-  });
+[
+  {{
+    "type": "true_false",
+    "difficulty": "{difficulty}",
+    "questionText": "rewritten statement",
+    "correctAnswer": false
+  }}
+]
 
+Important:
+correctAnswer must remain the same as the input question (true or false).
+`
+});
   // 4c. Lesson Quiz — Fill in the Blank
-  static lessonQuizFBPrompt = new PromptTemplate({
-    inputVariables: [
-      'lessonTitle', 'content', 'grade', 'country',
-      'questionNumber', 'totalQuestions', 'difficulty', 'alreadyAsked',
-    ],
-    template: `
-You are a fill-in-the-blank question generator for a school tutoring app.
+static lessonQuizFBPrompt = new PromptTemplate({
+  inputVariables: [
+    'grade',
+    'country',
+    'difficulty',
+    'question_number',
+    'questions'
+  ],
+  template: `
+You are rewriting existing fill-in-the-blank questions.
 
-Lesson : {lessonTitle}
-Grade  : {grade}  |  Country: {country}
-Task   : Generate question {questionNumber} of {totalQuestions}.  Difficulty: {difficulty}
+Grade  : {grade}
+Country: {country}
+Target Difficulty: {difficulty}
 
-Curriculum Content:
-{content}
+Task:
+Paraphrase exactly {question_number} fill-in-the-blank questions.
 
-Questions already generated — do NOT test the same term:
-{alreadyAsked}
+Existing Questions:
+{questions}
 
 Rules:
-1. Base the question strictly on the Curriculum Content above.
-2. The blank (___) must replace a KEY TERM, concept name, or scientific term — never a common
-   grammatical word like "the", "a", "is", "of", or "ability".
-3. correctAnswer must NOT appear anywhere else in questionText — not before or after the blank.
-4. The hint must give a clue WITHOUT containing the correctAnswer word or phrase.
-   Bad hint : "Porosity is the ability of a material to absorb liquid."  (reveals the answer)
-   Good hint: "This property describes how much liquid a material can absorb."
+1. Preserve the SAME correctAnswer from the input question.
+2. The blank (___) must still represent that answer.
+3. Do NOT include the correctAnswer word in the sentence.
+4. Only rewrite the wording to match the difficulty level.
+5. Return exactly {question_number} questions.
 
-Return ONLY a valid JSON array containing exactly 1 object:
-[{{"type":"fill_blank","difficulty":"{difficulty}","questionText":"The process of ___ occurs when iron reacts with oxygen.","correctAnswer":"oxidation","hint":"A clue that does not say the word oxidation."}}]
+Return ONLY JSON:
 
-Output only the JSON array. No extra text.
-    `,
-  });
+[
+  {{
+    "type": "fill_blank",
+    "difficulty": "{difficulty}",
+    "questionText": "rewritten sentence with ___",
+    "correctAnswer": "answer",
+    "hint": "short clue"
+  }}
+]
+`
+});
 
 
   // ── 5. Quarterly Exam — one prompt per question type ──────────────────────
@@ -341,7 +377,7 @@ Output only the JSON array. No extra text.
       'subjectName', 'quarter', 'topic',
       'lessonTitle', 'lessonContent',
       'grade', 'country',
-      'questionNumber', 'difficulty', 'alreadyAsked',
+      'questionNumber', 'difficulty', 'alreadyAsked'
     ],
     template: `
 You are a multiple-choice exam question generator for a school tutoring app.
@@ -351,8 +387,6 @@ Lesson  : {lessonTitle}
 Grade   : {grade}  |  Country: {country}
 Task    : Generate question {questionNumber} of 5 for this lesson.  Difficulty: {difficulty}
 
-Lesson Content:
-{lessonContent}
 
 Questions already generated for this lesson — do NOT test the same fact or reuse the same correct answer:
 {alreadyAsked}

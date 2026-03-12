@@ -1,8 +1,8 @@
 import { ModelClass }      from '../model/ModelClass';
 import { PromptTemplates } from '../templates/promptTemplates';
 import { jsonParser }      from '../utils/jsonParser';
-import type { LessonQuizInput } from '../types/input';
-import type { QuizQuestion }    from '../types/output';
+import type { LessonQuizInput } from '../types/input/LessonQuizInput';
+import type{ BaseQuestion} from '../types/outputs/quizQuestion';
 
 /**
  * LessonQuizService
@@ -27,21 +27,42 @@ import type { QuizQuestion }    from '../types/output';
  *     → handleAnswer() accumulates score, calls saveLessonQuizResult()
  */
 export class LessonQuizService {
-  async generateQuiz(input: LessonQuizInput): Promise<QuizQuestion[]> {
-    ModelClass.setTemperature(0.3);
+  static questionTypes : number = 3;
+  async generateQuiz(input: LessonQuizInput): Promise<BaseQuestion> {
+    ModelClass.setTemperature(0.1);
     const model = ModelClass.getInstance();
 
-    const chain = PromptTemplates.lessonQuizPrompt.pipe(model);
+    let chain: any;
+      if (input.difficulty === 'hard') {
+        chain = PromptTemplates.lessonQuizFBPrompt.pipe(model); 
+      } else {
+        // randomly pick MCQ or TF for non-hard
+        const randomNumber = Math.floor(Math.random() * 2) + 1; // 1 or 2
+        switch (randomNumber) {
+          case 1:
+            chain = PromptTemplates.lessonQuizMCQPrompt.pipe(model);
+            break;
+          case 2:
+            chain = PromptTemplates.lessonQuizMCQPrompt.pipe(model);
+            break;
+        }
+      }
 
+      // Safety check
+      if (!chain) throw new Error("Chain is undefined! Check prompts or model instance.");
+
+
+    if(input.difficulty == 'hard'){chain = PromptTemplates.lessonQuizFBPrompt.pipe(model);}
     const response = await chain.invoke({
-      lessonTitle: input.lessonTitle,
-      content:     input.content,
-      grade:       String(input.grade),
-      country:     input.country,
+      grade: input.grade,
+      country: input.country,
+      difficulty: input.country,
+      question_number: input.question_number,
+      questions: input.questions
     });
 
     ModelClass.setTemperature(0.5);
 
-    return jsonParser<QuizQuestion[]>(response.content);
+    return jsonParser<BaseQuestion>(response.content);
   }
 }

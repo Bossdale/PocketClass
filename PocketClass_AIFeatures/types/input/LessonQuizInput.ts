@@ -30,9 +30,16 @@
  *     country:     profile.country,
  *   };
  */
+export interface Question {
+  question: string;
+  answer: string;
+}
+
+// Define the interface for the quiz
 export interface LessonQuizInput {
-  lessonTitle: string;  // e.g. "The Human Digestive System" — lesson.title
-  content:     string;  // raw quarter curriculum text       — subjects.q{n}_content
-  grade:       number;  // 7–12
-  country:     string;  // "indonesia" | "malaysia" | "brunei"
+  grade: number;
+  country: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  question_number: number;
+  questions: Question[];
 }
