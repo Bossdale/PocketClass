@@ -1,90 +1,213 @@
-<!-- PROJECT LOGO / TITLE -->
-<h1 align="center">💊 MedSync</h1>
+# 📚 PocketClass
 
-<p align="center">
-  <b>Smart Medication Adherence System with Mobile and Hardware Synchronization</b>
-  <br>
-  <i>Research and Freelance Healthcare Technology Solution</i>
-</p>
+### Your AI Tutor, Always With You
 
----
+**Developed by Team A.I.Con**
 
-## 📖 Overview
+PocketClass is an **offline-first AI-powered mobile learning platform** designed to help secondary school students continue learning even without internet access. The system transforms a smartphone into a **complete AI learning companion**, providing curriculum-aligned lessons, adaptive quizzes, diagnostic assessments, AI tutor explanations, and progress tracking directly on the device.
 
-**MedSync** is a smart medication adherence system that integrates a **mobile application** with a **physical Medical Box device**, designed to work together through real-time synchronization to support patients in managing their medication routines.
-
-The system allows users to **schedule medication alarms** through the mobile application, which are then synced to the Medical Box so it can trigger **physical alerts and notifications**, ensuring patients are consistently reminded to take their medicines on time.
-
-This project was initially developed as part of our **research initiative** and is currently being further enhanced and maintained as a **freelance project** by the group.
+Unlike most educational platforms that require constant internet connectivity, **PocketClass operates entirely offline after installation**, allowing students in rural communities, low-income households, or areas with unreliable internet access to receive **personalized education anytime and anywhere**.
 
 ---
 
-## ⚠️ Problem Statement
+# 🎥 Demo Video
 
-> Medication non-adherence is a common issue where patients miss or forget their scheduled doses, leading to reduced treatment effectiveness and potential health risks.
+Watch the full demonstration of PocketClass.
 
----
-
-## ✅ Solution
-
-> MedSync addresses this issue by synchronizing a mobile pill management application with a smart Medical Box that provides both **digital reminders** and **physical alarms** to support timely medication intake.
+👉 **Demo Video:**
+`YOUR_VIDEO_LINK`
 
 ---
 
-## 🧩 Project Nature
+# 🧪 Prototype
 
-MedSync is developed as a:
+Explore the PocketClass prototype.
 
-- 🧪 **Research Project**
-- 💼 **Freelance Project**
-- 🏥 **Healthcare Technology Solution**
-
----
-
-## 🎯 Core Concept
-
-MedSync combines the **convenience of mobile technology** with the **reliability of a physical device** to ensure patients receive medication reminders in multiple forms.
-
-| Component | Description |
-|----------|-------------|
-| 📱 Mobile App | Used to schedule and manage medication alarms |
-| 📦 Medical Box | Physical device that triggers alarm reminders |
-| 🔄 Sync System | Connects the mobile app and the device |
+👉 **Prototype Link:**
+`YOUR_PROTOTYPE_LINK`
 
 ---
 
-## ❤️ Purpose
+# 📄 Project Report
 
-MedSync aims to:
+The **full research and technical documentation** for PocketClass is included in this repository.
 
-- Improve medication adherence
-- Reduce missed doses
-- Assist patients with daily medication routines
-- Provide reliable synchronized reminders
-- Support healthcare through smart technology
+📎 **File:**
+`PocketClass_Project_Report.pdf`
 
----
+The report includes:
 
-## 📌 Status
-
-🟡 Prototype  
-🟢 Active Development  
-🧪 Research Phase  
-💼 Freelance Continuation  
+* Background of the study
+* Literature review
+* System methodology
+* Technical architecture
+* Performance validation
+* Educational impact analysis
 
 ---
 
-## ⚠️ Disclaimer
+# ⚙️ Setup Instructions (Technical)
 
-This project is currently intended for:
+Follow these steps to run the project locally.
 
-- Research purposes  
-- Freelance and portfolio demonstration  
+### 1️⃣ Clone the Repository
 
-It is **not yet a certified medical device**.
+```bash
+git clone YOUR_REPO_LINK
+cd pocketclass
+```
+
+### 2️⃣ Install Dependencies
+
+```bash
+npm install
+```
+
+### 3️⃣ Start the Development Server
+
+```bash
+npx expo start
+```
+
+### 4️⃣ Run the Application
+
+You can run PocketClass using:
+
+* Android Emulator
+* iOS Simulator
+* Physical device using **Expo Go**
 
 ---
 
-<p align="center">
-  Made with ❤️ by the A.I.Con Team
-</p>
+## 🤖 Running the AI Model (Ollama)
+
+PocketClass runs **Gemma 2B locally using Ollama**.
+
+Start the model:
+
+```bash
+ollama run gemma2:2b
+```
+
+Start the Ollama server:
+
+```bash
+OLLAMA_HOST=0.0.0.0 ollama serve
+```
+
+---
+
+# 🌏 Project Overview
+
+**PocketClass** is an **AI-powered mobile learning platform designed to work completely offline**, allowing secondary school students to access personalized education even without internet connectivity.
+
+The platform transforms a student's smartphone into a **fully functional AI tutor**, providing:
+
+* 📖 Curriculum-aligned lessons
+* 🧠 AI-generated quizzes
+* 📊 Adaptive learning diagnostics
+* 🎓 Personalized study plans
+* 💬 AI tutor explanations
+* 📈 Progress tracking
+
+All learning materials, AI responses, and student progress are stored **directly on the device**, allowing the system to operate **without cloud servers, internet access, or data costs**.
+
+PocketClass specifically targets students in **low-connectivity regions across Southeast Asia**, helping bridge the **digital divide in education**.
+
+---
+
+# 🎯 Sustainable Development Goal
+
+PocketClass supports the **United Nations Sustainable Development Goal 4 (Quality Education)**.
+
+**Goal:** Ensure inclusive and equitable quality education and promote lifelong learning opportunities for all.
+
+By removing connectivity barriers and enabling offline AI learning, PocketClass helps make education accessible to students who would otherwise be excluded from digital learning platforms.
+
+---
+
+# 🚀 Key Features
+
+### 📱 Offline-First Architecture
+
+PocketClass operates entirely on the student’s device. Once installed, all lessons, quizzes, AI explanations, and progress tracking work **without internet connectivity**.
+
+### 🧠 AI Tutor
+
+The system integrates a **locally running AI model (Gemma 2B)** that provides explanations, tutoring, and learning support directly on the device.
+
+### 📊 Adaptive Learning
+
+Students take a **diagnostic assessment** that identifies knowledge gaps and generates a **personalized study plan**.
+
+### 📝 Smart Assessments
+
+Each lesson contains **Easy–Medium–Hard quizzes** that adapt based on the student’s performance.
+
+### 📈 Progress Tracking
+
+Students can monitor their learning progress using **mastery scores, dashboards, and quarterly performance charts**.
+
+### 🌍 Multi-Country Curriculum Support
+
+PocketClass aims to align with public schools curricula including to further minimize digital divide
+
+---
+
+# 🏗 System Architecture
+
+PocketClass uses a **client-only architecture**, meaning the entire system runs locally on the smartphone.
+
+**Key design principles**
+
+* Offline-first design
+* No backend server
+* No cloud database
+* No API dependency
+* On-device AI inference
+
+This architecture ensures the platform works even in **remote areas with no connectivity**.
+
+---
+
+# 🛠 Tech Stack
+
+### Mobile Development
+
+* React Native
+* Expo SDK
+* TypeScript
+* NativeWind (Tailwind for React Native)
+
+### AI System
+
+* Google **Gemma 2B**
+* **Ollama** local inference
+* Prompt engineering with structured JSON outputs
+
+### Data Storage
+
+* SQLLite (local device database)
+
+### Additional Tools
+
+* Expo Speech (Text-to-Speech)
+* React Native SVG
+* Lucide Icons
+
+---
+
+# 📊 Validation Results
+
+PocketClass was tested through **technical validation and simulated learning scenarios**.
+
+| Category                     | Result           |
+| ---------------------------- | ---------------- |
+| Offline functionality        | 100% operational |
+| AI explanation accuracy      | 96% correct      |
+| Model size                   | ~1.5GB           |
+| Minimum device compatibility | 2GB–4GB RAM      |
+| Quiz generation time         | ~4 seconds       |
+| Server cost                  | ₱0               |
+
+The results demonstrate that **AI-powered personalized learning is feasible entirely offline**.
