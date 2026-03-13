@@ -1,98 +1,129 @@
 import * as Speech from 'expo-speech';
-import { Platform } from 'react-native';
 
-/**
- * Picks the most seamless, natural-sounding English voice available on the device.
- *
- * iOS:     Prefers Ava/Samantha Enhanced (Neural) — must be downloaded from
- *          Settings → Accessibility → Spoken Content → Voices → English
- * Android: Prefers Google Studio → Wavenet → Neural voices automatically.
- */
+export interface SpeakOptions {
+  rate?: number;
+  pitch?: number;
+  onDone?: () => void;
+  onError?: (error: Error) => void;
+}
+
+// ── Active poll handle — cleared by stopSpeaking() ───────────────────────────
+let activePollInterval: ReturnType<typeof setInterval> | null = null;
+
+function clearActivePoll() {
+  if (activePollInterval !== null) {
+    clearInterval(activePollInterval);
+    activePollInterval = null;
+  }
+}
+
+// ── Voice selection ───────────────────────────────────────────────────────────
 
 export const getBestVoice = async (): Promise<string | undefined> => {
   try {
     const voices = await Speech.getAvailableVoicesAsync();
-    const enVoices = voices.filter(v => v.language.startsWith('en'));
 
-    // Priority 1: Enhanced/Neural voices (must be downloaded from
-    // Settings → Accessibility → Spoken Content → Voices → English)
-    const enhancedIds = [
+    // iOS — prefer enhanced/neural English voices
+    const iosPreferred = [
       'com.apple.voice.enhanced.en-US.Ava',
       'com.apple.voice.enhanced.en-US.Samantha',
-      'com.apple.voice.enhanced.en-US.Nicky',
-      'com.apple.voice.enhanced.en-GB.Daniel',
-      'com.apple.ttsbundle.Ava-premium',
-      'com.apple.ttsbundle.Samantha-premium',
+      'com.apple.voice.compact.en-US.Samantha',
+      'Samantha',
+      'Daniel',
     ];
-    for (const id of enhancedIds) {
-      const match = enVoices.find(v => v.identifier === id);
+    for (const id of iosPreferred) {
+      if (voices.find(v => v.identifier === id)) return id;
+    }
+
+    // Android — prefer high-quality network voices
+    const androidKeywords = ['studio', 'wavenet', 'neural', 'enhanced', 'premium', 'network'];
+    for (const kw of androidKeywords) {
+      const match = voices.find(
+        v => v.language?.startsWith('en') && v.identifier?.toLowerCase().includes(kw)
+      );
       if (match) return match.identifier;
     }
 
-    // Priority 2: Best from what your device currently has —
-    // super-compact voices sound more natural than the novelty ones
-    const currentDeviceIds = [
-      'com.apple.voice.super-compact.en-GB.Daniel',  // most natural from your list
-      'com.apple.voice.super-compact.en-AU.Karen',
-      'com.apple.voice.super-compact.en-IE.Moira',
-      'com.apple.voice.super-compact.en-ZA.Tessa',
-      'com.apple.voice.super-compact.en-IN.Rishi',
-      'com.apple.eloquence.en-GB.Reed',
-      'com.apple.eloquence.en-GB.Shelley',
-      'com.apple.eloquence.en-GB.Flo',
-    ];
-    for (const id of currentDeviceIds) {
-      const match = enVoices.find(v => v.identifier === id);
-      if (match) return match.identifier;
-    }
-
-    // Fallback: anything English
-    return enVoices[0]?.identifier;
+    // Fallback — any English voice
+    const anyEn = voices.find(v => v.language?.startsWith('en'));
+    return anyEn?.identifier;
   } catch {
     return undefined;
   }
 };
 
-export interface SpeakOptions {
-  rate?: number;   // 0.0 – 2.0, default 0.88
-  pitch?: number;  // 0.5 – 2.0, default 1.0 (keep neutral)
-  onDone?: () => void;
-  onError?: () => void;
-}
+// ── Core speak function with polling fallback ─────────────────────────────────
+//
+// WHY POLLING:
+//   expo-speech's onDone callback is unreliable on physical iOS devices when
+//   running inside Expo Go. It fires correctly in simulators but on real
+//   hardware it often never fires, silently breaking any logic placed inside it
+//   (e.g. fetching and speaking the AI follow-up explanation).
+//
+//   The fix: we register onDone with Speech.speak() as normal, but ALSO start
+//   a setInterval that polls Speech.isSpeakingAsync() every 600ms. Whichever
+//   fires first triggers the completion handler. A `doneFired` flag ensures the
+//   handler only runs once.
 
-/**
- * Speak text using the best available voice on the device.
- * Drop-in replacement for Speech.speak() anywhere in the app.
- */
-export const speak = async (text: string, options: SpeakOptions = {}) => {
-  const {
-    rate = 0.88,
-    pitch = 1.0,
-    onDone = () => {},
-    onError = () => {},
-  } = options;
+export const speak = async (text: string, options: SpeakOptions = {}): Promise<void> => {
+  // Clear any previous poll before starting a new utterance
+  clearActivePoll();
 
   const voice = await getBestVoice();
 
+  // One-shot guard — prevents onDone + poll from both firing
+  let doneFired = false;
+
+  const handleDone = () => {
+    if (doneFired) return;
+    doneFired = true;
+    clearActivePoll();
+    options.onDone?.();
+  };
+
+  const handleError = (error: Error) => {
+    doneFired = true;
+    clearActivePoll();
+    options.onError?.(error);
+  };
+
+  // Start speaking — pass onDone in case it works (simulator / some Android)
   Speech.speak(text, {
-    voice,   // undefined silently falls back to OS default
-    rate,
-    pitch,
-    onDone,
-    onError,
+    voice,
+    rate:    options.rate  ?? 0.88,
+    pitch:   options.pitch ?? 1.0,
+    onDone:  options.onDone  ? handleDone  : undefined,
+    onError: options.onError ? handleError : undefined,
   });
+
+  // Polling fallback — only set up if caller cares about completion
+  if (options.onDone) {
+    // Short initial delay so isSpeakingAsync() has time to return true
+    await new Promise(resolve => setTimeout(resolve, 400));
+
+    activePollInterval = setInterval(async () => {
+      try {
+        const stillSpeaking = await Speech.isSpeakingAsync();
+        if (!stillSpeaking) {
+          handleDone();
+        }
+      } catch {
+        // isSpeakingAsync can fail on some devices — stop polling silently
+        clearActivePoll();
+      }
+    }, 600);
+  }
 };
 
-/** Stop any currently playing speech. */
-export const stopSpeaking = () => Speech.stop();
+// ── Stop — also kills the poll so handleDone never fires after manual stop ────
+export const stopSpeaking = (): void => {
+  clearActivePoll();
+  Speech.stop();
+};
 
-/** Returns true if speech is currently playing. */
-export const isSpeaking = () => Speech.isSpeakingAsync();
+export const isSpeaking = (): Promise<boolean> => Speech.isSpeakingAsync();
 
-// Temporary debug — call this once from any screen's useEffect to see real voice IDs
-export const logAvailableVoices = async () => {
+export const logAvailableVoices = async (): Promise<void> => {
   const voices = await Speech.getAvailableVoicesAsync();
-  const enVoices = voices.filter(v => v.language.startsWith('en'));
-  console.log('=== AVAILABLE EN VOICES ===');
-  enVoices.forEach(v => console.log(`id: ${v.identifier} | lang: ${v.language} | name: ${v.name}`));
+  console.log('Available voices:', voices.map(v => `${v.identifier} (${v.language})`));
 };

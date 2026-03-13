@@ -1,4 +1,3 @@
-
 export interface FocusAreaRequest {
     subject_name: string;
     subject_mastery: number;
