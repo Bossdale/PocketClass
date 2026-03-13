@@ -48,6 +48,7 @@ You don't need to be a developer to test PocketClass! You can easily run the pro
 ### Step 2: Start the App on Your Computer
 Open your computer's terminal (Command Prompt/Mac Terminal), and run the following commands:
 
+```bash
 # 1. Clone the repository to your computer
 git clone frontend
 cd pocketclass
@@ -57,6 +58,8 @@ npm install
 
 # 3. Start the application server
 npx expo start
+```bash
+
 # 🌏 Project Overview
 
 **PocketClass** is an **AI-powered mobile learning platform designed to work completely offline**, allowing secondary school students to access personalized education even without internet connectivity.
