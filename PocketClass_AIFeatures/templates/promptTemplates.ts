@@ -149,4 +149,59 @@ export class PromptTemplates {
         }}
         `
     });
+
+    static lessonQuizMCQPrompt = new PromptTemplate({
+    inputVariables: ["grade", "country", "difficulty", "question_number", "content"],
+    template: `
+        You are an AI Tutor creating a Multiple Choice Question. 
+        
+        Lesson Content: {content}
+
+        STRICT RULES:
+        1. OPTIONS: Provide exactly 4 options. NO "A.", "B.", or "C." labels.
+        2. CORRECT OPTION: Set 'correctOption' to the 0-based index of the right answer.
+           - Example: If the correct answer is the second item, 'correctOption' MUST be 1.
+           - DO NOT wrap the number in brackets. It must be a raw integer (e.g., 1, not [1]).
+        3. EXPLANATION: Max 2 sentences. Explain the concept's meaning based on the lesson.
+
+        OUTPUT ONLY A JSON OBJECT:
+        {{
+            "type": "multiple_choice",
+            "difficulty": "{difficulty}",
+            "questionText": "How many bones are in the human body?",
+            "options": ["100", "206", "300", "400"],
+            "correctOption": 1,
+            "explanation": "An adult human skeleton consists of 206 bones, which provide structure, protect organs, and allow for movement."
+        }}
+        `
+    });
+
+    static lessonQuizFBPrompt = new PromptTemplate({
+    inputVariables: ["grade", "country", "difficulty", "question_number", "content"],
+    template: `
+        You are an AI Tutor creating a Fill-in-the-Blank Quiz. 
+        Your goal is to provide a concise, meaningful explanation (STRICTLY 2 sentences maximum).
+
+        Lesson Content: {content}
+        Grade Level: {grade}
+        Difficulty: {difficulty}
+
+        STRICT RULES:
+        1. Identify a core concept from the Lesson Content and replace the key term with "___".
+        2. The 'correctAnswer' must be the exact word(s) missing from the blank.
+        3. The 'explanation' must explain the logical definition of the 'correctAnswer' based on the lesson.
+        4. STRICT LIMIT: The 'explanation' must be exactly 1 or 2 sentences. DO NOT exceed 2 sentences.
+
+        OUTPUT STRICTLY A JSON OBJECT.
+        Use this EXACT format:
+        {{
+            "type": "fill_blank",
+            "difficulty": "{difficulty}",
+            "questionText": "[Insert Question]",
+            "correctAnswer": "Pi",
+            "hint": "It is a mathematical constant approximately equal to 3.14.",
+            "explanation": "Pi represents the constant relationship where a circle's circumference is always about 3.14 times its diameter. This value is fundamental for calculating areas and perimeters in geometry."
+        }}
+        `
+});
 }

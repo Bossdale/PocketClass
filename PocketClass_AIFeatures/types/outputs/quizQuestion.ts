@@ -44,6 +44,7 @@ export type QuestionType = 'multiple_choice' | 'true_false' | 'fill_blank';
 export interface BaseQuestion {
   type:       QuestionType;
   difficulty: Difficulty;
+  explanation: string;
 }
 
 // ── 1. Multiple Choice ────────────────────────────────────────────────────────

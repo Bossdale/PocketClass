@@ -1,36 +1,25 @@
-import { getStudyTips } from "./features/getStudyTips";
-import { diagnosticScoreInterface } from "./types/input/diagnosticScoreInterface";
-import { generateFocusArea } from "./features/generateFocusArea"; 
-import { FocusAreaRequest } from "./types/input/focusAreaRequestInterface";
+import { LessonQuizService } from "./services/LessonQuizService"; // Adjust the path if needed
+import { LessonQuizInput } from "./types/input/LessonQuizInput";
 
 async function main() {
-  const mockDiagnosticData: diagnosticScoreInterface = {
-    quarter1_score: 42,
-    quarter1_lessons: ["Algebra Basics, Variables, Linear Equations"],
 
-    quarter2_score: 68,
-    quarter2_lessons: ["Fractions, Ratios, Proportions"],
+    const quizService = new LessonQuizService();
 
-    quarter3_score: 85,
-    quarter3_lessons: ["Triangles", "Angles", "Geometry Basics"],
-
-    quarter4_score: 55,
-    quarter4_lessons: ["Mean, Median, Mode", "Basic Statistics"],
-  };
-
-  const mockFocusAreaData: FocusAreaRequest = {
-        subject_name: "Mathematics",
-        subject_mastery: 35,
-        lesson_title: "Linear Equations",
-        lesson_score: 50,
-        lesson_content: "Understanding constant rates of change, solving for unknown variables, and graphing straight lines using y = mx + b."
+    const mockInput: LessonQuizInput = {
+        grade: 7,
+        country: "Philippines",
+        difficulty: "easy", 
+        question_number: 1,
+        questions: [
+            {
+                question: "What do you call an animal that eats only plants?", 
+                answer: "Herbivore"
+            }
+        ] as any 
     };
-
-
-  const focusAreaPlan = await generateFocusArea(mockFocusAreaData);
-  console.log(focusAreaPlan);
-  // const json = await getStudyTips(mockDiagnosticData);
-  // console.log(json);
+    
+    const generatedQuestion = await quizService.generateQuiz(mockInput);
+    console.log(JSON.stringify(generatedQuestion, null, 2));
 }
 
 main();
