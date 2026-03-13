@@ -3,6 +3,7 @@ import { PromptTemplates } from '../templates/promptTemplates';
 import { jsonParser }      from '../utils/jsonParser';
 import type { LessonQuizInput } from '../types/input/LessonQuizInput';
 import type{ BaseQuestion} from '../types/outputs/quizQuestion';
+import { randNumber } from '../utils/randNumber';
 
 /**
  * LessonQuizService
@@ -37,10 +38,10 @@ export class LessonQuizService {
         chain = PromptTemplates.lessonQuizFBPrompt.pipe(model);
       } else {
         // randomly pick MCQ or TF for non-hard
-        const randomNumber = Math.floor(Math.random() * 2) + 1; // 1 or 2
+        const randomNumber: number = randNumber(LessonQuizService.questionTypes);
         switch (randomNumber) {
           case 1:
-            chain = PromptTemplates.lessonQuizTFPrompt.pipe(model);
+            chain = PromptTemplates.lessonQuizMCQPrompt.pipe(model);
             break;
           case 2:
             chain = PromptTemplates.lessonQuizTFPrompt.pipe(model);
@@ -55,8 +56,7 @@ export class LessonQuizService {
     if(input.difficulty == 'hard'){chain = PromptTemplates.lessonQuizFBPrompt.pipe(model);}
     const response = await chain.invoke({
       grade: input.grade,
-      country: input.country,
-      difficulty: input.country,
+      difficulty: input.difficulty,
       question_number: input.question_number,
       questions: input.questions
     });
