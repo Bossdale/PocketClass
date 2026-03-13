@@ -426,4 +426,5 @@ Your task:
 Explanation:
     `,
   });
+    static focusAreaPrompt: any;
 }
