@@ -84,107 +84,179 @@ export class PromptTemplates {
     static tutorPrompt = new PromptTemplate({
     inputVariables: ["topic", "lecture"],
     template: `
-        You are an AI tutor. You will create a structured lesson for the topic: "{topic}"
-        lectur content {lecture}.
+You are an AI tutor. Create a structured 3-page lesson for the topic: "{topic}".
+Use ONLY the following curriculum content as your source — do not add outside facts.
 
-        The lesson should have 3 pages:
+{lecture}
 
-        Page 1:
-        - topic_introduction: a brief introduction of the topic
-        - learning_objectives: a list of learning objectives (3-5 points)
-        - tip: a small tip for learners
+Page 1 — Introduction:
+  topic_introduction : 2–3 sentences introducing the topic engagingly
+  learning_objectives: list of 3–5 clear learning goals
+  tip                : one practical study tip for students
 
-        Page 2:
-        - lecture_content: main lecture content explained clearly
-        - key_concepts: important key concepts summarized
+Page 2 — Core Content:
+  lecture_content : main lesson content in student-friendly language
+  key_concepts    : 3–5 short bullet-point concept summaries
 
-        Page 3:
-        - real_life_application: how this topic is applied in real life
-        - summary: summary of the whole lecture content
+Page 3 — Application:
+  real_life_application : 2–3 sentences on real-world relevance
+  summary               : 3–4 sentence recap of the whole lesson
 
-        Output the lesson in a JSON string exactly like this format:
+Return ONLY a valid JSON object:
+{{
+  "page1": {{
+    "topic_introduction":  "...",
+    "learning_objectives": ["...", "...", "..."],
+    "tip": "..."
+  }},
+  "page2": {{
+    "lecture_content": "...",
+    "key_concepts":    ["...", "...", "..."]
+  }},
+  "page3": {{
+    "real_life_application": "...",
+    "summary": "..."
+  }}
+}}
+No extra text before or after the JSON.
+    `,
+  });
 
-        {{
-            "page1": {{
-                "topic_introduction": "...",
-                "learning_objectives": ["...", "...", "..."],
-                "tip": "..."
-            }},
-            "page2": {{
-                "lecture_content": "...",
-                "key_concepts": ["...", "..."]
-            }},
-            "page3": {{
-                "real_life_application": "...",
-                "summary": "..."
-            }}
-        }}
 
-        Make sure the output is valid JSON so it can be parsed directly.
-        `
-    });
+  // ── 4. Lesson Quiz — one prompt per question type ─────────────────────────
+  // Service : LessonQuizService.generateQuiz()
+  // Screen  : LessonView.tsx  (student taps "🎯 Take Quiz" after all 3 pages)
+  // Schema  : lessons.title         → lessonTitle
+  //           subjects.q{n}_content → content  (NOT lesson.sections)
+  //           profiles.grade        → grade
+  //           profiles.country      → country
+  // Output  : QuizQuestion  (1 item per invoke; service collects 10 total)
+  //
+  // ── WHY ONE PROMPT PER TYPE ──────────────────────────────────────────────
+  //   A single prompt with 3 schemas forces the model to parse which schema
+  //   applies per call, causing:
+  //     • Option letter-prefixes (A. B. C. D.) the MCQ schema didn't forbid
+  //     • correctOption always 0 (schema example anchors the model to index 0)
+  //     • fill_blank answer leaking into questionText
+  //     • fill_blank hint containing the answer verbatim
+  //   One prompt per type eliminates all schema noise: every rule in the prompt
+  //   applies to the one type being generated.  questionType is no longer a
+  //   variable — it is baked into the prompt the service selects.
+  //
+  // ── CALL PLAN (10 invocations, defined in LessonQuizService.LESSON_QUIZ_PLAN)
+  //   #1  easy   lessonQuizMCQPrompt    #6  medium  lessonQuizMCQPrompt
+  //   #2  easy   lessonQuizTFPrompt     #7  medium  lessonQuizFBPrompt
+  //   #3  easy   lessonQuizFBPrompt     #8  medium  lessonQuizMCQPrompt
+  //   #4  easy   lessonQuizMCQPrompt    #9  hard    lessonQuizFBPrompt
+  //   #5  medium lessonQuizTFPrompt     #10 hard    lessonQuizMCQPrompt
 
-    static focusAreaPrompt = new PromptTemplate({
-    inputVariables: ["subject_name", "subject_mastery", "lesson_title", "lesson_score", "lesson_content"],
-    template: `
-        You are an analytical educational system generating a dashboard widget. 
+  // 4a. Lesson Quiz — Multiple Choice
+static lessonQuizMCQPrompt = new PromptTemplate({
+  inputVariables: [
+    'grade',
+    'country',
+    'difficulty',
+    'question_number',
+    'questions'
+  ],
+  template: `
+You are rewriting existing quiz questions for a school tutoring app.
 
-        Weakest Subject: {subject_name} (Mastery: {subject_mastery}%)
-        Weakest Lesson: {lesson_title} (Score: {lesson_score}%)
-        Concepts in this Lesson: {lesson_content}
+Grade  : {grade}
+Country: {country}
+Target Difficulty: {difficulty}
 
-        Your task is to generate a direct, brief focus action plan for the dashboard. 
+Task:
+Paraphrase exactly {question_number} multiple-choice questions.
 
-        STRICT RULES:
-        1. Tone: Be direct and action-oriented. NO greetings.
-        2. Call to Action: The 'take_note' MUST be a study "Call to Action". 
-        3. Synthesis: Summarize the 'Concepts in this Lesson' briefly. DO NOT copy them word-for-word.
+Existing Questions:
+{questions}
 
-        OUTPUT STRICTLY A SINGLE JSON OBJECT.
-        Use this EXACT format:
-        {{
-            "subject_line": "{subject_name} - {subject_mastery}% mastery",
-            "lesson_line": "{lesson_title} - {lesson_score}% quiz result",
-            "take_note": "Review [briefly summarized concepts] and [actionable next step, e.g., retake the quizzes for greater results next time]."
-        }}
-        `
-    });
+Difficulty Guidelines:
+- easy → simpler wording and direct questions
+- medium → slightly more descriptive wording
+- hard → more analytical or scenario-based wording
 
-    static lessonQuizMCQPrompt = new PromptTemplate({
-    inputVariables: ["grade", "country", "difficulty", "question_number", "content"],
-    template: `
-        You are an AI Tutor creating a Multiple Choice Question. 
-        
-        Lesson Content: {content}
+Rules:
+1. DO NOT change the meaning of the question.
+2. DO NOT change the options.
+3. Preserve the correct answer from the input question.
+4. The correctAnswer should refer to the correct answer string
+5. Only rewrite the questionText wording.
+6. Keep exactly 4 options per question.
+7. Return exactly {question_number} questions.
 
-        STRICT RULES:
-        1. OPTIONS: Provide exactly 4 options. NO "A.", "B.", or "C." labels.
-        2. CORRECT OPTION: Set 'correctOption' to the 0-based index of the right answer.
-           - Example: If the correct answer is the second item, 'correctOption' MUST be 1.
-           - DO NOT wrap the number in brackets. It must be a raw integer (e.g., 1, not [1]).
-        3. EXPLANATION: Max 2 sentences. Explain the concept's meaning based on the lesson.
+Return ONLY JSON:
 
-        OUTPUT ONLY A JSON OBJECT:
-        {{
-            "type": "multiple_choice",
-            "difficulty": "{difficulty}",
-            "questionText": "How many bones are in the human body?",
-            "options": ["100", "206", "300", "400"],
-            "correctOption": 1,
-            "explanation": "An adult human skeleton consists of 206 bones, which provide structure, protect organs, and allow for movement."
-        }}
-        `
-    });
+[
+  {{
+    "type": "multiple_choice",
+    "questionText": "rewritten question",
+    "options": ["option1","option2","option3","option4"],
+    "correctAnswer": option1
+  }}
+]
+`
+});
 
-    static lessonQuizFBPrompt = new PromptTemplate({
-    inputVariables: ["grade", "country", "difficulty", "question_number", "content"],
-    template: `
-        You are an AI Tutor creating a Fill-in-the-Blank Quiz. 
-        Your goal is to provide a concise, meaningful explanation (STRICTLY 2 sentences maximum).
+  // 4b. Lesson Quiz — True / False
+static lessonQuizTFPrompt = new PromptTemplate({
+  inputVariables: [
+    'grade',
+    'country',
+    'difficulty',
+    'question_number',
+    'questions'
+  ],
+  template: `
+You are rewriting existing True/False questions.
 
-        Lesson Content: {content}
-        Grade Level: {grade}
-        Difficulty: {difficulty}
+Grade  : {grade}
+Country: {country}
+Target Difficulty: {difficulty}
+
+Task:
+Paraphrase exactly {question_number} true/false questions.
+
+Existing Questions:
+{questions}
+
+Rules:
+1. DO NOT change the meaning of the statement.
+2. Preserve the correctAnswer value from the input question.
+3. Only rewrite the wording of questionText.
+4. Maintain the same fact being tested.
+5. Return exactly {question_number} questions.
+
+Return ONLY JSON:
+
+[
+  {{
+    "type": "true_false",
+    "questionText": "rewritten statement",
+    "correctAnswer": false
+  }}
+]
+
+Important:
+correctAnswer must remain the same as the input question (true or false).
+`
+});
+  // 4c. Lesson Quiz — Fill in the Blank
+static lessonQuizFBPrompt = new PromptTemplate({
+  inputVariables: [
+    'grade',
+    'country',
+    'difficulty',
+    'question_number',
+    'questions'
+  ],
+  template: `
+You are rewriting existing fill-in-the-blank questions.
+
+Grade  : {grade}
+Country: {country}
+Target Difficulty: {difficulty}
 
         STRICT RULES:
         1. Identify a core concept from the Lesson Content and replace the key term with "___".

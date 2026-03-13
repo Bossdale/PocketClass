@@ -74,8 +74,7 @@ export class LessonQuizService {
   static questionTypes : number = 3;
 
   async generateQuiz(input: LessonQuizInput): Promise<BaseQuestion> {
-    // 1. Setup Model
-    ModelClass.setTemperature(0.1);
+    ModelClass.setTemperature(0.3);
     const model = ModelClass.getInstance();
 
     let chain: any;
@@ -96,13 +95,10 @@ export class LessonQuizService {
         
         switch (randomNumber) {
           case 1:
-            chain = PromptTemplates.lessonQuizMCQPrompt.pipe(model);
-            expectedType = "multiple_choice";
+            chain = PromptTemplates.lessonQuizTFPrompt.pipe(model);
             break;
           case 2:
-            // Note: Change to lessonQuizTFPrompt and "true_false" once you create it!
-            chain = PromptTemplates.lessonQuizMCQPrompt.pipe(model);
-            expectedType = "multiple_choice";
+            chain = PromptTemplates.lessonQuizTFPrompt.pipe(model);
             break;
         }
         break;
