@@ -7,7 +7,8 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   ScrollView,
-  Platform
+  Platform,
+  Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { User, Globe, GraduationCap, ArrowRight } from 'lucide-react-native';
@@ -37,7 +38,7 @@ const colors = {
 export default function Onboarding() {
   const router = useRouter(); 
   const [step, setStep] = useState(0);
-  const [name, setName] = useState('');
+  const[name, setName] = useState('');
   const [country, setCountry] = useState<Country | null>(null);
   const[grade, setGrade] = useState<number | null>(null);
 
@@ -76,7 +77,11 @@ export default function Onboarding() {
           <View style={styles.logoContainer}>
             <View style={styles.logoTitleRow}>
               <View style={styles.logoIconBox}>
-                <GraduationCap size={28} color={colors.primary} strokeWidth={2.5} />
+                <Image 
+                  source={require('../assets/images/logo.png')} 
+                  style={{ width: 48, height: 48 }} 
+                  resizeMode="contain" 
+                />
               </View>
               <Text style={styles.logoTitle}>PocketClass</Text>
             </View>
@@ -150,8 +155,8 @@ export default function Onboarding() {
                 </View>
                 
                 {/* UPGRADED UNIFORM GRID */}
-                <View style={styles.gradeGrid}>
-                  {[7, 8, 9, 10, 11, 12].map((g) => {
+                <View style={styles.gridContainer}>
+                  {[7, 8, 9, 10, 11, 12].map(g => {
                     const isSelected = grade === g;
                     return (
                       <TouchableOpacity
@@ -159,12 +164,12 @@ export default function Onboarding() {
                         activeOpacity={0.7}
                         onPress={() => setGrade(g)}
                         style={[
-                          styles.gradeCard,
-                          isSelected && styles.gradeCardSelected
+                          styles.gridItem,
+                          isSelected && styles.gridItemSelected
                         ]}
                       >
                         <Text style={[
-                          styles.gradeText,
+                          styles.gradeText, 
                           isSelected && styles.gradeTextSelected
                         ]}>
                           Grade {g}
@@ -232,16 +237,14 @@ const styles = StyleSheet.create({
   logoIconBox: {
     width: 48,
     height: 48,
-    borderRadius: 14,
-    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoTitle: {
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: 32,
+    fontWeight: '900',
     color: colors.foreground,
-    letterSpacing: -0.5,
+    letterSpacing: -1,
   },
   logoSubtitle: {
     fontSize: 15,
@@ -336,36 +339,36 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
 
-  gradeGrid: {
+  // Step 2: Upgraded Grade Grid
+  gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between', // Pushes the 48% cards to the edges, creating a middle gap
-    width: '100%',
-    marginTop: 20,
+    gap: 12, 
+    justifyContent: 'space-between',
   },
-  gradeCard: {
-    width: '48%', // Exactly 2 columns
-    backgroundColor: colors.white, // Or whatever your default background is
-    paddingVertical: 24,
+  gridItem: {
+    width: '48%', // Ensures exactly 2 columns
+    height: 72,   // Fixed height guarantees all boxes are strictly the same size
+    backgroundColor: colors.white,
     borderRadius: 16,
+    borderWidth: 2,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16, // The vertical gap between rows
-    borderWidth: 2,
-    borderColor: 'transparent',
   },
-  gradeCardSelected: {
-    backgroundColor: colors.primaryLight,
+  gridItemSelected: {
     borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
   },
   gradeText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.mutedForeground,
   },
   gradeTextSelected: {
     color: colors.primaryDark,
-    fontWeight: '700',
+    fontWeight: '800',
+    fontSize: 17, // Slight pop effect when selected
   },
 
   // Continue Button

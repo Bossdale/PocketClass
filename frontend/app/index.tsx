@@ -1,25 +1,52 @@
 import { Redirect } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet} from 'react-native';
-import { getProfile } from '../lib/store';  // ← one level up from (tabs)
+import { useEffect, useState, useRef } from 'react';
+import { View, StyleSheet, Image, Text, Animated } from 'react-native';
+import { getProfile } from '../lib/store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
+  
+  // Create an animated value for a smooth fade-in effect
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Start the fade-in animation immediately on mount
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+
     async function checkUser() {
-      const profile = await getProfile();
+      // Promise.all ensures the splash screen stays visible for at least 2 seconds 
+      // even if fetching the profile from AsyncStorage is instantaneous.
+      await AsyncStorage.clear(); 
+      
+      const [profile] = await Promise.all([
+        getProfile(),
+        new Promise(resolve => setTimeout(resolve, 2000))
+      ]);
+      
       setHasProfile(!!profile);
       setIsLoading(false);
     }
     checkUser();
-  }, []);
+  },[]);
 
+  // Display the custom Splash Screen while loading
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+        <Animated.View style={[styles.splashContent, { opacity: fadeAnim }]}>
+          <Image 
+            source={require('../assets/images/logo.png')} 
+            style={styles.logo} 
+            resizeMode="contain" 
+          />
+          <Text style={styles.logoTitle}>PocketClass</Text>
+        </Animated.View>
       </View>
     );
   }
@@ -35,8 +62,22 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#ffffff', 
+  },
+  splashContent: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff', // Use '#111827' if you want the dark mode color
   },
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+  },
+  logoTitle: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#0f172a',
+    letterSpacing: -1,
+  }
 });
