@@ -7,7 +7,7 @@ async function main() {
     const mockInput: LessonQuizInput = {
         grade: 7,
         country: "Philippines",
-        difficulty: "easy", 
+        difficulty: "medium", 
         question_number: 1,
         questions: [
             {

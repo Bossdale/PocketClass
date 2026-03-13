@@ -1,6 +1,5 @@
 import { ModelClass }      from '../model/ModelClass';
 import { PromptTemplates } from '../templates/promptTemplates';
-import { jsonParser }      from '../utils/jsonParser';
 import type { LessonQuizInput } from '../types/input/LessonQuizInput';
 import type{ BaseQuestion} from '../types/outputs/quizQuestion';
 import type{ MultipleChoiceQuestion} from '../types/outputs/quizQuestion';
@@ -29,49 +28,9 @@ import { aiRetryHandler } from '../utils/aiRetryHandler';
  *     → handleAnswer() accumulates score, calls saveLessonQuizResult()
  */
 
-// export class LessonQuizService {
-//   static questionTypes : number = 3;
-//   async generateQuiz(input: LessonQuizInput): Promise<BaseQuestion> {
-//     ModelClass.setTemperature(0.1);
-//     const model = ModelClass.getInstance();
-
-//     let chain: any;
-//       if (input.difficulty === 'hard') {
-//         chain = PromptTemplates.lessonQuizFBPrompt.pipe(model); 
-//       } else {
-//         // randomly pick MCQ or TF for non-hard
-//         const randomNumber = Math.floor(Math.random() * 2) + 1; // 1 or 2
-//         switch (randomNumber) {
-//           case 1:
-//             chain = PromptTemplates.lessonQuizMCQPrompt.pipe(model);
-//             break;
-//           case 2:
-//             chain = PromptTemplates.lessonQuizMCQPrompt.pipe(model);
-//             break;
-//         }
-//       }
-
-//     // Safety check
-//     if (!chain) throw new Error("Chain is undefined! Check prompts or model instance.");
-
-//     if(input.difficulty == 'hard'){chain = PromptTemplates.lessonQuizFBPrompt.pipe(model);}
-//     const response = await chain.invoke({
-//       grade: input.grade,
-//       country: input.country,
-//       difficulty: input.country,
-//       question_number: input.question_number,
-//       questions: input.questions
-//     });
-
-//     ModelClass.setTemperature(0.5);
-
-//     return jsonParser<BaseQuestion>(response.content);
-//   }
-// }
-
 
 export class LessonQuizService {
-  static questionTypes : number = 3;
+  static questionTypes: number = 3;
 
   async generateQuiz(input: LessonQuizInput): Promise<BaseQuestion> {
     ModelClass.setTemperature(0.3);
@@ -80,84 +39,82 @@ export class LessonQuizService {
     let chain: any;
     let expectedType: string = "";
 
-    // 2. Determine Question Type by Difficulty
     switch (input.difficulty) {
       case 'hard':
-        chain = PromptTemplates.lessonQuizFBPrompt.pipe(model); 
+        chain = PromptTemplates.lessonQuizFBPrompt.pipe(model);
         expectedType = "fill_blank";
         break;
 
       case 'medium':
       case 'easy':
       default:
-        // Randomly pick MCQ or TF for easy/medium
-        const randomNumber = Math.floor(Math.random() * 2) + 1; // 1 or 2
-        
-        switch (randomNumber) {
-          case 1:
-            chain = PromptTemplates.lessonQuizTFPrompt.pipe(model);
-            break;
-          case 2:
-            chain = PromptTemplates.lessonQuizTFPrompt.pipe(model);
-            break;
+        const randomNumber = Math.floor(Math.random() * 2) + 1;
+
+        if (randomNumber === 1) {
+          chain = PromptTemplates.lessonQuizMCQPrompt.pipe(model);
+          expectedType = "multiple_choice";
+        } else {
+          chain = PromptTemplates.lessonQuizTFPrompt.pipe(model);
+          expectedType = "true_false";
         }
-        break;
     }
 
-    if (!chain) throw new Error("Chain is undefined! Check prompts or model instance.");
+    if (!chain) throw new Error("Chain is undefined!");
 
-    // 3. Define the Safe Fallback
-    const safeFallback = {
-        type: "multiple_choice",
-        difficulty: input.difficulty,
-        questionText: "An error occurred while generating this question. Please select 'Skip'.",
-        options: ["Skip", "Skip", "Skip", "Skip"],
-        correctOption: 0,
-        explanation: "The system was temporarily unable to generate this question."
-    } as MultipleChoiceQuestion;
+    const safeFallback: MultipleChoiceQuestion = {
+      type: "multiple_choice",
+      difficulty: input.difficulty,
+      questionText: "An error occurred while generating this question. Please select 'Skip'.",
+      options: ["Skip", "Skip", "Skip", "Skip"],
+      correctOption: 0,
+      explanation: "The system was temporarily unable to generate this question."
+    };
 
-    // 4. Wrap the execution in the Retry Handler
-    // Note: We use <any> because the AI might temporarily return an array
     const rawResult = await aiRetryHandler<any>(
-        
-        // Function 1: The AI Call
-        async () => {
-            const response = await chain.invoke({
-                grade: input.grade,
-                country: input.country,
-                difficulty: input.difficulty, 
-                question_number: input.question_number,
-                content: JSON.stringify(input.questions) // Passes the lesson content securely
-            });
-            return response.content as string;
-        },
+      async () => {
+        const response = await chain.invoke({
+          grade: input.grade,
+          country: input.country,
+          difficulty: input.difficulty,
+          question_number: input.question_number,
+          questions: JSON.stringify(input.questions)
+        });
 
-        // Function 2: The Dynamic Validator
-        (parsed) => {
-            // ✨ ARRAY-PROOF LOGIC: If it's an array, validate the first item
-            const data = Array.isArray(parsed) ? parsed[0] : parsed;
+        // 🔧 FIX: return raw AI text
+        return typeof response === "string" ? response : response.content;
+      },
 
-            if (!data || typeof data !== 'object') return false;
-            if (!data.type || !data.explanation) return false;
+      (parsed) => {
+        const data = Array.isArray(parsed) ? parsed[0] : parsed;
 
-            if (expectedType === 'multiple_choice' && !Array.isArray(data.options)) return false;
-            if (expectedType === 'fill_blank' && typeof data.correctAnswer !== 'string') return false;
-            // Add a check for 'true_false' here later!
+        if (!data || typeof data !== 'object') return false;
+        if (!data.type) return false;
+        if (!data.questionText) return false;
+        if (!data.explanation) return false;
 
-            return true;
-        },
+        if (expectedType === "multiple_choice") {
+          if (!Array.isArray(data.options)) return false;
+          if (typeof data.correctOption !== "number") return false;
+        }
 
-        // The Fallback and Retries
-        safeFallback,
-        3
+        if (expectedType === "true_false") {
+          if (typeof data.correctAnswer !== "boolean") return false;
+        }
+
+        if (expectedType === "fill_blank") {
+          if (typeof data.correctAnswer !== "string") return false;
+        }
+
+        return true;
+      },
+
+      safeFallback,
+      3
     );
 
-    // 5. Cleanup and Return
     ModelClass.setTemperature(0.5);
 
-    // ✨ FINAL ARRAY-PROOF UNWRAP: Guarantee the UI gets the Object, not the Array
     const finalQuestion = Array.isArray(rawResult) ? rawResult[0] : rawResult;
-    
     return finalQuestion as BaseQuestion;
   }
 }
