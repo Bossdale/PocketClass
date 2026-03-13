@@ -160,6 +160,32 @@ Return ONLY JSON:
 `
   });
 
+  static focusAreaPrompt = new PromptTemplate({
+    inputVariables: ["subject_name", "subject_mastery", "lesson_title", "lesson_score", "lesson_content"],
+    template: `
+        You are an analytical educational system generating a dashboard widget. 
+
+        Weakest Subject: {subject_name} (Mastery: {subject_mastery}%)
+        Weakest Lesson: {lesson_title} (Score: {lesson_score}%)
+        Concepts in this Lesson: {lesson_content}
+
+        Your task is to generate a direct, brief focus action plan for the dashboard. 
+
+        STRICT RULES:
+        1. Tone: Be direct and action-oriented. NO greetings.
+        2. Call to Action: The 'take_note' MUST be a study "Call to Action". 
+        3. Synthesis: Summarize the 'Concepts in this Lesson' briefly. DO NOT copy them word-for-word.
+
+        OUTPUT STRICTLY A SINGLE JSON OBJECT.
+        Use this EXACT format:
+        {{
+            "subject_line": "{subject_name} - {subject_mastery}% mastery",
+            "lesson_line": "{lesson_title} - {lesson_score}% quiz result",
+            "take_note": "Review [briefly summarized concepts] and [actionable next step, e.g., retake the quizzes for greater results next time]."
+        }}
+        `
+    });
+
 
   /* ─────────────────────────────────────────────
      Lesson Quiz — True/False
