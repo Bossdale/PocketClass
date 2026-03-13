@@ -19,21 +19,12 @@ Watch the full demonstration of PocketClass.
 
 ---
 
-# 🧪 Prototype
-
-Explore the PocketClass prototype.
-
-👉 **Prototype Link:**
-`YOUR_PROTOTYPE_LINK`
-
----
-
 # 📄 Project Report
 
 The **full research and technical documentation** for PocketClass is included in this repository.
 
 📎 **File:**
-`PocketClass_Project_Report.pdf`
+[`PocketClass_Project_Report.pdf`](https://drive.google.com/file/d/1QHZ4YsfNujZ2sBSmFwHbzAoZl2Y8B4ey/view?usp=sharing)
 
 The report includes:
 
