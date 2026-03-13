@@ -34,7 +34,7 @@ export class LessonQuizService {
 
     let chain: any;
       if (input.difficulty === 'hard') {
-        chain = PromptTemplates.lessonQuizFBPrompt.pipe(model); 
+        chain = PromptTemplates.lessonQuizFBPrompt.pipe(model);
       } else {
         // randomly pick MCQ or TF for non-hard
         const randomNumber = Math.floor(Math.random() * 2) + 1; // 1 or 2
