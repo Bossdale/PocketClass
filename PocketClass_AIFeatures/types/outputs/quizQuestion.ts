@@ -43,7 +43,6 @@ export type QuestionType = 'multiple_choice' | 'true_false' | 'fill_blank';
 // ── Base (never used directly — always one of the five subtypes below) ────────
 export interface BaseQuestion {
   type:       QuestionType;
-  difficulty: Difficulty;
 }
 
 // ── 1. Multiple Choice ────────────────────────────────────────────────────────

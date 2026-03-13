@@ -29,7 +29,7 @@ import type{ BaseQuestion} from '../types/outputs/quizQuestion';
 export class LessonQuizService {
   static questionTypes : number = 3;
   async generateQuiz(input: LessonQuizInput): Promise<BaseQuestion> {
-    ModelClass.setTemperature(0.1);
+    ModelClass.setTemperature(0.3);
     const model = ModelClass.getInstance();
 
     let chain: any;
@@ -40,10 +40,10 @@ export class LessonQuizService {
         const randomNumber = Math.floor(Math.random() * 2) + 1; // 1 or 2
         switch (randomNumber) {
           case 1:
-            chain = PromptTemplates.lessonQuizMCQPrompt.pipe(model);
+            chain = PromptTemplates.lessonQuizTFPrompt.pipe(model);
             break;
           case 2:
-            chain = PromptTemplates.lessonQuizMCQPrompt.pipe(model);
+            chain = PromptTemplates.lessonQuizTFPrompt.pipe(model);
             break;
         }
       }

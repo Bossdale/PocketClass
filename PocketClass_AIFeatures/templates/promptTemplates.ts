@@ -245,7 +245,6 @@ Return ONLY JSON:
 [
   {{
     "type": "multiple_choice",
-    "difficulty": "{difficulty}",
     "questionText": "rewritten question",
     "options": ["option1","option2","option3","option4"],
     "correctAnswer": option1
@@ -288,7 +287,6 @@ Return ONLY JSON:
 [
   {{
     "type": "true_false",
-    "difficulty": "{difficulty}",
     "questionText": "rewritten statement",
     "correctAnswer": false
   }}
@@ -332,7 +330,6 @@ Return ONLY JSON:
 [
   {{
     "type": "fill_blank",
-    "difficulty": "{difficulty}",
     "questionText": "rewritten sentence with ___",
     "correctAnswer": "answer",
     "hint": "short clue"
