@@ -1,49 +1,8 @@
-/**
- * PromptTemplates  (Static Registry)
- *
- * Single source of truth for every LangChain prompt in the app.
- * All prompts are static — instantiated once at module load, shared by every
- * service with no allocation cost per call.
- *
- * ── PROMPT → SERVICE MAP ─────────────────────────────────────────────────────
- *   diagnosticQuizPrompt      → DiagnosticQuizService   (5 MCQ per quarter)
- *   diagnosticStudyPlanPrompt → StudyPlanService        (1 call, full plan)
- *   lessonMaterialPrompt      → LessonMaterialService   (1 call, 3-page object)
- *   lessonQuizMCQPrompt        → LessonQuizService       (MCQ questions)
- *   lessonQuizTFPrompt         → LessonQuizService       (true/false questions)
- *   lessonQuizFBPrompt         → LessonQuizService       (fill-blank questions)
- *   quarterlyExamMCQPrompt     → QuarterlyExamService    (MCQ questions)
- *   quarterlyExamTFPrompt      → QuarterlyExamService    (true/false questions)
- *   quarterlyExamFBPrompt      → QuarterlyExamService    (fill-blank questions)
- *   quarterlyExamDragDropPrompt→ QuarterlyExamService    (drag-drop sequencing)
- *   quarterlyExamMatchingPrompt→ QuarterlyExamService    (matching pairs)
- *   aiTutorChatPrompt         → AITutorService          (1 call per chat turn)
- *   aiExplanationPrompt       → AIExplanationService    (1 call per TTS section)
- *
- * ── HOW A SERVICE USES A PROMPT ──────────────────────────────────────────────
- *   const chain = PromptTemplates.somePrompt.pipe(ModelClass.getInstance());
- *   const raw   = await chain.invoke({ ...variables });
- *   return jsonParser<OutputType>(raw.content);
- *
- * ── SINGLE-QUESTION GENERATION (lessonQuiz + quarterlyExam) ─────────────────
- *   Each invoke produces exactly 1 question.  The caller loops and passes
- *   previously generated question texts in `alreadyAsked` to prevent repeats.
- *   Small models handle a single focused task far better than a bulk list —
- *   this cuts hallucinations and eliminates truncation mid-array.
- */
-
 import { PromptTemplate } from '@langchain/core/prompts';
 
 export class PromptTemplates {
 
   // ── 1. Diagnostic Quiz ─────────────────────────────────────────────────────
-  // Service : DiagnosticQuizService.generateQuestions()
-  // Screen  : DiagnosticTest.tsx  (via hooks/use-diagnostic.ts)
-  // Schema  : subjects.q{n}_topic → quarterTopic
-  //           subjects.q{n}_content → quarterContent
-  //           profiles.grade / profiles.country → grade / country
-  // Output  : MultipleChoiceQuestion[]  — 5 items, all difficulty "easy"
-  // Invoke  : once per quarter (4 total calls per diagnostic session)
   static diagnosticQuizPrompt = new PromptTemplate({
     inputVariables: ['subjectName', 'quarter', 'quarterTopic', 'quarterContent', 'grade', 'country'],
     template: `
@@ -77,14 +36,7 @@ Output only the JSON. No extra text.
     `,
   });
 
-
   // ── 2. Diagnostic Study Plan ───────────────────────────────────────────────
-  // Service : StudyPlanService.generateStudyPlan()
-  // Screen  : DiagnosticTest.tsx → DiagnosticResultCard.tsx
-  // Schema  : diagnostic_results.q{1-4}_score → quarter{n}_score
-  //           lessons.title (per quarter)      → quarter{n}_lessons
-  // Output  : StudyPlan  { quarter1…quarter4: StudyPlanQuarter }
-  // Invoke  : once, after all 4 diagnostic quarters complete
   static diagnosticStudyPlanPrompt = new PromptTemplate({
     inputVariables: [
       'quarter1_score', 'quarter1_lessons',
@@ -127,14 +79,7 @@ No extra text before or after the JSON.
     `,
   });
 
-
   // ── 3. Lesson Material ─────────────────────────────────────────────────────
-  // Service : LessonMaterialService.generateMaterial()
-  // Screen  : LessonView.tsx  (3-page lesson card content)
-  // Schema  : lessons.title               → topic
-  //           subjects.q{n}_content       → lecture  (NOT lesson.sections)
-  // Output  : LessonMaterial  { page1, page2, page3 }
-  // Invoke  : once when the student opens a lesson
   static lessonMaterialPrompt = new PromptTemplate({
     inputVariables: ['topic', 'lecture'],
     template: `
@@ -176,420 +121,191 @@ No extra text before or after the JSON.
     `,
   });
 
-
-  // ── 4. Lesson Quiz — one prompt per question type ─────────────────────────
-  // Service : LessonQuizService.generateQuiz()
-  // Screen  : LessonView.tsx  (student taps "🎯 Take Quiz" after all 3 pages)
-  // Schema  : lessons.title         → lessonTitle
-  //           subjects.q{n}_content → content  (NOT lesson.sections)
-  //           profiles.grade        → grade
-  //           profiles.country      → country
-  // Output  : QuizQuestion  (1 item per invoke; service collects 10 total)
-  //
-  // ── WHY ONE PROMPT PER TYPE ──────────────────────────────────────────────
-  //   A single prompt with 3 schemas forces the model to parse which schema
-  //   applies per call, causing:
-  //     • Option letter-prefixes (A. B. C. D.) the MCQ schema didn't forbid
-  //     • correctOption always 0 (schema example anchors the model to index 0)
-  //     • fill_blank answer leaking into questionText
-  //     • fill_blank hint containing the answer verbatim
-  //   One prompt per type eliminates all schema noise: every rule in the prompt
-  //   applies to the one type being generated.  questionType is no longer a
-  //   variable — it is baked into the prompt the service selects.
-  //
-  // ── CALL PLAN (10 invocations, defined in LessonQuizService.LESSON_QUIZ_PLAN)
-  //   #1  easy   lessonQuizMCQPrompt    #6  medium  lessonQuizMCQPrompt
-  //   #2  easy   lessonQuizTFPrompt     #7  medium  lessonQuizFBPrompt
-  //   #3  easy   lessonQuizFBPrompt     #8  medium  lessonQuizMCQPrompt
-  //   #4  easy   lessonQuizMCQPrompt    #9  hard    lessonQuizFBPrompt
-  //   #5  medium lessonQuizTFPrompt     #10 hard    lessonQuizMCQPrompt
-
-  // 4a. Lesson Quiz — Multiple Choice
-static lessonQuizMCQPrompt = new PromptTemplate({
-  inputVariables: [
-    'grade',
-    'country',
-    'difficulty',
-    'question_number',
-    'questions'
-  ],
-  template: `
-You are rewriting existing quiz questions for a school tutoring app.
+  // ── 4. Lesson Quiz — (Left as Original for Service Compatibility) ─────────
+  static lessonQuizMCQPrompt = new PromptTemplate({
+    inputVariables: ['grade', 'country', 'difficulty', 'question_number', 'questions'],
+    template: `
+You are rewriting an existing multiple-choice question for a school tutoring app.
 
 Grade  : {grade}
 Country: {country}
 Target Difficulty: {difficulty}
 
 Task:
-Paraphrase exactly {question_number} multiple-choice questions.
+Rewrite the wording of the following question to match the target difficulty.
 
-Existing Questions:
+Existing Question:
 {questions}
 
-Difficulty Guidelines:
-- easy → simpler wording and direct questions
-- medium → slightly more descriptive wording
-- hard → more analytical or scenario-based wording
+STRICT RULES:
+1. FACTUAL INTEGRITY: DO NOT change the scientific, historical, or mathematical facts.
+2. OPTIONS: You MUST split the pipe-separated options from the input into an array of exactly 4 separate strings. DO NOT change the options themselves.
+3. CORRECT ANSWER: The correctAnswer MUST be the EXACT TEXT of the correct option from the input. DO NOT use placeholders.
+4. TASK: Only rewrite the questionText wording.
 
-Rules:
-1. DO NOT change the meaning of the question.
-2. DO NOT change the options.
-3. Preserve the correct answer from the input question.
-4. The correctAnswer should refer to the correct answer string
-5. Only rewrite the questionText wording.
-6. Keep exactly 4 options per question.
-7. Return exactly {question_number} questions.
-
-Return ONLY JSON:
-
+Return ONLY a valid JSON array containing exactly 1 object:
 [
   {{
     "type": "multiple_choice",
     "difficulty": "{difficulty}",
-    "questionText": "rewritten question",
-    "options": ["option1","option2","option3","option4"],
-    "correctAnswer": option1
+    "questionText": "<your rewritten question here>",
+    "options": ["<first option>", "<second option>", "<third option>", "<fourth option>"],
+    "correctAnswer": "<the exact text of the correct option>"
   }}
 ]
 `
-});
+  });
 
-  // 4b. Lesson Quiz — True / False
-static lessonQuizTFPrompt = new PromptTemplate({
-  inputVariables: [
-    'grade',
-    'country',
-    'difficulty',
-    'question_number',
-    'questions'
-  ],
-  template: `
-You are rewriting existing True/False questions.
+  static lessonQuizTFPrompt = new PromptTemplate({
+    inputVariables: ['grade', 'country', 'difficulty', 'question_number', 'questions'],
+    template: `
+You are rewriting an existing true/false question for a school tutoring app.
 
 Grade  : {grade}
 Country: {country}
 Target Difficulty: {difficulty}
 
 Task:
-Paraphrase exactly {question_number} true/false questions.
+Rewrite the wording of the following true/false question to match the target difficulty.
 
-Existing Questions:
+Existing Question:
 {questions}
 
-Rules:
-1. DO NOT change the meaning of the statement.
-2. Preserve the correctAnswer value from the input question.
-3. Only rewrite the wording of questionText.
-4. Maintain the same fact being tested.
-5. Return exactly {question_number} questions.
+STRICT RULES:
+1. FACTUAL INTEGRITY: You MUST preserve the exact same meaning and fact being tested.
+2. CORRECT ANSWER: The correctAnswer MUST remain the exact same boolean (true or false) as the input question. DO NOT re-evaluate or flip the truth value.
+3. TASK: Only rewrite the questionText to match the difficulty. Ensure it is a complete sentence or clear question.
 
-Return ONLY JSON:
-
+Return ONLY a valid JSON array containing exactly 1 object:
 [
   {{
     "type": "true_false",
     "difficulty": "{difficulty}",
-    "questionText": "rewritten statement",
-    "correctAnswer": false
+    "questionText": "<your rewritten statement or question here>",
+    "correctAnswer": <true or false, exactly matching the input>
   }}
 ]
-
-Important:
-correctAnswer must remain the same as the input question (true or false).
 `
-});
-  // 4c. Lesson Quiz — Fill in the Blank
-static lessonQuizFBPrompt = new PromptTemplate({
-  inputVariables: [
-    'grade',
-    'country',
-    'difficulty',
-    'question_number',
-    'questions'
-  ],
-  template: `
-You are rewriting existing fill-in-the-blank questions.
+  });
+
+  static lessonQuizFBPrompt = new PromptTemplate({
+    inputVariables: ['grade', 'country', 'difficulty', 'question_number', 'questions'],
+    template: `
+You are rewriting an existing fill-in-the-blank question for a school tutoring app.
 
 Grade  : {grade}
 Country: {country}
 Target Difficulty: {difficulty}
 
 Task:
-Paraphrase exactly {question_number} fill-in-the-blank questions.
+Rewrite the wording of the following fill-in-the-blank question to match the target difficulty.
 
-Existing Questions:
+Existing Question:
 {questions}
 
-Rules:
-1. Preserve the SAME correctAnswer from the input question.
-2. The blank (___) must still represent that answer.
-3. Do NOT include the correctAnswer word in the sentence.
-4. Only rewrite the wording to match the difficulty level.
-5. Return exactly {question_number} questions.
+STRICT RULES:
+1. CORRECT ANSWER: Preserve the EXACT correctAnswer word/phrase from the input.
+2. THE BLANK: The rewritten sentence must logically lead to the exact answer. Use exactly three underscores (___) for the blank.
+3. NO LEAKS: DO NOT include the correctAnswer word anywhere in the rewritten questionText or the hint.
+4. TASK: Only rewrite the surrounding wording to match the difficulty level.
 
-Return ONLY JSON:
-
+Return ONLY a valid JSON array containing exactly 1 object:
 [
   {{
     "type": "fill_blank",
     "difficulty": "{difficulty}",
-    "questionText": "rewritten sentence with ___",
-    "correctAnswer": "answer",
-    "hint": "short clue"
+    "questionText": "<your rewritten sentence with ___>",
+    "correctAnswer": "<the exact answer from the input>",
+    "hint": "<a short, helpful clue that does not contain the answer>"
   }}
 ]
 `
-});
+  });
 
+  // ── 5. Quarterly Exam — Decoupled Architecture ──────────────────────────────
+  // These prompts NO LONGER return full Question objects. 
+  // They ONLY return the rewritten text strings.
 
-  // ── 5. Quarterly Exam — one prompt per question type ──────────────────────
-  // Service : QuarterlyExamService.generateExam()
-  // Screen  : QuarterlyExam.tsx  (gated by dbQuarterlyExamUnlocked)
-  // Schema  : subjects.name         → subjectName
-  //           subjects.q{n}_topic   → topic
-  //           lessons.title         → lessonTitle  (one lesson per outer loop)
-  //           lessons.sections[]    → lessonContent (joined; populated by LessonMaterialService)
-  //           profiles.grade        → grade
-  //           profiles.country      → country
-  // Output  : QuizQuestion  (1 item per invoke)
-  //           Service collects 5 per lesson × N lessons in the quarter
-  //
-  // ── WHY ONE PROMPT PER TYPE ──────────────────────────────────────────────
-  //   Sample output confirmed 4 failure modes from the combined prompt:
-  //     • MCQ options had letter prefixes (A. B. C. D.)
-  //     • correctOption biased to 0, causing factual errors (rusting, sublimation)
-  //     • drag_drop instructions said "Match..." (confused with matching schema)
-  //     • matching correctPairs always [0,1,2,3] (trivial, no shuffling)
-  //   One prompt per type means each call has zero irrelevant schema noise.
-  //   questionType is no longer a variable — the service selects the prompt.
-  //
-  // ── CALL PLAN (5 invocations per lesson, defined in QuarterlyExamService.EXAM_QUESTION_PLAN)
-  //   #1  easy   quarterlyExamMCQPrompt
-  //   #2  easy   quarterlyExamTFPrompt
-  //   #3  medium quarterlyExamFBPrompt
-  //   #4  medium quarterlyExamMCQPrompt
-  //   #5  hard   quarterlyExamDragDropPrompt  ← even-indexed lessons
-  //       hard   quarterlyExamMatchingPrompt  ← odd-indexed lessons
-
-  // 5a. Quarterly Exam — Multiple Choice
   static quarterlyExamMCQPrompt = new PromptTemplate({
-    inputVariables: [
-      'subjectName', 'quarter', 'topic',
-      'lessonTitle', 'lessonContent',
-      'grade', 'country',
-      'questionNumber', 'difficulty', 'alreadyAsked'
-    ],
+    inputVariables: ['grade', 'country', 'difficulty', 'questions'],
     template: `
-You are a multiple-choice exam question generator for a school tutoring app.
+You are rewriting the wording of a multiple-choice exam question for a school tutoring app.
 
-Subject : {subjectName}  |  Quarter: {quarter}  |  Topic: {topic}
-Lesson  : {lessonTitle}
-Grade   : {grade}  |  Country: {country}
-Task    : Generate question {questionNumber} of 5 for this lesson.  Difficulty: {difficulty}
+Grade: {grade}
+Country: {country}
+Target Difficulty: {difficulty}
 
+Original Question Context:
+{questions}
 
-Questions already generated for this lesson — do NOT test the same fact or reuse the same correct answer:
-{alreadyAsked}
+STRICT RULES:
+1. ONLY rewrite the question wording to match the target difficulty.
+2. DO NOT change the underlying facts or meaning.
+3. DO NOT return the options or the answer. The system handles those.
+4. DO NOT append the multiple-choice options (A, B, C, D) to the end of the questionText.
 
-Rules:
-1. Base the question strictly on the Lesson Content above.
-2. Write 4 distinct, plausible options — no obviously absurd distractors.
-3. Do NOT prefix options with letters (A, B, C, D) — write the text only.
-4. Place the correct answer at a varied index (0, 1, 2, or 3) — NOT always 0.
-5. correctOption is the 0-based index of the correct option in the array.
-6. Double-check: options[correctOption] must be the factually correct answer.
+Return ONLY a valid JSON object with the new question text:
+{{ "questionText": "<your rewritten question here>" }}
 
-Return ONLY a valid JSON array containing exactly 1 object:
-[{{"type":"multiple_choice","difficulty":"{difficulty}","questionText":"...","options":["...","...","...","..."],"correctOption":2}}]
-
-Output only the JSON array. No extra text.
+Output only the JSON object. No extra text.
     `,
   });
 
-  // 5b. Quarterly Exam — True / False
   static quarterlyExamTFPrompt = new PromptTemplate({
-    inputVariables: [
-      'subjectName', 'quarter', 'topic',
-      'lessonTitle', 'lessonContent',
-      'grade', 'country',
-      'questionNumber', 'difficulty', 'alreadyAsked',
-    ],
+    inputVariables: ['grade', 'country', 'difficulty', 'questions'],
     template: `
-You are a true/false exam question generator for a school tutoring app.
+You are rewriting the wording of a true/false exam question for a school tutoring app.
 
-Subject : {subjectName}  |  Quarter: {quarter}  |  Topic: {topic}
-Lesson  : {lessonTitle}
-Grade   : {grade}  |  Country: {country}
-Task    : Generate question {questionNumber} of 5 for this lesson.  Difficulty: {difficulty}
+Grade: {grade}
+Country: {country}
+Target Difficulty: {difficulty}
 
-Lesson Content:
-{lessonContent}
+Original Question Context:
+{questions}
 
-Questions already generated for this lesson — do NOT test the same fact:
-{alreadyAsked}
+STRICT RULES:
+1. ONLY rewrite the statement wording to match the target difficulty. Ensure it is a complete sentence or a clear question.
+2. DO NOT alter the truth value of the underlying scientific fact.
+3. DO NOT return the boolean answer. The system handles that.
+4. DO NOT change the conditions of the statement in a way that flips the scientific truth value.
+5. CRITICAL: DO NOT use antonyms. DO NOT add or remove the word "NOT". Ensure the rewritten statement evaluates to the exact same truth value as the original.
 
-Rules:
-1. Base the statement strictly on the Lesson Content above.
-2. The statement must be clearly and unambiguously true or false — no edge cases.
-3. Vary correctAnswer across calls — do not always return true.
-4. The statement must test a meaningful concept, not a trivially obvious fact.
+Return ONLY a valid JSON object with the new question text:
+{{ "questionText": "<your rewritten statement or question here>" }}
 
-Return ONLY a valid JSON array containing exactly 1 object:
-[{{"type":"true_false","difficulty":"{difficulty}","questionText":"...","correctAnswer":true}}]
-
-Output only the JSON array. No extra text.
+Output only the JSON object. No extra text.
     `,
   });
 
-  // 5c. Quarterly Exam — Fill in the Blank
   static quarterlyExamFBPrompt = new PromptTemplate({
-    inputVariables: [
-      'subjectName', 'quarter', 'topic',
-      'lessonTitle', 'lessonContent',
-      'grade', 'country',
-      'questionNumber', 'difficulty', 'alreadyAsked',
-    ],
+    inputVariables: ['grade', 'country', 'difficulty', 'questions'],
     template: `
-You are a fill-in-the-blank exam question generator for a school tutoring app.
+You are rewriting the wording of a fill-in-the-blank exam question for a school tutoring app.
 
-Subject : {subjectName}  |  Quarter: {quarter}  |  Topic: {topic}
-Lesson  : {lessonTitle}
-Grade   : {grade}  |  Country: {country}
-Task    : Generate question {questionNumber} of 5 for this lesson.  Difficulty: {difficulty}
+Grade: {grade}
+Country: {country}
+Target Difficulty: {difficulty}
 
-Lesson Content:
-{lessonContent}
+Original Question Context:
+{questions}
 
-Questions already generated for this lesson — do NOT test the same term:
-{alreadyAsked}
+STRICT RULES:
+1. Rewrite the sentence so it logically leads to the exact same answer as the original.
+2. The blank MUST be exactly three underscores (___).
+3. DO NOT include the answer word anywhere in your rewritten sentence or hint.
+4. Provide a helpful hint that does not give away the exact answer.
 
-Rules:
-1. Base the question strictly on the Lesson Content above.
-2. The blank (___) must replace a KEY TERM, concept name, or scientific term — never a common
-   grammatical word like "the", "a", "is", "of", or "ability".
-3. correctAnswer must NOT appear anywhere else in questionText — not before or after the blank.
-4. The hint must give a clue WITHOUT containing the correctAnswer word or phrase.
-   Bad hint : "Porosity is the ability of a material to absorb liquid."  (reveals the answer)
-   Good hint: "This property describes how much liquid a material can absorb."
+Return ONLY a valid JSON object with the text and hint:
+{{ 
+  "questionText": "<your rewritten sentence with ___>",
+  "hint": "<a short clue that does not contain the answer>"
+}}
 
-Return ONLY a valid JSON array containing exactly 1 object:
-[{{"type":"fill_blank","difficulty":"{difficulty}","questionText":"The process of ___ occurs when iron reacts with oxygen.","correctAnswer":"oxidation","hint":"A clue that does not say the word oxidation."}}]
-
-Output only the JSON array. No extra text.
+Output only the JSON object. No extra text.
     `,
   });
-
-  // 5d. Quarterly Exam — Drag & Drop
-  //
-  // drag_drop tests SEQUENCING — the student drags items into the correct order.
-  // It is NOT a matching task.  instruction must describe a process or sequence to arrange.
-  //
-  // correctOrder semantics:
-  //   correctOrder[position] = the index in items[] that belongs at that position.
-  //   Example: items = ["Step C", "Step A", "Step D", "Step B"]
-  //            correctOrder = [1, 3, 0, 2]
-  //            means: position 0 → items[1] ("Step A")
-  //                   position 1 → items[3] ("Step B")
-  //                   position 2 → items[0] ("Step C")
-  //                   position 3 → items[2] ("Step D")
-  static quarterlyExamDragDropPrompt = new PromptTemplate({
-    inputVariables: [
-      'subjectName', 'quarter', 'topic',
-      'lessonTitle', 'lessonContent',
-      'grade', 'country',
-      'questionNumber', 'difficulty', 'alreadyAsked',
-    ],
-    template: `
-You are a drag-and-drop sequencing exam question generator for a school tutoring app.
-
-Subject : {subjectName}  |  Quarter: {quarter}  |  Topic: {topic}
-Lesson  : {lessonTitle}
-Grade   : {grade}  |  Country: {country}
-Task    : Generate question {questionNumber} of 5 for this lesson.  Difficulty: {difficulty}
-
-Lesson Content:
-{lessonContent}
-
-Questions already generated for this lesson — do NOT test the same sequence:
-{alreadyAsked}
-
-Rules:
-1. Base the question strictly on the Lesson Content above.
-2. drag_drop tests SEQUENCING — the student arranges items into the correct order.
-   It is NOT a matching task.  Do NOT write "Match the following."
-3. instruction must describe a process, sequence, or timeline to arrange.
-   Good: "Arrange the stages of the water cycle in the correct order."
-   Bad : "Match the following terms with their definitions."
-4. Provide 4 items in a SHUFFLED order — NOT in the correct sequence.
-5. correctOrder[i] = the index in items[] that belongs at position i in the correct sequence.
-   Example: items=["Step C","Step A","Step D","Step B"], correctOrder=[1,3,0,2]
-   means the correct sequence is: items[1]→items[3]→items[0]→items[2]  (A→B→C→D).
-
-Return ONLY a valid JSON array containing exactly 1 object:
-[{{"type":"drag_drop","difficulty":"{difficulty}","instruction":"Arrange the steps of [process] in the correct order.","items":["Step C","Step A","Step D","Step B"],"correctOrder":[1,3,0,2]}}]
-
-Output only the JSON array. No extra text.
-    `,
-  });
-
-  // 5e. Quarterly Exam — Matching
-  //
-  // correctPairs semantics:
-  //   correctPairs[leftIndex] = the index in rightItems[] that matches leftItems[leftIndex].
-  //   Example: leftItems  = ["Heart",  "Lungs",      "Liver"]
-  //            rightItems = ["Filters blood", "Pumps blood", "Gas exchange"]  ← shuffled
-  //            correctPairs = [1, 2, 0]
-  //            means: Heart  → rightItems[1] ("Pumps blood")
-  //                   Lungs  → rightItems[2] ("Gas exchange")
-  //                   Liver  → rightItems[0] ("Filters blood")
-  static quarterlyExamMatchingPrompt = new PromptTemplate({
-    inputVariables: [
-      'subjectName', 'quarter', 'topic',
-      'lessonTitle', 'lessonContent',
-      'grade', 'country',
-      'questionNumber', 'difficulty', 'alreadyAsked',
-    ],
-    template: `
-You are a matching exam question generator for a school tutoring app.
-
-Subject : {subjectName}  |  Quarter: {quarter}  |  Topic: {topic}
-Lesson  : {lessonTitle}
-Grade   : {grade}  |  Country: {country}
-Task    : Generate question {questionNumber} of 5 for this lesson.  Difficulty: {difficulty}
-
-Lesson Content:
-{lessonContent}
-
-Questions already generated for this lesson — do NOT test the same pairs:
-{alreadyAsked}
-
-Rules:
-1. Base the question strictly on the Lesson Content above.
-2. Provide 3 or 4 leftItems (terms) and the same number of rightItems (definitions/descriptions).
-3. rightItems MUST be in a SHUFFLED order relative to leftItems.
-   correctPairs MUST NOT equal [0,1,2,3] — if your natural pairing produces that, reshuffle rightItems.
-4. correctPairs[i] = the index in rightItems[] that matches leftItems[i].
-   Example: leftItems  = ["Oxidation", "Galvanization", "Rusting"]
-            rightItems = ["Coating iron with zinc", "Iron reacting with oxygen", "Visible rust on iron"]
-                          ↑ shuffled so natural order is broken
-            correctPairs = [1, 0, 2]
-            meaning: Oxidation→rightItems[1], Galvanization→rightItems[0], Rusting→rightItems[2].
-
-Return ONLY a valid JSON array containing exactly 1 object:
-[{{"type":"matching","difficulty":"{difficulty}","instruction":"Match each term to its definition.","leftItems":["Oxidation","Galvanization","Rusting"],"rightItems":["Coating iron with zinc","Iron reacting with oxygen","Visible rust on iron"],"correctPairs":[1,0,2]}}]
-
-Output only the JSON array. No extra text.
-    `,
-  });
-
 
   // ── 6. AI Tutor Chat ───────────────────────────────────────────────────────
-  // Service : AITutorService.getResponse()
-  // Screen  : AITutor.tsx  (floating FAB on LessonView.tsx)
-  // Schema  : lessons.title   → lessonTitle
-  //           chat_messages   ← each turn saved after send/receive
-  // Output  : string  (plain text; no JSON; directly into chat bubble)
-  // Invoke  : once per student message
   static aiTutorChatPrompt = new PromptTemplate({
     inputVariables: ['lessonTitle', 'history'],
     template: `
@@ -612,14 +328,7 @@ Respond only with your next reply. Do not repeat the conversation history.
     `,
   });
 
-
   // ── 7. AI Explanation — TTS follow-up ─────────────────────────────────────
-  // Service : AIExplanationService.getExplanation()
-  // Screen  : LessonView.tsx  (auto-plays via expo-speech after each page read)
-  // Schema  : lessons.sections[n].content → text  (stripped of markdown)
-  //           profiles.grade              → grade
-  // Output  : string  (plain spoken language; no JSON; fed into Speech.speak())
-  // Invoke  : once per lesson page after TTS finishes reading it
   static aiExplanationPrompt = new PromptTemplate({
     inputVariables: ['text', 'grade'],
     template: `

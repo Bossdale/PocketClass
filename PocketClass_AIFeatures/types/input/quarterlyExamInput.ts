@@ -1,73 +1,136 @@
 /**
- * QuarterlyExamLesson
+ * QuarterlyExamInput
  *
- * One lesson's data passed to QuarterlyExamService.generateExam().
- * The service generates 5 questions per lesson using this content.
+ * Input shape for QuarterlyExamService.generateExam().
  *
- * SCHEMA SOURCES
- *   lessons.title    → title
- *   lessons.sections → content  (sections joined as plain text after
- *                                LessonMaterialService has populated them;
- *                                the quarterly exam is gated behind lesson
- *                                completion so sections are always present)
+ * ── APPROACH: SEED-BASED REWRITING ───────────────────────────────────────────
+ *   The service does NOT pass curriculum text to the model.
+ *   Instead it passes pre-written seed questions and asks the model to
+ *   REWRITE THE WORDING to the target difficulty.
+ *   The model never generates new facts — it only adjusts language.
  *
- * HOW TO BUILD content
- *   lesson.sections.map((s: { content: string }) => s.content).join('\n')
+ *   This directly mirrors LessonQuizService, which receives Question[] seeds
+ *   and paraphrases them.  Passing curriculum text caused hallucinations:
+ *   wrong facts, letter-prefixed options, correctOption always 0.
+ *
+ *   MCQ / TF / FB  →  AI rewrites the seed text to the target difficulty
+ *   drag_drop      →  constructed DIRECTLY from DragDropSeed (no AI call)
+ *   matching       →  constructed DIRECTLY from MatchingSeed  (no AI call)
+ *
+ * ── ONE CALL PER LESSON ──────────────────────────────────────────────────────
+ *   generateExam(input) is called once per lesson and returns exactly 5
+ *   BaseQuestions.  QuarterlyExam.tsx loops over lessons and accumulates them.
+ *
+ * ── SEED REQUIREMENTS PER LESSON ─────────────────────────────────────────────
+ *   mcqSeeds:     >= 2  (consumed by steps 1 and 4)
+ *   tfSeeds:      >= 1  (consumed by step 2)
+ *   fbSeeds:      >= 1  (consumed by step 3)
+ *   dragDropSeed:  1    (step 5 when lessonIndex is EVEN: 0, 2, 4 …)
+ *   matchingSeed:  1    (step 5 when lessonIndex is ODD:  1, 3, 5 …)
+ *
+ * ── HOW TO BUILD (QuarterlyExam.tsx) ─────────────────────────────────────────
+ *   import { EXAM_SEEDS } from '@/constants/examSeeds';
+ *
+ *   for (const [lessonIdx, lesson] of qLessons.entries()) {
+ *     const seeds = EXAM_SEEDS[subject.id]?.[quarter]?.[lessonIdx];
+ *     if (!seeds) throw new Error(`No seeds for ${subject.id} Q${quarter} lesson ${lessonIdx}`);
+ *
+ *     const input: QuarterlyExamInput = {
+ *       subjectName:  subject.name,
+ *       quarter,
+ *       lessonTitle:  lesson.title,
+ *       lessonIndex:  lessonIdx,
+ *       grade:        profile.grade,
+ *       country:      profile.country,
+ *       mcqSeeds:     seeds.mcq,
+ *       tfSeeds:      seeds.tf,
+ *       fbSeeds:      seeds.fb,
+ *       dragDropSeed: seeds.dragDrop,   // present when lessonIdx is even
+ *       matchingSeed: seeds.matching,   // present when lessonIdx is odd
+ *     };
+ *     const five = await quarterlyExamService.generateExam(input);
+ *     allQuestions.push(...five);
+ *   }
  */
-export interface QuarterlyExamLesson {
-  title:   string;  // lessons.title
-  content: string;  // lessons.sections joined as plain text
+
+
+// ── Seed types ────────────────────────────────────────────────────────────────
+
+/**
+ * A pre-written question+answer pair used as the source text the model rewrites.
+ *
+ * MCQ : question = question sentence
+ *       answer   = exact text of the correct option
+ *       options  = all 4 options (must include the answer)
+ *
+ * TF  : question = the statement
+ *       answer   = "true" | "false"
+ *
+ * FB  : question = sentence containing "___" where the blank goes
+ *       answer   = the word / phrase that fills the blank
+ *       options  = omitted
+ */
+export interface SeedQuestion {
+  question: string;
+  answer:   string;
+  options?: string[];   // MCQ only — include all 4 options + the correct one
 }
 
 /**
- * QuarterlyExamInput
+ * Pre-computed drag-and-drop sequencing seed.
+ * Constructed directly into a BaseQuestion — NO model call.
  *
- * The data shape passed into QuarterlyExamService.generateExam().
- * The service loops over `lessons` and for each lesson calls the exam prompt
- * 5 times (one question per invoke), accumulating all questions into a single
- * QuizQuestion[] returned to the screen.
+ * items[] is already SHUFFLED (not in correct order).
  *
- * SCHEMA SOURCES
- *   subjects.name        → subjectName
- *   subjects.q{n}_topic  → topic     (quarter-level topic for context)
- *   lessons (filtered)   → lessons   (only non-exam lessons in this quarter)
- *   profiles.grade       → grade
- *   profiles.country     → country
- *
- * UI
- *   Screen : QuarterlyExam.tsx
- *   Trigger: student taps "Start Exam"; gated by dbQuarterlyExamUnlocked
- *            (all non-exam lessons in the quarter must be completed first,
- *             which guarantees lessons.sections is populated for each lesson)
- *
- * HOW TO BUILD IT
- *   const subject      = await dbGetSubjectById(subjectId);
- *   const allLessons   = await dbGetLessonsBySubject(subjectId);
- *   const qLessons     = allLessons.filter(l => l.quarter === quarter && !l.isQuarterlyExam);
- *   const topicKey     = `q${quarter}Topic` as keyof Subject;
- *
- *   const input: QuarterlyExamInput = {
- *     subjectName: subject.name,
- *     quarter,
- *     topic:   subject[topicKey] as string,
- *     lessons: qLessons.map(l => ({
- *       title:   l.title,
- *       content: l.sections.map((s: { content: string }) => s.content).join('\n'),
- *     })),
- *     grade:   profile.grade,
- *     country: profile.country,
- *   };
- *
- * TOTAL QUESTIONS
- *   lessons.length × 5  (e.g. 4 lessons → 20 questions)
- *   QuarterlyExam.tsx should show a loading indicator while the service
- *   streams questions in, or show all at once after generation completes.
+ * correctOrder[position] = index in items[] that belongs at that position.
+ * Example:
+ *   items        = ['Step C', 'Step A', 'Step D', 'Step B']
+ *   correctOrder = [1, 3, 0, 2]
+ *   → correct sequence: items[1] → items[3] → items[0] → items[2]  (A→B→C→D)
  */
+export interface DragDropSeed {
+  instruction:  string;
+  items:        string[];   // SHUFFLED
+  correctOrder: number[];   // pre-computed index mapping
+}
+
+/**
+ * Pre-computed matching seed.
+ * Constructed directly into a BaseQuestion — NO model call.
+ *
+ * rightItems[] is already SHUFFLED (not aligned with leftItems[]).
+ *
+ * correctPairs[i] = index in rightItems[] that matches leftItems[i].
+ * Example:
+ *   leftItems    = ['Oxidation',         'Galvanization',     'Rusting']
+ *   rightItems   = ['Coating with zinc', 'Iron + oxygen',     'Visible rust']  ← shuffled
+ *   correctPairs = [1, 0, 2]
+ *   → Oxidation→rightItems[1], Galvanization→rightItems[0], Rusting→rightItems[2]
+ */
+export interface MatchingSeed {
+  instruction:  string;
+  leftItems:    string[];
+  rightItems:   string[];   // SHUFFLED — not aligned with leftItems
+  correctPairs: number[];   // pre-computed index mapping
+}
+
+
+// ── Primary input type ────────────────────────────────────────────────────────
+
 export interface QuarterlyExamInput {
-  subjectName: string;                // subjects.name
-  quarter:     number;                // 1 | 2 | 3 | 4
-  topic:       string;                // subjects.q{n}_topic — overall context
-  lessons:     QuarterlyExamLesson[]; // per-lesson title + sections content
-  grade:       number;                // 7–12  — from profiles.grade
-  country:     string;                // "indonesia" | "malaysia" | "brunei"
+  subjectName: string;   // subjects.name — light context for the rewrite prompt
+  quarter:     number;   // 1 | 2 | 3 | 4
+  lessonTitle: string;   // lessons.title — anchors the rewrite to the right lesson
+  lessonIndex: number;   // 0-based position in this quarter's lesson list
+                         // even (0,2,4…) → step-5 hard question is drag_drop
+                         // odd  (1,3,5…) → step-5 hard question is matching
+  grade:   number;       // 7–12  from profiles.grade
+  country: string;       // 'indonesia' | 'malaysia' | 'brunei'
+
+  // Seed banks — consumed in order by EXAM_QUESTION_PLAN
+  mcqSeeds:     SeedQuestion[];   // need >= 2 (steps 1 and 4)
+  tfSeeds:      SeedQuestion[];   // need >= 1 (step 2)
+  fbSeeds:      SeedQuestion[];   // need >= 1 (step 3)
+  dragDropSeed?: DragDropSeed;    // required when lessonIndex is even
+  matchingSeed?: MatchingSeed;    // required when lessonIndex is odd
 }

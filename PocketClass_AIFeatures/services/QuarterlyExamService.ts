@@ -1,177 +1,159 @@
-/**
- * QuarterlyExamService
- *
- * Generates a quarterly exam covering all lessons in a quarter.
- * Produces 5 questions per lesson, each from a separate model invocation,
- * so the model can focus on one lesson and one question type at a time.
- * All 5 question types (including drag_drop and matching) are used without
- * the malformed JSON that results from requesting complex nested structures
- * in a bulk array.
- *
- * ── SCHEMA ───────────────────────────────────────────────────────────────────
- *   READ  subjects.name         → QuarterlyExamInput.subjectName
- *   READ  subjects.q{n}_topic   → QuarterlyExamInput.topic
- *   READ  lessons (per quarter) → QuarterlyExamInput.lessons[]
- *           lessons.title       → lessons[i].title
- *           lessons.sections    → lessons[i].content  (joined; populated by
- *                                  LessonMaterialService before exam is unlocked)
- *   READ  profiles.grade        → QuarterlyExamInput.grade
- *   READ  profiles.country      → QuarterlyExamInput.country
- *   WRITE quarterly_exam_results ← attempt row written by QuarterlyExam.tsx
- *
- * ── UI ───────────────────────────────────────────────────────────────────────
- *   Screen : QuarterlyExam.tsx
- *   Trigger: student taps "Start Exam" (startExam); gated by
- *            dbQuarterlyExamUnlocked — all non-exam lessons in the quarter
- *            must be completed, guaranteeing lessons.sections is populated
- *   Renders: QuizRenderer.tsx → all 5 renderers including QuizDragDrop,
- *            QuizMatching
- *   After  : easyScore / mediumScore / hardScore saved to quarterly_exam_results
- *            Stars: 3★ ≥ 80%  |  2★ ≥ 50%  |  1★ otherwise
- *
- * ── GENERATION PLAN (EXAM_QUESTION_PLAN) ─────────────────────────────────────
- *   5 questions per lesson. Each step routes to its own prompt via EXAM_PROMPT_MAP.
- *   The hard question type alternates per lesson (drag_drop / matching)
- *   for variety across the full exam.
- *
- *   #   difficulty  prompt
- *   1   easy        quarterlyExamMCQPrompt
- *   2   easy        quarterlyExamTFPrompt
- *   3   medium      quarterlyExamFBPrompt
- *   4   medium      quarterlyExamMCQPrompt
- *   5   hard        quarterlyExamDragDropPrompt  ← even-indexed lessons
- *            OR     quarterlyExamMatchingPrompt  ← odd-indexed lessons
- *
- *   Example: 4 lessons → 20 questions (8 easy, 8 medium, 4 hard)
- *
- * ── FLOW ─────────────────────────────────────────────────────────────────────
- *   QuarterlyExam.tsx (startExam)
- *     → dbGetSubjectById(subjectId) + dbGetLessonsBySubject(subjectId)
- *     → build QuarterlyExamInput { subjectName, quarter, topic, lessons[], grade, country }
- *     → QuarterlyExamService.generateExam(input)
- *         for each lesson in input.lessons:
- *           alreadyAsked = []
- *           for i in 0..4 (EXAM_QUESTION_PLAN):
- *             → EXAM_PROMPT_MAP[type].pipe(model).invoke({
- *                 subjectName, quarter, topic,
- *                 lessonTitle, lessonContent,
- *                 grade, country,
- *                 questionNumber, difficulty,
- *                 alreadyAsked
- *               })
- *             → jsonParser<QuizQuestion[]>(raw.content)[0]
- *             → push to lessonQuestions[]
- *           allQuestions.push(...lessonQuestions)
- *     → setQuestions(allQuestions) → QuizRenderer renders all questions
- *
- * ── OUTPUT ───────────────────────────────────────────────────────────────────
- *   QuizQuestion[]  (lessons.length × 5 items)
- *   Types: all 5 — multiple_choice, true_false, fill_blank, drag_drop, matching
- *
- * ── TEMPERATURE ──────────────────────────────────────────────────────────────
- *   0.2 — exam answers must be factually unambiguous and consistent
- */
+import { ModelClass }      from '../model/ModelClass';
+import { PromptTemplates } from '../templates/promptTemplates';
+import { safeInvoke }      from '../utils/safeInvoke';
+import type { QuarterlyExamInput, SeedQuestion } from '../types/input/quarterlyExamInput';
+import type {
+  QuarterlyExamQuestion,
+  QEMultipleChoiceQuestion,
+  QETrueFalseQuestion,
+  QEFillBlankQuestion,
+  QEDragDropQuestion,
+  QEMatchingQuestion,
+} from '../types/outputs/QuarterlyExamOutput';
 
-// import { ModelClass }      from '../model/ModelClass';
-// import { PromptTemplates } from '../templates/promptTemplates';
-// import { jsonParser }      from '../utils/jsonParser';
+// ── Question plan ─────────────────────────────────────────────────────────────
 
-// import type { QuarterlyExamInput } from '../types/input/quarterlyExamInput';
-// import type { Difficulty, QuestionType, QuizQuestion } from '../types/outputs/quizQuestion'; // also commented 
+type StepType = 'mcq' | 'tf' | 'fb' | 'drag_drop' | 'matching';
 
-// ── Question generation plan ──────────────────────────────────────────────────
-// 5 questions per lesson. The last entry's type is overridden per lesson index
-// to alternate between drag_drop (even lessons) and matching (odd lessons).
-// const EXAM_QUESTION_PLAN: ReadonlyArray<{ difficulty: Difficulty; type: QuestionType }> = [
-//   { difficulty: 'easy',   type: 'multiple_choice' },
-//   { difficulty: 'easy',   type: 'true_false'      },
-//   { difficulty: 'medium', type: 'fill_blank'      },
-//   { difficulty: 'medium', type: 'multiple_choice' },
-// ];
+interface PlanStep {
+  difficulty: 'easy' | 'medium' | 'hard';
+  type:       StepType;
+}
 
-// Hard question types alternated per lesson for variety across the full exam
-// const HARD_TYPES: ReadonlyArray<QuestionType> = ['fill_blank'];
+const EXAM_QUESTION_PLAN: ReadonlyArray<PlanStep> = [
+  { difficulty: 'easy',   type: 'mcq'       },
+  { difficulty: 'easy',   type: 'tf'        },
+  { difficulty: 'medium', type: 'fb'        },
+  { difficulty: 'medium', type: 'mcq'       },
+  { difficulty: 'hard',   type: 'drag_drop' },
+];
 
-// ── Prompt map ────────────────────────────────────────────────────────────────
-// Each type routes to its own prompt so the model sees only the schema it needs.
-// questionType is no longer passed as an invoke variable.
-// const EXAM_PROMPT_MAP = {
-//   multiple_choice: PromptTemplates.quarterlyExamMCQPrompt,
-//   true_false:      PromptTemplates.quarterlyExamTFPrompt,
-//   fill_blank:      PromptTemplates.quarterlyExamFBPrompt,
-// } as const;
+const EXAM_PROMPT_MAP = {
+  mcq: PromptTemplates.quarterlyExamMCQPrompt,
+  tf:  PromptTemplates.quarterlyExamTFPrompt,
+  fb:  PromptTemplates.quarterlyExamFBPrompt,
+} as const;
 
-// export class QuarterlyExamService {
+// Internal type for parsing the decoupled LLM payload
+interface DecoupledTextPayload {
+  questionText: string;
+  hint?: string;
+}
 
-  /**
-   * Generates 5 questions per lesson across all lessons in the quarter.
-   * Each question is its own model invocation. alreadyAsked resets per lesson
-   * so the model only avoids duplicates within the same lesson's questions.
-   *
-   * @param input  subjectName, quarter, topic, per-lesson content, grade, country
-   * @returns      QuizQuestion[] of length lessons.length × 5
-   */
-  // static async generateExam(input: QuarterlyExamInput): Promise<QuizQuestion[]> {
-  //   ModelClass.setTemperature(0.2);
-  //   const model        = ModelClass.getInstance();
-  //   const allQuestions: QuizQuestion[] = [];
+export class QuarterlyExamService {
 
-  //   for (let lessonIdx = 0; lessonIdx < input.lessons.length; lessonIdx++) {
-  //     const lesson          = input.lessons[lessonIdx];
-  //     const lessonQuestions: QuizQuestion[] = [];
+  async generateExam(input: QuarterlyExamInput): Promise<QuarterlyExamQuestion[]> {
+    ModelClass.setTemperature(0.1);
+    const model = ModelClass.getInstance();
 
-  //     for (let i = 0; i < EXAM_QUESTION_PLAN.length; i++) {
-  //       let { difficulty, type } = EXAM_QUESTION_PLAN[i];
+    const questions: QuarterlyExamQuestion[] = [];
 
-  //       // Alternate the hard question type per lesson so the full exam
-  //       // contains both drag_drop and matching across different lessons.
-  //       if (difficulty === 'hard') {
-  //         type = HARD_TYPES[lessonIdx % HARD_TYPES.length];
-  //       }
+    const mcqQueue: SeedQuestion[] = [...input.mcqSeeds];
+    const tfQueue:  SeedQuestion[] = [...input.tfSeeds];
+    const fbQueue:  SeedQuestion[] = [...input.fbSeeds];
 
-  //       // Select the prompt for this type — no schema noise from other types.
-  //       const chain = EXAM_PROMPT_MAP[type].pipe(model);
+    for (const step of EXAM_QUESTION_PLAN) {
+      let type: StepType = step.type;
+      
+      // Resolve the actual type for the hard step
+      if (step.difficulty === 'hard') {
+        type = input.lessonIndex % 2 === 0 ? 'drag_drop' : 'matching';
+      }
 
-  //       // alreadyAsked resets per lesson — cross-lesson content differs enough
-  //       // that global deduplication adds complexity without meaningful benefit.
-  //       const alreadyAsked = lessonQuestions.length > 0
-  //         ? lessonQuestions
-  //             .map((q, idx) => `${idx + 1}. ${QuarterlyExamService.getQuestionLabel(q)}`)
-  //             .join('\n')
-  //         : 'None';
+      // ── drag_drop: construct directly ───────────────────────────────────────
+      if (type === 'drag_drop') {
+        if (!input.dragDropSeed) throw new Error(`dragDropSeed missing for even lessonIndex`);
+        questions.push({
+          type:         'drag_drop',
+          difficulty:   'hard',
+          instruction:  input.dragDropSeed.instruction,
+          items:        input.dragDropSeed.items,
+          correctOrder: input.dragDropSeed.correctOrder,
+        } as QEDragDropQuestion);
+        continue;
+      }
 
-  //       const raw = await chain.invoke({
-  //         subjectName:    input.subjectName,
-  //         quarter:        String(input.quarter),
-  //         topic:          input.topic,
-  //         lessonTitle:    lesson.title,
-  //         lessonContent:  lesson.content,
-  //         grade:          String(input.grade),
-  //         country:        input.country,
-  //         questionNumber: String(i + 1),
-  //         difficulty,
-  //         alreadyAsked,
-  //         // questionType is NOT passed — it is baked into the selected prompt
-  //       });
+      // ── matching: construct directly ────────────────────────────────────────
+      if (type === 'matching') {
+        if (!input.matchingSeed) throw new Error(`matchingSeed missing for odd lessonIndex`);
+        questions.push({
+          type:         'matching',
+          difficulty:   'hard',
+          instruction:  input.matchingSeed.instruction,
+          leftItems:    input.matchingSeed.leftItems,
+          rightItems:   input.matchingSeed.rightItems,
+          correctPairs: input.matchingSeed.correctPairs,
+        } as QEMatchingQuestion);
+        continue;
+      }
 
-  //       const [question] = jsonParser<QuizQuestion[]>(raw.content);
-  //       lessonQuestions.push(question);
-  //     }
+      // ── MCQ / TF / FB: Call LLM for TEXT ONLY, build JSON securely ────────
+      let seed: SeedQuestion;
+      if (type === 'mcq') {
+        if (mcqQueue.length === 0) throw new Error(`mcqSeeds exhausted`);
+        seed = mcqQueue.shift()!;
+      } else if (type === 'tf') {
+        if (tfQueue.length === 0) throw new Error(`tfSeeds exhausted`);
+        seed = tfQueue.shift()!;
+      } else {
+        if (fbQueue.length === 0) throw new Error(`fbSeeds exhausted`);
+        seed = fbQueue.shift()!;
+      }
 
-  //     allQuestions.push(...lessonQuestions);
-  //   }
+      const chain = EXAM_PROMPT_MAP[type as keyof typeof EXAM_PROMPT_MAP].pipe(model);
 
-  //   ModelClass.setTemperature(0.5);
-  //   return allQuestions;
-  // }
+      // We only ask the LLM for the text payload (question wording and optional hint)
+      const textPayload = await safeInvoke<DecoupledTextPayload>(
+        () => chain.invoke({
+          grade:      String(input.grade),
+          country:    input.country,
+          difficulty: step.difficulty,
+          questions:  QuarterlyExamService.formatSeed(seed),
+        }),
+        (data) => typeof data?.questionText === 'string' && data.questionText.length > 5,
+        3
+      );
 
-  // /**
-  //  * Extracts a short display label from a question for use in alreadyAsked.
-  //  * MCQ / TF / FB expose questionText; drag_drop / matching expose instruction.
-  //  */
-  // private static getQuestionLabel(q: QuizQuestion): string {
-  //   if ('questionText' in q) return q.questionText;
-  //   if ('instruction'  in q) return q.instruction;
-  //   return '(unknown)';
-  // }
-// }
+      // Deterministically build the final object mapping seed data perfectly
+      if (type === 'mcq') {
+        questions.push({
+          type:          'multiple_choice',
+          difficulty:    step.difficulty,
+          questionText:  textPayload.questionText,
+          options:       seed.options!, // Safely injected from the hardcoded seed!
+          correctAnswer: seed.answer    // 100% accurate!
+        } as QEMultipleChoiceQuestion);
+      } 
+      else if (type === 'tf') {
+        questions.push({
+          type:          'true_false',
+          difficulty:    step.difficulty,
+          questionText:  textPayload.questionText,
+          // Safely map string 'true' to boolean true
+          correctAnswer: seed.answer.toLowerCase() === 'true' 
+        } as QETrueFalseQuestion);
+      } 
+      else if (type === 'fb') {
+        questions.push({
+          type:          'fill_blank',
+          difficulty:    step.difficulty,
+          questionText:  textPayload.questionText,
+          correctAnswer: seed.answer, // 100% accurate!
+          hint:          textPayload.hint || 'Think carefully about the lesson concepts.'
+        } as QEFillBlankQuestion);
+      }
+    }
+
+    ModelClass.setTemperature(0.5);
+    return questions;
+  }
+
+  private static formatSeed(seed: SeedQuestion): string {
+    const lines: string[] = [`Original Question: ${seed.question}`];
+    if (seed.options && seed.options.length > 0) {
+      lines.push(`Options Context: ${JSON.stringify(seed.options)}`);
+    }
+    lines.push(`Target Answer: ${seed.answer}`);
+    return lines.join('\n');
+  }
+}
