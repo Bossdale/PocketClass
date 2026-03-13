@@ -48,9 +48,8 @@ You don't need to be a developer to test PocketClass! You can easily run the pro
 ### Step 2: Start the App on Your Computer
 Open your computer's terminal (Command Prompt/Mac Terminal), and run the following commands:
 
-```bash
 # 1. Clone the repository to your computer
-git clone YOUR_REPO_LINK
+git clone frontend
 cd pocketclass
 
 # 2. Install the required files
