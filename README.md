@@ -14,7 +14,7 @@ Unlike most educational platforms that require constant internet connectivity, *
 
 Watch the full demonstration of PocketClass.
 
-👉 **Demo Video:**
+👉 **Click Demo Video Link:**
 [`YOUR_VIDEO_LINK`](https://www.youtube.com/watch?v=PFJBk2GVuXU&feature=youtu.be)
 
 ---
