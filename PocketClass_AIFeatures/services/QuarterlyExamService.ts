@@ -60,7 +60,7 @@ export class QuarterlyExamService {
         type = input.lessonIndex % 2 === 0 ? 'drag_drop' : 'matching';
       }
 
-      // ── drag_drop: construct directly ───────────────────────────────────────
+      // ── 1. drag_drop: construct directly ───────────────────────────────────────
       if (type === 'drag_drop') {
         if (!input.dragDropSeed) throw new Error(`dragDropSeed missing for even lessonIndex`);
         questions.push({
@@ -73,7 +73,7 @@ export class QuarterlyExamService {
         continue;
       }
 
-      // ── matching: construct directly ────────────────────────────────────────
+      // ── 2. matching: construct directly ────────────────────────────────────────
       if (type === 'matching') {
         if (!input.matchingSeed) throw new Error(`matchingSeed missing for odd lessonIndex`);
         questions.push({
@@ -87,17 +87,31 @@ export class QuarterlyExamService {
         continue;
       }
 
-      // ── MCQ / TF / FB: Call LLM for TEXT ONLY, build JSON securely ────────
+      // ── 3. TF: Construct directly, zero model call (Guarantees 100% logic accuracy) ──
+      if (type === 'tf') {
+        if (tfQueue.length === 0) throw new Error(`tfSeeds exhausted`);
+        const seed = tfQueue.shift()!;
+        
+        questions.push({
+          type:          'true_false',
+          difficulty:    step.difficulty,
+          questionText:  seed.question, // ← Maps your seed directly! No LLM!
+          correctAnswer: seed.answer.toLowerCase() === 'true' 
+        } as QETrueFalseQuestion);
+        
+        continue; // ← Skips the LLM call entirely!
+      }
+
+      // ── 4. MCQ / FB: Call LLM for TEXT ONLY, build JSON securely ────────
       let seed: SeedQuestion;
       if (type === 'mcq') {
         if (mcqQueue.length === 0) throw new Error(`mcqSeeds exhausted`);
         seed = mcqQueue.shift()!;
-      } else if (type === 'tf') {
-        if (tfQueue.length === 0) throw new Error(`tfSeeds exhausted`);
-        seed = tfQueue.shift()!;
-      } else {
+      } else if (type === 'fb') {
         if (fbQueue.length === 0) throw new Error(`fbSeeds exhausted`);
         seed = fbQueue.shift()!;
+      } else {
+        throw new Error(`Unexpected question type reaching LLM: ${type}`);
       }
 
       const chain = EXAM_PROMPT_MAP[type as keyof typeof EXAM_PROMPT_MAP].pipe(model);
@@ -123,15 +137,6 @@ export class QuarterlyExamService {
           options:       seed.options!, // Safely injected from the hardcoded seed!
           correctAnswer: seed.answer    // 100% accurate!
         } as QEMultipleChoiceQuestion);
-      } 
-      else if (type === 'tf') {
-        questions.push({
-          type:          'true_false',
-          difficulty:    step.difficulty,
-          questionText:  textPayload.questionText,
-          // Safely map string 'true' to boolean true
-          correctAnswer: seed.answer.toLowerCase() === 'true' 
-        } as QETrueFalseQuestion);
       } 
       else if (type === 'fb') {
         questions.push({
