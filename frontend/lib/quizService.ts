@@ -22,6 +22,28 @@ async function callAnthropic(system: string, user: string): Promise<string> {
   return data.content?.[0]?.text || '';
 }
 
+// ── Ollama (local) ─────────────────────────────────────────────────────────
+const OLLAMA_URL = process.env.EXPO_PUBLIC_OLLAMA_URL || 'http://10.0.2.2:11434';
+const OLLAMA_MODEL = 'gemma2:2b';
+
+async function callOllama(system: string, user: string): Promise<string> {
+  const res = await fetch(`${OLLAMA_URL}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      stream: false,
+      options: { temperature: 0.5 },
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user',   content: user   },
+      ],
+    }),
+  });
+  const data = await res.json();
+  return data.message?.content || '';
+}
+
 function parseJsonResponse(text: string): any {
   // Strip markdown fences
   let cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
@@ -286,15 +308,23 @@ export async function getAIExplanation(
   sectionContent: string,
   grade: number
 ): Promise<string> {
-  if (!API_KEY) return 'This section covers important concepts that build on foundational knowledge. Practice applying these ideas to real-world scenarios for better understanding.';
+  const FALLBACK = 'This section covers important concepts that build on foundational knowledge. Try to connect these ideas to things you see in your daily life!';
 
-  const system = `You are an engaging tutor. Explain the following lesson section comprehensively in 3–5 sentences. Expand on the key idea, clarify any difficult concepts, and give one memorable real-world example. Keep it conversational and suitable for a grade ${grade} student.`;
+  const system = `You are an AI tutor providing a spoken follow-up explanation for a school student. They are in Grade ${grade}. Keep your explanation to 3 to 5 sentences. Do NOT use bullet points, markdown, lists, or special characters. Write as if speaking naturally to a student.`;
+
+  const user = `The student has just heard this lesson section read aloud:
+
+"${sectionContent}"
+
+Explain the key idea from that passage in simple, spoken language. Use vocabulary and examples appropriate for a Grade ${grade} student. Your explanation will be read aloud by text-to-speech.
+
+Explanation:`;
 
   try {
-    const text = await callAnthropic(system, sectionContent.substring(0, 1000));
-    return text;
+    const text = await callOllama(system, user);
+    return text.trim() || FALLBACK;
   } catch {
-    return 'This section covers important foundational concepts. Try to connect these ideas to things you see in your daily life!';
+    return FALLBACK;
   }
 }
 

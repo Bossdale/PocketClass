@@ -52,6 +52,7 @@ export default function LessonView() {
   const [ttsState, setTtsState] = useState<'idle' | 'speaking' | 'loading'>('idle');
 
   const lesson = lessonId ? getLessonById(lessonId as string) : undefined;
+  const ttsInProgressRef = React.useRef(false);
 
   useEffect(() => {
     async function load() {
@@ -70,35 +71,68 @@ export default function LessonView() {
     text.replace(/^#{1,2}\s*/gm, '').replace(/\*\*/g, '').replace(/^>\s*/gm, '').replace(/^-\s*/gm, '').trim();
 
   const handleTTS = async () => {
-  if (ttsState !== 'idle') {
-    stopSpeaking();
-    setTtsState('idle');
-    return;
-  }
+    console.log("🔊 TTS Button Pressed. Current state:", ttsState);
 
-  const text = stripMarkdown(lesson.sections[currentSection].content);
-  setTtsState('speaking');
+    // Stop button
+    if (ttsState !== 'idle') {
+      stopSpeaking();
+      ttsInProgressRef.current = false;
+      setTtsState('idle');
+      return;
+    }
 
-  speak(text, {
-    onDone: () => {
-      const fetchExplanation = async () => {
-        setTtsState('loading');
-        try {
-          const explanation = await getAIExplanation(text, profile.grade);
-          setTtsState('speaking');
-          speak(explanation, {
-            onDone: () => setTtsState('idle'),
-            onError: () => setTtsState('idle'),
-          });
-        } catch {
-          setTtsState('idle');
-        }
-      };
-      fetchExplanation();
-    },
-    onError: () => setTtsState('idle'),
-  });
-};
+    // Prevent double-fire from rapid taps — ref is synchronous unlike state
+    if (ttsInProgressRef.current) {
+      console.log("⛔ Already in progress, ignoring tap");
+      return;
+    }
+    ttsInProgressRef.current = true;
+
+    const text = stripMarkdown(lesson.sections[currentSection].content);
+    setTtsState('speaking');
+
+    speak(text, {
+      onDone: () => {
+        const fetchExplanation = async () => {
+          setTtsState('loading');
+          try {
+            console.log("📞 Calling getAIExplanation...");
+            const explanation = await getAIExplanation(text, profile.grade);
+            console.log("📝 Explanation received. Length:", explanation?.length, "| Preview:", explanation?.substring(0, 80));
+
+            if (!explanation || explanation.trim().length < 10) {
+              console.warn("⚠️ Explanation too short or empty, skipping second TTS");
+              ttsInProgressRef.current = false;
+              setTtsState('idle');
+              return;
+            }
+
+            setTtsState('speaking');
+            speak(explanation, {
+              onDone: () => {
+                ttsInProgressRef.current = false;
+                setTtsState('idle');
+              },
+              onError: () => {
+                ttsInProgressRef.current = false;
+                setTtsState('idle');
+              },
+            });
+          } catch (error) {
+            console.error("💥 getAIExplanation failed:", error);
+            ttsInProgressRef.current = false;
+            setTtsState('idle');
+          }
+        };
+        fetchExplanation();
+      },
+      onError: () => {
+        ttsInProgressRef.current = false;
+        setTtsState('idle');
+      },
+    });
+  };
+  
 
   const startQuiz = async () => {
     setLoadingQuiz(true);

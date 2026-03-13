@@ -251,20 +251,12 @@ Rewrite the fill-in-the-blank question.
 Existing Question:
 {questions}
 
-<<<<<<< HEAD
-STRICT RULES:
-1. CORRECT ANSWER: Preserve the EXACT correctAnswer word/phrase from the input.
-2. THE BLANK: The rewritten sentence must logically lead to the exact answer. Use exactly three underscores (___) for the blank.
-3. NO LEAKS: DO NOT include the correctAnswer word anywhere in the rewritten questionText or the hint.
-4. TASK: Only rewrite the surrounding wording to match the difficulty level.
-=======
 Rules:
 - Replace the key concept with ___
 - Preserve the original meaning
 - Always produce 2-sentence explanations that teach the concept, even for easy questions.
 
 Return ONLY JSON:
->>>>>>> origin/ai_features_she
 
 Return ONLY a valid JSON array containing exactly 1 object:
 [
