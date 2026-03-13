@@ -123,12 +123,11 @@ No extra text before or after the JSON.
 
   // ── 4. Lesson Quiz — (Left as Original for Service Compatibility) ─────────
   static lessonQuizMCQPrompt = new PromptTemplate({
-    inputVariables: ['grade', 'country', 'difficulty', 'question_number', 'questions'],
+    inputVariables: ['grade', 'difficulty', 'question_number', 'questions'],
     template: `
 You are rewriting an existing multiple-choice question for a school tutoring app.
 
 Grade  : {grade}
-Country: {country}
 Target Difficulty: {difficulty}
 
 Task:
@@ -142,27 +141,26 @@ STRICT RULES:
 2. OPTIONS: You MUST split the pipe-separated options from the input into an array of exactly 4 separate strings. DO NOT change the options themselves.
 3. CORRECT ANSWER: The correctAnswer MUST be the EXACT TEXT of the correct option from the input. DO NOT use placeholders.
 4. TASK: Only rewrite the questionText wording.
+5. THERE SHOULD BE 4 OPTIONS IN TOTAL
 
 Return ONLY a valid JSON array containing exactly 1 object:
 [
   {{
     "type": "multiple_choice",
-    "difficulty": "{difficulty}",
-    "questionText": "<your rewritten question here>",
-    "options": ["<first option>", "<second option>", "<third option>", "<fourth option>"],
-    "correctAnswer": "<the exact text of the correct option>"
+    "questionText": "rewritten question",
+    "options": ["option1","option2","option3","option4"],
+    "correctAnswer": option1
   }}
 ]
 `
   });
 
   static lessonQuizTFPrompt = new PromptTemplate({
-    inputVariables: ['grade', 'country', 'difficulty', 'question_number', 'questions'],
+    inputVariables: ['grade','difficulty', 'question_number', 'questions'],
     template: `
 You are rewriting an existing true/false question for a school tutoring app.
 
 Grade  : {grade}
-Country: {country}
 Target Difficulty: {difficulty}
 
 Task:
@@ -180,21 +178,19 @@ Return ONLY a valid JSON array containing exactly 1 object:
 [
   {{
     "type": "true_false",
-    "difficulty": "{difficulty}",
-    "questionText": "<your rewritten statement or question here>",
-    "correctAnswer": <true or false, exactly matching the input>
+    "questionText": "rewritten statement",
+    "correctAnswer": false
   }}
 ]
 `
   });
 
   static lessonQuizFBPrompt = new PromptTemplate({
-    inputVariables: ['grade', 'country', 'difficulty', 'question_number', 'questions'],
+    inputVariables: ['grade', 'difficulty', 'question_number', 'questions'],
     template: `
 You are rewriting an existing fill-in-the-blank question for a school tutoring app.
 
 Grade  : {grade}
-Country: {country}
 Target Difficulty: {difficulty}
 
 Task:
@@ -213,119 +209,113 @@ Return ONLY a valid JSON array containing exactly 1 object:
 [
   {{
     "type": "fill_blank",
-    "difficulty": "{difficulty}",
-    "questionText": "<your rewritten sentence with ___>",
-    "correctAnswer": "<the exact answer from the input>",
-    "hint": "<a short, helpful clue that does not contain the answer>"
+    "questionText": "rewritten sentence with ___",
+    "correctAnswer": "answer",
+    "hint": "short clue"
   }}
 ]
 `
   });
 
-  // ── 5. Quarterly Exam — Decoupled Architecture ──────────────────────────────
-  // These prompts NO LONGER return full Question objects. 
-  // They ONLY return the rewritten text strings.
-
+  // ── Multiple Choice ──────────────────────────────
   static quarterlyExamMCQPrompt = new PromptTemplate({
-    inputVariables: ['grade', 'country', 'difficulty', 'questions'],
+    inputVariables: ['grade','difficulty','questions','questionCount'],
     template: `
-You are rewriting the wording of a multiple-choice exam question for a school tutoring app.
+You are an expert AI tutor. You are rewriting multiple-choice questions for a school tutoring app.
 
-Grade: {grade}
-Country: {country}
+Grade  : {grade}
 Target Difficulty: {difficulty}
 
-Original Question Context:
+Task:
+Rewrite the wording of the following question to match the target difficulty.
+
+Existing Question:
 {questions}
 
-STRICT RULES:
-1. ONLY rewrite the question wording to match the target difficulty.
-2. DO NOT change the underlying facts or meaning.
-3. DO NOT return the options or the answer. The system handles those.
-4. DO NOT append the multiple-choice options (A, B, C, D) to the end of the questionText.
+You will receive a list of questions with options and the correct answer.
 
-Return ONLY a valid JSON object with the new question text:
-{{ "questionText": "<your rewritten question here>" }}
+Task:
+- Paraphrase each question to make it sound fresh.
+- DO NOT change the meaning of the question.
+- DO NOT change the correct answer.
+- Ensure the correct answer remains in the options.
+- Keep the original options exactly as they are.
+- Return exactly {questionCount} questions.
+- THERE SHOULD BE 4 OPTIONS IN TOTAL
 
-Output only the JSON object. No extra text.
-    `,
+Return ONLY a valid JSON array containing {questionCount} questions
+[
+  {{
+    "type": "multiple_choice",
+    "questionText": "rewritten question",
+    "options": ["option1","option2","option3","option4"],
+    "correctAnswer": correctAnswer
+  }}
+`
   });
 
+  // ── True/False ──────────────────────────────
   static quarterlyExamTFPrompt = new PromptTemplate({
-    inputVariables: ['grade', 'country', 'difficulty', 'questions'],
+    inputVariables: ['grade','difficulty','questions','questionCount'],
     template: `
-You are rewriting the wording of a true/false exam question for a school tutoring app.
+You are an expert AI tutor. You are rewriting true/false questions for a school tutoring app.
 
-Grade: {grade}
-Country: {country}
+Grade  : {grade}
 Target Difficulty: {difficulty}
 
-Original Question Context:
+You will receive a list of true/false questions with their correct answers.
+
+Existing Question:
 {questions}
 
-STRICT RULES:
-1. ONLY rewrite the statement wording to match the target difficulty. Ensure it is a complete sentence or a clear question.
-2. DO NOT alter the truth value of the underlying scientific fact.
-3. DO NOT return the boolean answer. The system handles that.
-4. DO NOT change the conditions of the statement in a way that flips the scientific truth value.
-5. CRITICAL: DO NOT use antonyms. DO NOT add or remove the word "NOT". Ensure the rewritten statement evaluates to the exact same truth value as the original.
+Task:
+- Paraphrase each statement to make it sound fresh.
+- DO NOT change the truth value of any question.
+- Return exactly {questionCount} questions.
 
-Return ONLY a valid JSON object with the new question text:
-{{ "questionText": "<your rewritten statement or question here>" }}
+Return ONLY a valid JSON array:
 
-Output only the JSON object. No extra text.
-    `,
+[
+  {{
+    "type": "true_false",
+    "questionText": "paraphrased statement",
+    "correctAnswer": true
+  }}
+]
+`
   });
 
+  // ── Fill-in-the-Blank ──────────────────────────────
   static quarterlyExamFBPrompt = new PromptTemplate({
-    inputVariables: ['grade', 'country', 'difficulty', 'questions'],
+    inputVariables: ['grade','difficulty','questions','questionCount'],
     template: `
-You are rewriting the wording of a fill-in-the-blank exam question for a school tutoring app.
+You are an expert AI tutor. You are rewriting fill-in-the-blank questions for a school tutoring app.
 
-Grade: {grade}
-Country: {country}
+Grade  : {grade}
 Target Difficulty: {difficulty}
 
-Original Question Context:
+Existing Question:
 {questions}
 
-STRICT RULES:
-1. Rewrite the sentence so it logically leads to the exact same answer as the original.
-2. The blank MUST be exactly three underscores (___).
-3. DO NOT include the answer word anywhere in your rewritten sentence or hint.
-4. Provide a helpful hint that does not give away the exact answer.
+You will receive a list of questions with the correct answer.
 
-Return ONLY a valid JSON object with the text and hint:
-{{ 
-  "questionText": "<your rewritten sentence with ___>",
-  "hint": "<a short clue that does not contain the answer>"
-}}
+Task:
+- Paraphrase the sentence while keeping the blank and correct answer intact.
+- Use exactly ___ for the blank.
+- Provide a short hint if needed.
+- Return exactly {questionCount} questions.
 
-Output only the JSON object. No extra text.
-    `,
-  });
+Return ONLY a valid JSON array:
 
-  // ── 6. AI Tutor Chat ───────────────────────────────────────────────────────
-  static aiTutorChatPrompt = new PromptTemplate({
-    inputVariables: ['lessonTitle', 'history'],
-    template: `
-You are a friendly and encouraging AI tutor for school students.
-You are helping a student understand the lesson: "{lessonTitle}".
-
-Stay focused on this lesson topic. If the student asks something unrelated,
-gently redirect them back to the lesson.
-
-Keep your answers:
-- Clear and simple (suitable for school students)
-- Encouraging and positive in tone
-- Concise (2–4 sentences unless a longer explanation is needed)
-- Always in plain text — do NOT use markdown, bullet points, or headers
-
-Conversation so far:
-{history}
-
-Respond only with your next reply. Do not repeat the conversation history.
-    `,
+[
+  {{
+    "type": "fill_blank",
+    "questionText": "paraphrased sentence with ___",
+    "correctAnswer": "answer",
+    "hint": "short hint"
+  }}
+]
+`
   });
 
   // ── 7. AI Explanation — TTS follow-up ─────────────────────────────────────
