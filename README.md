@@ -50,15 +50,15 @@ Open your computer's terminal (Command Prompt/Mac Terminal), and run the followi
 
 ```bash
 # 1. Clone the repository to your computer
-git clone frontend
-cd pocketclass
+git clone [frontend](https://github.com/Bossdale/PocketClass.git)
+cd frontend
 
 # 2. Install the required files
 npm install
 
 # 3. Start the application server
 npx expo start
-```bash
+```
 
 # 🌏 Project Overview
 
