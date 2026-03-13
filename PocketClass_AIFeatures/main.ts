@@ -1,5 +1,7 @@
 import { getStudyTips } from "./features/getStudyTips";
 import { diagnosticScoreInterface } from "./types/input/diagnosticScoreInterface";
+import { generateFocusArea } from "./features/generateFocusArea"; 
+import { FocusAreaRequest } from "./types/input/focusAreaRequestInterface";
 
 async function main() {
   const mockDiagnosticData: diagnosticScoreInterface = {
@@ -16,8 +18,19 @@ async function main() {
     quarter4_lessons: ["Mean, Median, Mode", "Basic Statistics"],
   };
 
-  const json = await getStudyTips(mockDiagnosticData);
-  console.log(json);
+  const mockFocusAreaData: FocusAreaRequest = {
+        subject_name: "Mathematics",
+        subject_mastery: 35,
+        lesson_title: "Linear Equations",
+        lesson_score: 50,
+        lesson_content: "Understanding constant rates of change, solving for unknown variables, and graphing straight lines using y = mx + b."
+    };
+
+
+  const focusAreaPlan = await generateFocusArea(mockFocusAreaData);
+  console.log(focusAreaPlan);
+  // const json = await getStudyTips(mockDiagnosticData);
+  // console.log(json);
 }
 
 main();
