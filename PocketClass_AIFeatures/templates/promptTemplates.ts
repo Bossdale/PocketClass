@@ -318,6 +318,30 @@ Return ONLY a valid JSON array:
 `
   });
 
+  static aiTutorChatPrompt = new PromptTemplate({
+  inputVariables: ['name', 'grade', 'country', 'subjectName', 'lessonTitle', 'lessonContent', 'history'],
+  template: `
+You are a friendly AI tutor for {name}, a Grade {grade} student in {country}.
+Subject: {subjectName} | Lesson: {lessonTitle}
+
+--- LESSON CONTENT (ONLY USE THIS) ---
+{lessonContent}
+
+--- CONVERSATION HISTORY ---
+{history}
+
+--- FINAL INSTRUCTIONS ---
+1. Address {name} and answer their LAST question using ONLY the Lesson Content above.
+2. If the question is NOT in the Lesson Content, say: "I'm sorry {name}, but that isn't covered in our lesson on {lessonTitle}. Should we get back to that?"
+3. Use a local example from {country} (like local plants or landmarks).
+4. Do NOT repeat your previous answers from the history. 
+5. Provide a NEW, direct answer to the latest message.
+6. Plain text only. No markdown.
+
+Reply:
+`
+});
+
   // ── 7. AI Explanation — TTS follow-up ─────────────────────────────────────
   static aiExplanationPrompt = new PromptTemplate({
     inputVariables: ['text', 'grade'],
