@@ -39,179 +39,242 @@ Output only the JSON. No extra text.
   // ── 2. Diagnostic Study Plan ───────────────────────────────────────────────
   static diagnosticStudyPlanPrompt = new PromptTemplate({
     inputVariables: [
-      'quarter1_score', 'quarter1_lessons',
-      'quarter2_score', 'quarter2_lessons',
-      'quarter3_score', 'quarter3_lessons',
-      'quarter4_score', 'quarter4_lessons',
+      "quarter1_score",
+      "quarter1_lessons",
+      "quarter2_score",
+      "quarter2_lessons",
+      "quarter3_score",
+      "quarter3_lessons",
+      "quarter4_score",
+      "quarter4_lessons"
     ],
     template: `
-You are an AI tutor creating a personalised study plan from a student's diagnostic results.
+You are an AI tutor helping a student improve based on diagnostic test results.
 
-Priority rules — set focus_level from the score:
-  0–50   → "High Priority"
-  51–75  → "Moderate Priority"
-  76–100 → "Low Priority"
+Diagnostic Scores:
+Quarter 1: {quarter1_score}
+Quarter 2: {quarter2_score}
+Quarter 3: {quarter3_score}
+Quarter 4: {quarter4_score}
 
-Set is_need_review to true when score < 76.
+Lessons:
 
-Diagnostic results:
-  Quarter 1 — Score: {quarter1_score}  Lessons: {quarter1_lessons}
-  Quarter 2 — Score: {quarter2_score}  Lessons: {quarter2_lessons}
-  Quarter 3 — Score: {quarter3_score}  Lessons: {quarter3_lessons}
-  Quarter 4 — Score: {quarter4_score}  Lessons: {quarter4_lessons}
+Quarter 1:
+{quarter1_lessons}
 
-Write practical, actionable strategies. Keep language simple and encouraging.
-Focus more effort on quarters with lower scores.
+Quarter 2:
+{quarter2_lessons}
 
-Return ONLY a valid JSON object:
+Quarter 3:
+{quarter3_lessons}
+
+Quarter 4:
+{quarter4_lessons}
+
+Rules:
+- Focus more on quarters with lower scores.
+- Give practical study strategies.
+- Use simple explanations for students.
+
+Return ONLY JSON:
+
 {{
   "quarter1": {{
-    "lessons": "comma-separated lesson titles from Quarter 1",
+    "lessons": "...",
     "is_need_review": true,
-    "how_to_get_high_scores": "1. ... 2. ... 3. ... 4. ... 5. ...",
-    "focus_level": "High Priority"
+    "how_to_get_high_scores": ["...", "...", "...", "...", "..."]
   }},
-  "quarter2": {{ "lessons": "...", "is_need_review": false, "how_to_get_high_scores": "1. ...", "focus_level": "Low Priority" }},
-  "quarter3": {{ "lessons": "...", "is_need_review": true,  "how_to_get_high_scores": "1. ...", "focus_level": "..." }},
-  "quarter4": {{ "lessons": "...", "is_need_review": true,  "how_to_get_high_scores": "1. ...", "focus_level": "..." }}
+  "quarter2": {{
+    "lessons": "...",
+    "is_need_review": false,
+    "how_to_get_high_scores": ["...", "...", "...", "...", "..."]
+  }},
+  "quarter3": {{
+    "lessons": "...",
+    "is_need_review": true,
+    "how_to_get_high_scores": ["...", "...", "...", "...", "..."]
+  }},
+  "quarter4": {{
+    "lessons": "...",
+    "is_need_review": false,
+    "how_to_get_high_scores": ["...", "...", "...", "...", "..."]
+  }}
 }}
-No extra text before or after the JSON.
-    `,
+`
   });
 
-  // ── 3. Lesson Material ─────────────────────────────────────────────────────
-  static lessonMaterialPrompt = new PromptTemplate({
-    inputVariables: ['topic', 'lecture'],
+
+  /* ─────────────────────────────────────────────
+     Tutor Lesson Prompt
+  ───────────────────────────────────────────── */
+
+  static tutorPrompt = new PromptTemplate({
+    inputVariables: ["topic", "lecture"],
     template: `
 You are an AI tutor. Create a structured 3-page lesson for the topic: "{topic}".
-Use ONLY the following curriculum content as your source — do not add outside facts.
+
+Use ONLY the following curriculum content as your source:
 
 {lecture}
 
-Page 1 — Introduction:
-  topic_introduction : 2–3 sentences introducing the topic engagingly
-  learning_objectives: list of 3–5 clear learning goals
-  tip                : one practical study tip for students
+Page 1 — Introduction  
+Page 2 — Core Content  
+Page 3 — Application  
 
-Page 2 — Core Content:
-  lecture_content : main lesson content in student-friendly language
-  key_concepts    : 3–5 short bullet-point concept summaries
+Return ONLY JSON:
 
-Page 3 — Application:
-  real_life_application : 2–3 sentences on real-world relevance
-  summary               : 3–4 sentence recap of the whole lesson
-
-Return ONLY a valid JSON object:
 {{
   "page1": {{
-    "topic_introduction":  "...",
+    "topic_introduction": "...",
     "learning_objectives": ["...", "...", "..."],
     "tip": "..."
   }},
   "page2": {{
     "lecture_content": "...",
-    "key_concepts":    ["...", "...", "..."]
+    "key_concepts": ["...", "...", "..."]
   }},
   "page3": {{
     "real_life_application": "...",
     "summary": "..."
   }}
 }}
-No extra text before or after the JSON.
-    `,
+`
   });
 
-  // ── 4. Lesson Quiz — (Left as Original for Service Compatibility) ─────────
+
+  /* ─────────────────────────────────────────────
+     Lesson Quiz — Multiple Choice
+  ───────────────────────────────────────────── */
+
   static lessonQuizMCQPrompt = new PromptTemplate({
-    inputVariables: ['grade', 'difficulty', 'question_number', 'questions'],
+    inputVariables: [
+      "grade",
+      "country",
+      "difficulty",
+      "question_number",
+      "questions"
+    ],
     template: `
-You are rewriting an existing multiple-choice question for a school tutoring app.
+You are rewriting multiple-choice questions.
 
-Grade  : {grade}
-Target Difficulty: {difficulty}
-
-Task:
-Rewrite the wording of the following question to match the target difficulty.
+Grade: {grade}  
+Country: {country}  
+Difficulty: {difficulty}
 
 Existing Question:
 {questions}
 
-STRICT RULES:
-1. FACTUAL INTEGRITY: DO NOT change the scientific, historical, or mathematical facts.
-2. OPTIONS: You MUST split the pipe-separated options from the input into an array of exactly 4 separate strings. DO NOT change the options themselves.
-3. CORRECT ANSWER: The correctAnswer MUST be the EXACT TEXT of the correct option from the input. DO NOT use placeholders.
-4. TASK: Only rewrite the questionText wording.
-5. THERE SHOULD BE 4 OPTIONS IN TOTAL
+Rules:
+- Do NOT change the meaning.
+- Keep the same options.
+- Only rewrite the question wording.
+- Maintain the same correct answer.
+- Always produce 2-sentence explanations that teach the concept, even for easy questions.
+
+Return ONLY JSON:
 
 Return ONLY a valid JSON array containing exactly 1 object:
 [
   {{
     "type": "multiple_choice",
+    "difficulty": "{difficulty}",
     "questionText": "rewritten question",
-    "options": ["option1","option2","option3","option4"],
-    "correctAnswer": option1
+    "options": [
+                "Correct concept",
+                "Common misconception",
+                "Related concept",
+                "Clearly incorrect answer"
+                ],
+    "correctOption": 0,
+    "explanation": "Short explanation of why the answer is correct."
   }}
 ]
 `
   });
 
+
+  /* ─────────────────────────────────────────────
+     Lesson Quiz — True/False
+  ───────────────────────────────────────────── */
+
   static lessonQuizTFPrompt = new PromptTemplate({
-    inputVariables: ['grade','difficulty', 'question_number', 'questions'],
+    inputVariables: [
+      "grade",
+      "country",
+      "difficulty",
+      "question_number",
+      "questions"
+    ],
     template: `
-You are rewriting an existing true/false question for a school tutoring app.
+Rewrite the following True/False question.
 
-Grade  : {grade}
-Target Difficulty: {difficulty}
-
-Task:
-Rewrite the wording of the following true/false question to match the target difficulty.
+Grade: {grade}  
+Country: {country}
 
 Existing Question:
 {questions}
 
-STRICT RULES:
-1. FACTUAL INTEGRITY: You MUST preserve the exact same meaning and fact being tested.
-2. CORRECT ANSWER: The correctAnswer MUST remain the exact same boolean (true or false) as the input question. DO NOT re-evaluate or flip the truth value.
-3. TASK: Only rewrite the questionText to match the difficulty. Ensure it is a complete sentence or clear question.
+Rules:
+- Always produce 2-sentence explanations that teach the concept, even for easy questions.
+
+Return ONLY JSON:
 
 Return ONLY a valid JSON array containing exactly 1 object:
 [
   {{
     "type": "true_false",
+    "difficulty": "{difficulty}",
     "questionText": "rewritten statement",
-    "correctAnswer": false
+    "correctAnswer": true,
+    "explanation": "Short explanation of why the answer is correct."
   }}
 ]
 `
   });
 
+
+  /* ─────────────────────────────────────────────
+     Lesson Quiz — Fill in the Blank
+  ───────────────────────────────────────────── */
+
   static lessonQuizFBPrompt = new PromptTemplate({
-    inputVariables: ['grade', 'difficulty', 'question_number', 'questions'],
+    inputVariables: [
+      "grade",
+      "country",
+      "difficulty",
+      "question_number",
+      "questions"
+    ],
     template: `
-You are rewriting an existing fill-in-the-blank question for a school tutoring app.
-
-Grade  : {grade}
-Target Difficulty: {difficulty}
-
-Task:
-Rewrite the wording of the following fill-in-the-blank question to match the target difficulty.
+Rewrite the fill-in-the-blank question.
 
 Existing Question:
 {questions}
 
+<<<<<<< HEAD
 STRICT RULES:
 1. CORRECT ANSWER: Preserve the EXACT correctAnswer word/phrase from the input.
 2. THE BLANK: The rewritten sentence must logically lead to the exact answer. Use exactly three underscores (___) for the blank.
 3. NO LEAKS: DO NOT include the correctAnswer word anywhere in the rewritten questionText or the hint.
 4. TASK: Only rewrite the surrounding wording to match the difficulty level.
+=======
+Rules:
+- Replace the key concept with ___
+- Preserve the original meaning
+- Always produce 2-sentence explanations that teach the concept, even for easy questions.
+
+Return ONLY JSON:
+>>>>>>> origin/ai_features_she
 
 Return ONLY a valid JSON array containing exactly 1 object:
 [
   {{
     "type": "fill_blank",
-    "questionText": "rewritten sentence with ___",
-    "correctAnswer": "answer",
-    "hint": "short clue"
+    "difficulty": "{difficulty}",
+    "questionText": "Plants make food using ___",
+    "correctAnswer": "photosynthesis",
+    "hint": "Process plants use sunlight for energy.",
+    "explanation": "Photosynthesis is the process plants use to make food."
   }}
 ]
 `

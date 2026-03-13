@@ -1,9 +1,9 @@
 import { ModelClass }      from '../model/ModelClass';
 import { PromptTemplates } from '../templates/promptTemplates';
-import { jsonParser }      from '../utils/jsonParser';
 import type { LessonQuizInput } from '../types/input/LessonQuizInput';
 import type{ BaseQuestion} from '../types/outputs/quizQuestion';
-import { randNumber } from '../utils/randNumber';
+import type{ MultipleChoiceQuestion} from '../types/outputs/quizQuestion';
+import { aiRetryHandler } from '../utils/aiRetryHandler';
 
 /**
  * LessonQuizService
@@ -27,42 +27,94 @@ import { randNumber } from '../utils/randNumber';
  *     → QuizRenderer renders each question via currentQ index
  *     → handleAnswer() accumulates score, calls saveLessonQuizResult()
  */
+
+
 export class LessonQuizService {
-  static questionTypes : number = 3;
+  static questionTypes: number = 3;
+
   async generateQuiz(input: LessonQuizInput): Promise<BaseQuestion> {
     ModelClass.setTemperature(0.3);
     const model = ModelClass.getInstance();
 
     let chain: any;
-      if (input.difficulty === 'hard') {
+    let expectedType: string = "";
+
+    switch (input.difficulty) {
+      case 'hard':
         chain = PromptTemplates.lessonQuizFBPrompt.pipe(model);
-      } else {
-        // randomly pick MCQ or TF for non-hard
-        const randomNumber: number = randNumber(LessonQuizService.questionTypes);
-        switch (randomNumber) {
-          case 1:
-            chain = PromptTemplates.lessonQuizMCQPrompt.pipe(model);
-            break;
-          case 2:
-            chain = PromptTemplates.lessonQuizTFPrompt.pipe(model);
-            break;
+        expectedType = "fill_blank";
+        break;
+
+      case 'medium':
+      case 'easy':
+      default:
+        const randomNumber = Math.floor(Math.random() * 2) + 1;
+
+        if (randomNumber === 1) {
+          chain = PromptTemplates.lessonQuizMCQPrompt.pipe(model);
+          expectedType = "multiple_choice";
+        } else {
+          chain = PromptTemplates.lessonQuizTFPrompt.pipe(model);
+          expectedType = "true_false";
         }
-      }
+    }
 
-      // Safety check
-      if (!chain) throw new Error("Chain is undefined! Check prompts or model instance.");
+    if (!chain) throw new Error("Chain is undefined!");
 
-
-    if(input.difficulty == 'hard'){chain = PromptTemplates.lessonQuizFBPrompt.pipe(model);}
-    const response = await chain.invoke({
-      grade: input.grade,
+    const safeFallback: MultipleChoiceQuestion = {
+      type: "multiple_choice",
       difficulty: input.difficulty,
-      question_number: input.question_number,
-      questions: input.questions
-    });
+      questionText: "An error occurred while generating this question. Please select 'Skip'.",
+      options: ["Skip", "Skip", "Skip", "Skip"],
+      correctOption: 0,
+      explanation: "The system was temporarily unable to generate this question."
+    };
+
+    const rawResult = await aiRetryHandler<any>(
+      async () => {
+        const response = await chain.invoke({
+          grade: input.grade,
+          country: input.country,
+          difficulty: input.difficulty,
+          question_number: input.question_number,
+          questions: JSON.stringify(input.questions)
+        });
+
+        // 🔧 FIX: return raw AI text
+        return typeof response === "string" ? response : response.content;
+      },
+
+      (parsed) => {
+        const data = Array.isArray(parsed) ? parsed[0] : parsed;
+
+        if (!data || typeof data !== 'object') return false;
+        if (!data.type) return false;
+        if (!data.questionText) return false;
+        if (!data.explanation) return false;
+
+        if (expectedType === "multiple_choice") {
+          if (!Array.isArray(data.options)) return false;
+          if (typeof data.correctOption !== "number") return false;
+        }
+
+        if (expectedType === "true_false") {
+          if (typeof data.correctAnswer !== "boolean") return false;
+        }
+
+        if (expectedType === "fill_blank") {
+          if (typeof data.correctAnswer !== "string") return false;
+        }
+
+        return true;
+      },
+
+      safeFallback,
+      3
+    );
 
     ModelClass.setTemperature(0.5);
 
-    return jsonParser<BaseQuestion>(response.content);
+    const finalQuestion = Array.isArray(rawResult) ? rawResult[0] : rawResult;
+    return finalQuestion as BaseQuestion;
   }
 }
