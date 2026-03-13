@@ -37,57 +37,27 @@ The report includes:
 
 ---
 
-# ⚙️ Setup Instructions (Technical)
+# 🚀 How to Try the Prototype (Using Expo Go)
 
-Follow these steps to run the project locally.
+You don't need to be a developer to test PocketClass! You can easily run the prototype on your own Android or iOS device using the *Expo Go* app. 
 
-### 1️⃣ Clone the Repository
+### Step 1: Prepare Your Phone
+1. Download the *Expo Go* app from the [Apple App Store](https://apps.apple.com/us/app/expo-go/id982107779) (iOS) or [Google Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent) (Android).
+2. Ensure your phone and your computer are connected to the *exact same Wi-Fi network*.
+
+### Step 2: Start the App on Your Computer
+Open your computer's terminal (Command Prompt/Mac Terminal), and run the following commands:
 
 ```bash
+# 1. Clone the repository to your computer
 git clone YOUR_REPO_LINK
 cd pocketclass
-```
 
-### 2️⃣ Install Dependencies
-
-```bash
+# 2. Install the required files
 npm install
-```
 
-### 3️⃣ Start the Development Server
-
-```bash
+# 3. Start the application server
 npx expo start
-```
-
-### 4️⃣ Run the Application
-
-You can run PocketClass using:
-
-* Android Emulator
-* iOS Simulator
-* Physical device using **Expo Go**
-
----
-
-## 🤖 Running the AI Model (Ollama)
-
-PocketClass runs **Gemma 2B locally using Ollama**.
-
-Start the model:
-
-```bash
-ollama run gemma2:2b
-```
-
-Start the Ollama server:
-
-```bash
-OLLAMA_HOST=0.0.0.0 ollama serve
-```
-
----
-
 # 🌏 Project Overview
 
 **PocketClass** is an **AI-powered mobile learning platform designed to work completely offline**, allowing secondary school students to access personalized education even without internet connectivity.
