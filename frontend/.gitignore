@@ -9,6 +9,9 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Ignore all GGUF models
+*.gguf
+
 # Native
 .kotlin/
 *.orig.*

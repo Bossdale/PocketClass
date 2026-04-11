@@ -1,0 +1,2525 @@
+Index: PocketClass_AIFeatures/templates/promptTemplates.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import { PromptTemplate } from '@langchain/core/prompts';\r\n\r\nexport class PromptTemplates {\r\n\r\n  // ── 1. Diagnostic Quiz ─────────────────────────────────────────────────────\r\n  static diagnosticQuizPrompt = new PromptTemplate({\r\n    inputVariables: ['subjectName', 'quarter', 'quarterTopic', 'quarterContent', 'grade', 'country'],\r\n    template: `\r\nYou are an expert teacher and quiz generator for students in {country}.\r\nGenerate 5 original multiple-choice questions for a Grade {grade} {subjectName} diagnostic test.\r\n\r\nQuarter: {quarter}  |  Topic: {quarterTopic}  |  Difficulty: easy (baseline assessment)\r\n\r\nCurriculum Content:\r\n{quarterContent}\r\n\r\nRules:\r\n1. Base ALL questions strictly on the Curriculum Content above.\r\n2. Each question must have exactly 4 distinct, plausible options.\r\n3. correctOption is the 0-based index (0, 1, 2, or 3) of the correct answer.\r\n4. Do NOT use placeholder labels like \"option A\" — write real educational content.\r\n5. No two questions may test the same fact or share the same correct answer.\r\n\r\nReturn ONLY a valid JSON array of exactly 5 objects:\r\n[\r\n  {{\r\n    \"type\": \"multiple_choice\",\r\n    \"difficulty\": \"easy\",\r\n    \"questionText\": \"A specific question about {quarterTopic}?\",\r\n    \"options\": [\"Correct answer\", \"Wrong answer 1\", \"Wrong answer 2\", \"Wrong answer 3\"],\r\n    \"correctOption\": 0\r\n  }}\r\n]\r\n\r\nOutput only the JSON. No extra text.\r\n    `,\r\n  });\r\n\r\n  // ── 2. Diagnostic Study Plan ───────────────────────────────────────────────\r\n  static diagnosticStudyPlanPrompt = new PromptTemplate({\r\n    inputVariables: [\r\n      \"quarter1_score\",\r\n      \"quarter1_lessons\",\r\n      \"quarter2_score\",\r\n      \"quarter2_lessons\",\r\n      \"quarter3_score\",\r\n      \"quarter3_lessons\",\r\n      \"quarter4_score\",\r\n      \"quarter4_lessons\"\r\n    ],\r\n    template: `\r\nYou are an AI tutor helping a student improve based on diagnostic test results.\r\n\r\nDiagnostic Scores:\r\nQuarter 1: {quarter1_score}\r\nQuarter 2: {quarter2_score}\r\nQuarter 3: {quarter3_score}\r\nQuarter 4: {quarter4_score}\r\n\r\nLessons:\r\n\r\nQuarter 1:\r\n{quarter1_lessons}\r\n\r\nQuarter 2:\r\n{quarter2_lessons}\r\n\r\nQuarter 3:\r\n{quarter3_lessons}\r\n\r\nQuarter 4:\r\n{quarter4_lessons}\r\n\r\nRules:\r\n- Focus more on quarters with lower scores.\r\n- Give practical study strategies.\r\n- Use simple explanations for students.\r\n\r\nReturn ONLY JSON:\r\n\r\n{{\r\n  \"quarter1\": {{\r\n    \"lessons\": \"...\",\r\n    \"is_need_review\": true,\r\n    \"how_to_get_high_scores\": [\"...\", \"...\", \"...\", \"...\", \"...\"]\r\n  }},\r\n  \"quarter2\": {{\r\n    \"lessons\": \"...\",\r\n    \"is_need_review\": false,\r\n    \"how_to_get_high_scores\": [\"...\", \"...\", \"...\", \"...\", \"...\"]\r\n  }},\r\n  \"quarter3\": {{\r\n    \"lessons\": \"...\",\r\n    \"is_need_review\": true,\r\n    \"how_to_get_high_scores\": [\"...\", \"...\", \"...\", \"...\", \"...\"]\r\n  }},\r\n  \"quarter4\": {{\r\n    \"lessons\": \"...\",\r\n    \"is_need_review\": false,\r\n    \"how_to_get_high_scores\": [\"...\", \"...\", \"...\", \"...\", \"...\"]\r\n  }}\r\n}}\r\n`\r\n  });\r\n\r\n\r\n  /* ─────────────────────────────────────────────\r\n     Tutor Lesson Prompt\r\n  ───────────────────────────────────────────── */\r\n\r\n  static tutorPrompt = new PromptTemplate({\r\n    inputVariables: [\"topic\", \"lecture\"],\r\n    template: `\r\nYou are an AI tutor. Create a structured 3-page lesson for the topic: \"{topic}\".\r\n\r\nUse ONLY the following curriculum content as your source:\r\n\r\n{lecture}\r\n\r\nPage 1 — Introduction  \r\nPage 2 — Core Content  \r\nPage 3 — Application  \r\n\r\nReturn ONLY JSON:\r\n\r\n{{\r\n  \"page1\": {{\r\n    \"topic_introduction\": \"...\",\r\n    \"learning_objectives\": [\"...\", \"...\", \"...\"],\r\n    \"tip\": \"...\"\r\n  }},\r\n  \"page2\": {{\r\n    \"lecture_content\": \"...\",\r\n    \"key_concepts\": [\"...\", \"...\", \"...\"]\r\n  }},\r\n  \"page3\": {{\r\n    \"real_life_application\": \"...\",\r\n    \"summary\": \"...\"\r\n  }}\r\n}}\r\n`\r\n  });\r\n\r\n\r\n  /* ─────────────────────────────────────────────\r\n     Lesson Quiz — Multiple Choice\r\n  ───────────────────────────────────────────── */\r\n\r\n  static lessonQuizMCQPrompt = new PromptTemplate({\r\n    inputVariables: [\r\n      \"grade\",\r\n      \"country\",\r\n      \"difficulty\",\r\n      \"question_number\",\r\n      \"questions\"\r\n    ],\r\n    template: `\r\nYou are rewriting multiple-choice questions.\r\n\r\nGrade: {grade}  \r\nCountry: {country}  \r\nDifficulty: {difficulty}\r\n\r\nExisting Question:\r\n{questions}\r\n\r\nRules:\r\n- Do NOT change the meaning.\r\n- Keep the same options.\r\n- Only rewrite the question wording.\r\n- Maintain the same correct answer.\r\n- Always produce 2-sentence explanations that teach the concept, even for easy questions.\r\n\r\nReturn ONLY JSON:\r\n\r\nReturn ONLY a valid JSON array containing exactly 1 object:\r\n[\r\n  {{\r\n    \"type\": \"multiple_choice\",\r\n    \"difficulty\": \"{difficulty}\",\r\n    \"questionText\": \"rewritten question\",\r\n    \"options\": [\r\n                \"Correct concept\",\r\n                \"Common misconception\",\r\n                \"Related concept\",\r\n                \"Clearly incorrect answer\"\r\n                ],\r\n    \"correctOption\": 0,\r\n    \"explanation\": \"Short explanation of why the answer is correct.\"\r\n  }}\r\n]\r\n`\r\n  });\r\n\r\n\r\n  /* ─────────────────────────────────────────────\r\n     Lesson Quiz — True/False\r\n  ───────────────────────────────────────────── */\r\n\r\n  static lessonQuizTFPrompt = new PromptTemplate({\r\n    inputVariables: [\r\n      \"grade\",\r\n      \"country\",\r\n      \"difficulty\",\r\n      \"question_number\",\r\n      \"questions\"\r\n    ],\r\n    template: `\r\nRewrite the following True/False question.\r\n\r\nGrade: {grade}  \r\nCountry: {country}\r\n\r\nExisting Question:\r\n{questions}\r\n\r\nRules:\r\n- Always produce 2-sentence explanations that teach the concept, even for easy questions.\r\n\r\nReturn ONLY JSON:\r\n\r\nReturn ONLY a valid JSON array containing exactly 1 object:\r\n[\r\n  {{\r\n    \"type\": \"true_false\",\r\n    \"difficulty\": \"{difficulty}\",\r\n    \"questionText\": \"rewritten statement\",\r\n    \"correctAnswer\": true,\r\n    \"explanation\": \"Short explanation of why the answer is correct.\"\r\n  }}\r\n]\r\n`\r\n  });\r\n\r\n\r\n  /* ─────────────────────────────────────────────\r\n     Lesson Quiz — Fill in the Blank\r\n  ───────────────────────────────────────────── */\r\n\r\n  static lessonQuizFBPrompt = new PromptTemplate({\r\n    inputVariables: [\r\n      \"grade\",\r\n      \"country\",\r\n      \"difficulty\",\r\n      \"question_number\",\r\n      \"questions\"\r\n    ],\r\n    template: `\r\nRewrite the fill-in-the-blank question.\r\n\r\nExisting Question:\r\n{questions}\r\n\r\nRules:\r\n- Replace the key concept with ___\r\n- Preserve the original meaning\r\n- Always produce 2-sentence explanations that teach the concept, even for easy questions.\r\n\r\nReturn ONLY JSON:\r\n\r\nReturn ONLY a valid JSON array containing exactly 1 object:\r\n[\r\n  {{\r\n    \"type\": \"fill_blank\",\r\n    \"difficulty\": \"{difficulty}\",\r\n    \"questionText\": \"Plants make food using ___\",\r\n    \"correctAnswer\": \"photosynthesis\",\r\n    \"hint\": \"Process plants use sunlight for energy.\",\r\n    \"explanation\": \"Photosynthesis is the process plants use to make food.\"\r\n  }}\r\n]\r\n`\r\n  });\r\n\r\n  // ── Multiple Choice ──────────────────────────────\r\n  static quarterlyExamMCQPrompt = new PromptTemplate({\r\n    inputVariables: ['grade','difficulty','questions','questionCount'],\r\n    template: `\r\nYou are an expert AI tutor. You are rewriting multiple-choice questions for a school tutoring app.\r\n\r\nGrade  : {grade}\r\nTarget Difficulty: {difficulty}\r\n\r\nTask:\r\nRewrite the wording of the following question to match the target difficulty.\r\n\r\nExisting Question:\r\n{questions}\r\n\r\nYou will receive a list of questions with options and the correct answer.\r\n\r\nTask:\r\n- Paraphrase each question to make it sound fresh.\r\n- DO NOT change the meaning of the question.\r\n- DO NOT change the correct answer.\r\n- Ensure the correct answer remains in the options.\r\n- Keep the original options exactly as they are.\r\n- Return exactly {questionCount} questions.\r\n- THERE SHOULD BE 4 OPTIONS IN TOTAL\r\n\r\nReturn ONLY a valid JSON array containing {questionCount} questions\r\n[\r\n  {{\r\n    \"type\": \"multiple_choice\",\r\n    \"questionText\": \"rewritten question\",\r\n    \"options\": [\"option1\",\"option2\",\"option3\",\"option4\"],\r\n    \"correctAnswer\": correctAnswer\r\n  }}\r\n`\r\n  });\r\n\r\n  // ── True/False ──────────────────────────────\r\n  static quarterlyExamTFPrompt = new PromptTemplate({\r\n    inputVariables: ['grade','difficulty','questions','questionCount'],\r\n    template: `\r\nYou are an expert AI tutor. You are rewriting true/false questions for a school tutoring app.\r\n\r\nGrade  : {grade}\r\nTarget Difficulty: {difficulty}\r\n\r\nYou will receive a list of true/false questions with their correct answers.\r\n\r\nExisting Question:\r\n{questions}\r\n\r\nTask:\r\n- Paraphrase each statement to make it sound fresh.\r\n- DO NOT change the truth value of any question.\r\n- Return exactly {questionCount} questions.\r\n\r\nReturn ONLY a valid JSON array:\r\n\r\n[\r\n  {{\r\n    \"type\": \"true_false\",\r\n    \"questionText\": \"paraphrased statement\",\r\n    \"correctAnswer\": true\r\n  }}\r\n]\r\n`\r\n  });\r\n\r\n  // ── Fill-in-the-Blank ──────────────────────────────\r\n  static quarterlyExamFBPrompt = new PromptTemplate({\r\n    inputVariables: ['grade','difficulty','questions','questionCount'],\r\n    template: `\r\nYou are an expert AI tutor. You are rewriting fill-in-the-blank questions for a school tutoring app.\r\n\r\nGrade  : {grade}\r\nTarget Difficulty: {difficulty}\r\n\r\nExisting Question:\r\n{questions}\r\n\r\nYou will receive a list of questions with the correct answer.\r\n\r\nTask:\r\n- Paraphrase the sentence while keeping the blank and correct answer intact.\r\n- Use exactly ___ for the blank.\r\n- Provide a short hint if needed.\r\n- Return exactly {questionCount} questions.\r\n\r\nReturn ONLY a valid JSON array:\r\n\r\n[\r\n  {{\r\n    \"type\": \"fill_blank\",\r\n    \"questionText\": \"paraphrased sentence with ___\",\r\n    \"correctAnswer\": \"answer\",\r\n    \"hint\": \"short hint\"\r\n  }}\r\n]\r\n`\r\n  });\r\n\r\n  static aiTutorChatPrompt = new PromptTemplate({\r\n  inputVariables: ['name', 'grade', 'country', 'subjectName', 'lessonTitle', 'lessonContent', 'history'],\r\n  template: `\r\nYou are a friendly AI tutor for {name}, a Grade {grade} student in {country}.\r\nSubject: {subjectName} | Lesson: {lessonTitle}\r\n\r\n--- LESSON CONTENT (ONLY USE THIS) ---\r\n{lessonContent}\r\n\r\n--- CONVERSATION HISTORY ---\r\n{history}\r\n\r\n--- FINAL INSTRUCTIONS ---\r\n1. Address {name} and answer their LAST question using ONLY the Lesson Content above.\r\n2. If the question is NOT in the Lesson Content, say: \"I'm sorry {name}, but that isn't covered in our lesson on {lessonTitle}. Should we get back to that?\"\r\n3. Use a local example from {country} (like local plants or landmarks).\r\n4. Do NOT repeat your previous answers from the history. \r\n5. Provide a NEW, direct answer to the latest message.\r\n6. Plain text only. No markdown.\r\n\r\nReply:\r\n`\r\n});\r\n\r\n  // ── 7. AI Explanation — TTS follow-up ─────────────────────────────────────\r\n  static aiExplanationPrompt = new PromptTemplate({\r\n    inputVariables: ['text', 'grade'],\r\n    template: `\r\nYou are an AI tutor providing a spoken follow-up explanation for a school student.\r\n\r\nThe student has just heard this lesson section read aloud:\r\n\"{text}\"\r\n\r\nThey are in Grade {grade}.\r\n\r\nYour task:\r\n- Explain the key idea from that passage in simple, spoken language.\r\n- Use vocabulary and examples appropriate for a Grade {grade} student.\r\n- Keep your explanation to 3–5 sentences — it will be read aloud by text-to-speech.\r\n- Do NOT use bullet points, markdown, lists, or special characters.\r\n- Write as if speaking naturally to a student.\r\n\r\nExplanation:\r\n    `,\r\n  });\r\n    static focusAreaPrompt: any;\r\n}
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/PocketClass_AIFeatures/templates/promptTemplates.ts b/PocketClass_AIFeatures/templates/promptTemplates.ts
+--- a/PocketClass_AIFeatures/templates/promptTemplates.ts	(revision c9432150fb668ee8b0f531213ac0b6d1a763ba69)
++++ b/PocketClass_AIFeatures/templates/promptTemplates.ts	(date 1773418043821)
+@@ -1,63 +1,188 @@
++/**
++ * templates/promptTemplates.ts
++ *
++ * Central registry of ALL LangChain PromptTemplates used across every AI service.
++ *
++ * ── SERVICE → PROMPT MAP ─────────────────────────────────────────────────────
++ *
++ *   SERVICE                   PROMPT(S) USED
++ *   ─────────────────────     ────────────────────────────────────────────────
++ *   DiagnosticQuizService   → diagnosticQuizPrompt
++ *   StudyPlanService        → diagnosticStudyPlanPrompt
++ *   LessonMaterialService   → lessonMaterialPrompt
++ *   LessonQuizService       → lessonQuizMCQPrompt
++ *                             lessonQuizTFPrompt
++ *                             lessonQuizFBPrompt
++ *   QuarterlyExamService    → quarterlyExamMCQPrompt
++ *                             quarterlyExamTFPrompt
++ *                             quarterlyExamFBPrompt
++ *   AITutorService          → aiTutorChatPrompt
++ *   AIExplanationService    → aiExplanationPrompt
++ *   FocusAreaService        → focusAreaPrompt
++ *
++ * ── OUTPUT TYPE MAP ──────────────────────────────────────────────────────────
++ *
++ *   PROMPT                       OUTPUT TYPE
++ *   ─────────────────────────    ───────────────────────────────────────────
++ *   diagnosticQuizPrompt       → MultipleChoiceQuestion[]     (5 items, easy)
++ *   diagnosticStudyPlanPrompt  → StudyPlan                    (4 quarters)
++ *   lessonMaterialPrompt       → LessonMaterial               (page1/2/3)
++ *   lessonQuizMCQPrompt        → MultipleChoiceQuestion[]     (1 item)
++ *   lessonQuizTFPrompt         → TrueFalseQuestion[]          (1 item)
++ *   lessonQuizFBPrompt         → FillBlankQuestion[]          (1 item)
++ *   quarterlyExamMCQPrompt     → QEMultipleChoiceQuestion[]   (n items)
++ *   quarterlyExamTFPrompt      → QETrueFalseQuestion[]        (n items)
++ *   quarterlyExamFBPrompt      → QEFillBlankQuestion[]        (n items)
++ *   aiTutorChatPrompt          → string                       (plain text)
++ *   aiExplanationPrompt        → string                       (plain text, TTS-safe)
++ *   focusAreaPrompt            → FocusAreaResponse            (JSON object)
++ *
++ * ── TEMPERATURE DEFAULTS ─────────────────────────────────────────────────────
++ *
++ *   0.1  quarterlyExamService     (highest determinism — seed rewriting)
++ *   0.3  diagnosticQuizPrompt     (baseline assessment — consistent)
++ *   0.3  lessonQuizPrompts        (quiz answers must not drift)
++ *   0.3  focusAreaPrompt          (dashboard widget — consistent output)
++ *   0.5  aiTutorChatPrompt        (balanced — personal but accurate)
++ *   0.5  aiExplanationPrompt      (natural spoken language)
++ *   0.6  lessonMaterialPrompt     (richer, more engaging lesson prose)
++ *
++ * ── KEY NOTES ────────────────────────────────────────────────────────────────
++ *   • All quiz prompts return JSON arrays with exactly 1 item (except
++ *     diagnosticQuizPrompt which returns 5, and quarterly exam prompts which
++ *     return {questionCount} items). Always unwrap [0] for single-question calls.
++ *   • how_to_get_high_scores is returned as string[] from the prompt — ensure
++ *     StudyPlan interface declares it as string[] (not string).
++ *   • MCQ correctOption (0-based index) is used in lesson quiz prompts.
++ *     MCQ correctAnswer (option text string) is used in quarterly exam prompts.
++ *     Never mix these up in result-saving or QuizRenderer logic.
++ */
++
+ import { PromptTemplate } from '@langchain/core/prompts';
+ 
+ export class PromptTemplates {
+ 
+-  // ── 1. Diagnostic Quiz ─────────────────────────────────────────────────────
+-  static diagnosticQuizPrompt = new PromptTemplate({
+-    inputVariables: ['subjectName', 'quarter', 'quarterTopic', 'quarterContent', 'grade', 'country'],
++  // ══════════════════════════════════════════════════════════════════════════
++  // 1. DIAGNOSTIC QUIZ
++  //    Service : DiagnosticQuizService.generateQuestions()
++  //    Input   : DiagnosticQuizInput
++  //    Output  : MultipleChoiceQuestion[]  (5 items, difficulty = "easy")
++  //    Temp    : 0.3
++  // ══════════════════════════════════════════════════════════════════════════
++  static diagnosticStudyPlanPrompt = new PromptTemplate({
++    inputVariables: [
++      'quarter1_score',
++      'quarter1_lessons',
++      'quarter2_score',
++      'quarter2_lessons',
++      'quarter3_score',
++      'quarter3_lessons',
++      'quarter4_score',
++      'quarter4_lessons',
++    ],
+     template: `
+-You are an expert teacher and quiz generator for students in {country}.
+-Generate 5 original multiple-choice questions for a Grade {grade} {subjectName} diagnostic test.
++You are an AI tutor helping a student improve based on diagnostic test results.
++
++Diagnostic Scores:
++Quarter 1: {quarter1_score}%
++Quarter 2: {quarter2_score}%
++Quarter 3: {quarter3_score}%
++Quarter 4: {quarter4_score}%
++
++Lessons Covered:
++
++Quarter 1:
++{quarter1_lessons}
+ 
+-Quarter: {quarter}  |  Topic: {quarterTopic}  |  Difficulty: easy (baseline assessment)
++Quarter 2:
++{quarter2_lessons}
+ 
+-Curriculum Content:
+-{quarterContent}
++Quarter 3:
++{quarter3_lessons}
++
++Quarter 4:
++{quarter4_lessons}
+ 
+ Rules:
+-1. Base ALL questions strictly on the Curriculum Content above.
+-2. Each question must have exactly 4 distinct, plausible options.
+-3. correctOption is the 0-based index (0, 1, 2, or 3) of the correct answer.
+-4. Do NOT use placeholder labels like "option A" — write real educational content.
+-5. No two questions may test the same fact or share the same correct answer.
++- focus_level must follow these exact score bands:
++    0–50   → "High Priority"
++    51–75  → "Moderate Priority"
++    76–100 → "Low Priority"
++- is_need_review must be true when score < 76, false when score >= 76.
++- how_to_get_high_scores must be a SINGLE STRING containing a numbered list of exactly 5 short, practical study tips (e.g. "1. Tip one\\n2. Tip two").
++- lessons must be a comma-separated string of the lesson names listed above.
++- Focus more on quarters with lower scores.
++- Use simple, encouraging language appropriate for school students.
+ 
+-Return ONLY a valid JSON array of exactly 5 objects:
+-[
+-  {{
+-    "type": "multiple_choice",
+-    "difficulty": "easy",
+-    "questionText": "A specific question about {quarterTopic}?",
+-    "options": ["Correct answer", "Wrong answer 1", "Wrong answer 2", "Wrong answer 3"],
+-    "correctOption": 0
++Return ONLY a valid JSON object:
++{{
++  "quarter1": {{
++    "lessons": "comma-separated lesson names",
++    "is_need_review": true,
++    "how_to_get_high_scores": "1. tip 1\\n2. tip 2\\n3. tip 3\\n4. tip 4\\n5. tip 5",
++    "focus_level": "High Priority"
++  }},
++  "quarter2": {{
++    "lessons": "comma-separated lesson names",
++    "is_need_review": true,
++    "how_to_get_high_scores": "1. tip 1\\n2. tip 2\\n3. tip 3\\n4. tip 4\\n5. tip 5",
++    "focus_level": "Moderate Priority"
++  }},
++  "quarter3": {{
++    "lessons": "comma-separated lesson names",
++    "is_need_review": false,
++    "how_to_get_high_scores": "1. tip 1\\n2. tip 2\\n3. tip 3\\n4. tip 4\\n5. tip 5",
++    "focus_level": "Low Priority"
++  }},
++  "quarter4": {{
++    "lessons": "comma-separated lesson names",
++    "is_need_review": true,
++    "how_to_get_high_scores": "1. tip 1\\n2. tip 2\\n3. tip 3\\n4. tip 4\\n5. tip 5",
++    "focus_level": "High Priority"
+   }}
+-]
++}}
+ 
+ Output only the JSON. No extra text.
+-    `,
++    `.trim(),
+   });
+ 
+-  // ── 2. Diagnostic Study Plan ───────────────────────────────────────────────
++
++  // ══════════════════════════════════════════════════════════════════════════
++  // 2. DIAGNOSTIC STUDY PLAN
++  //    Service : StudyPlanService.generateStudyPlan()
++  //    Input   : diagnosticScoreInterface
++  //    Output  : StudyPlan  (quarter1–quarter4, each a StudyPlanQuarter)
++  //    Temp    : 0.5 (default)
++  //
++  //    NOTE: how_to_get_high_scores is returned as string[] — ensure
++  //    StudyPlan.ts declares it as string[] not string.
++  //
++  //    Focus level bands:
++  //      0–50   → "High Priority"     (is_need_review: true)
++  //      51–75  → "Moderate Priority" (is_need_review: true)
++  //      76–100 → "Low Priority"      (is_need_review: false)
++  // ══════════════════════════════════════════════════════════════════════════
+   static diagnosticStudyPlanPrompt = new PromptTemplate({
+     inputVariables: [
+-      "quarter1_score",
+-      "quarter1_lessons",
+-      "quarter2_score",
+-      "quarter2_lessons",
+-      "quarter3_score",
+-      "quarter3_lessons",
+-      "quarter4_score",
+-      "quarter4_lessons"
++      'quarter1_score',
++      'quarter1_lessons',
++      'quarter2_score',
++      'quarter2_lessons',
++      'quarter3_score',
++      'quarter3_lessons',
++      'quarter4_score',
++      'quarter4_lessons',
+     ],
+     template: `
+ You are an AI tutor helping a student improve based on diagnostic test results.
+ 
+ Diagnostic Scores:
+-Quarter 1: {quarter1_score}
+-Quarter 2: {quarter2_score}
+-Quarter 3: {quarter3_score}
+-Quarter 4: {quarter4_score}
++Quarter 1: {quarter1_score}%
++Quarter 2: {quarter2_score}%
++Quarter 3: {quarter3_score}%
++Quarter 4: {quarter4_score}%
+ 
+-Lessons:
++Lessons Covered:
+ 
+ Quarter 1:
+ {quarter1_lessons}
+@@ -72,44 +197,64 @@
+ {quarter4_lessons}
+ 
+ Rules:
++- focus_level must follow these exact score bands:
++    0–50   → "High Priority"
++    51–75  → "Moderate Priority"
++    76–100 → "Low Priority"
++- is_need_review must be true when score < 76, false when score >= 76.
++- how_to_get_high_scores must be a JSON array of exactly 5 short, practical study tips.
++- lessons must be a comma-separated string of the lesson names listed above.
+ - Focus more on quarters with lower scores.
+-- Give practical study strategies.
+-- Use simple explanations for students.
++- Use simple, encouraging language appropriate for school students.
+ 
+-Return ONLY JSON:
+-
++Return ONLY a valid JSON object:
+ {{
+   "quarter1": {{
+-    "lessons": "...",
++    "lessons": "comma-separated lesson names",
+     "is_need_review": true,
+-    "how_to_get_high_scores": ["...", "...", "...", "...", "..."]
++    "how_to_get_high_scores": ["tip 1", "tip 2", "tip 3", "tip 4", "tip 5"],
++    "focus_level": "High Priority"
+   }},
+   "quarter2": {{
+-    "lessons": "...",
+-    "is_need_review": false,
+-    "how_to_get_high_scores": ["...", "...", "...", "...", "..."]
+-  }},
+-  "quarter3": {{
+-    "lessons": "...",
++    "lessons": "comma-separated lesson names",
+     "is_need_review": true,
+-    "how_to_get_high_scores": ["...", "...", "...", "...", "..."]
++    "how_to_get_high_scores": ["tip 1", "tip 2", "tip 3", "tip 4", "tip 5"],
++    "focus_level": "Moderate Priority"
+   }},
+-  "quarter4": {{
+-    "lessons": "...",
++  "quarter3": {{
++    "lessons": "comma-separated lesson names",
+     "is_need_review": false,
+-    "how_to_get_high_scores": ["...", "...", "...", "...", "..."]
++    "how_to_get_high_scores": ["tip 1", "tip 2", "tip 3", "tip 4", "tip 5"],
++    "focus_level": "Low Priority"
++  }},
++  "quarter4": {{
++    "lessons": "comma-separated lesson names",
++    "is_need_review": true,
++    "how_to_get_high_scores": ["tip 1", "tip 2", "tip 3", "tip 4", "tip 5"],
++    "focus_level": "High Priority"
+   }}
+ }}
+-`
+-  });
+ 
++Output only the JSON. No extra text.
++    `.trim(),
++  });
+ 
+-  /* ─────────────────────────────────────────────
+-     Tutor Lesson Prompt
+-  ───────────────────────────────────────────── */
+ 
+-  static tutorPrompt = new PromptTemplate({
+-    inputVariables: ["topic", "lecture"],
++  // ══════════════════════════════════════════════════════════════════════════
++  // 3. LESSON MATERIAL
++  //    Service : LessonMaterialService.generateMaterial()
++  //    Input   : LessonMaterialInput  { topic, lecture }
++  //    Output  : LessonMaterial       { page1, page2, page3 }
++  //    Temp    : 0.6
++  //
++  //    page1 → Page1  { topic_introduction, learning_objectives: string[], tip }
++  //    page2 → Page2  { lecture_content, key_concepts: string[] }
++  //    page3 → Page3  { real_life_application, summary }
++  //
++  //    RENAMED from 'tutorPrompt' — use lessonMaterialPrompt in the service.
++  // ══════════════════════════════════════════════════════════════════════════
++  static lessonMaterialPrompt = new PromptTemplate({
++    inputVariables: ['topic', 'lecture'],
+     template: `
+ You are an AI tutor. Create a structured 3-page lesson for the topic: "{topic}".
+ 
+@@ -119,285 +264,353 @@
+ 
+ Page 1 — Introduction  
+ Page 2 — Core Content  
+-Page 3 — Application  
++Page 3 — Real-Life Application
+ 
+-Return ONLY JSON:
++Rules:
++1. learning_objectives must be a JSON array of exactly 3 strings.
++2. key_concepts must be a JSON array of 3–5 short concept strings.
++3. Write lecture_content as rich, detailed prose (at least 4 sentences).
++4. tip must be a single motivational or memory-aid sentence.
++5. summary must recap the lesson in 2–3 sentences.
++6. real_life_application must give a concrete, relatable everyday example.
+ 
++Return ONLY a valid JSON object:
+ {{
+   "page1": {{
+-    "topic_introduction": "...",
+-    "learning_objectives": ["...", "...", "..."],
+-    "tip": "..."
++    "topic_introduction": "Engaging opening paragraph that sets context.",
++    "learning_objectives": ["objective 1", "objective 2", "objective 3"],
++    "tip": "A helpful memory tip or motivational note."
+   }},
+   "page2": {{
+-    "lecture_content": "...",
+-    "key_concepts": ["...", "...", "..."]
++    "lecture_content": "Detailed core teaching content in rich prose.",
++    "key_concepts": ["concept 1", "concept 2", "concept 3"]
+   }},
+   "page3": {{
+-    "real_life_application": "...",
+-    "summary": "..."
++    "real_life_application": "A concrete real-world example the student can relate to.",
++    "summary": "A 2–3 sentence recap of the whole lesson."
+   }}
+ }}
+-`
+-  });
+ 
++Output only the JSON. No extra text.
++    `.trim(),
++  });
+ 
+-  /* ─────────────────────────────────────────────
+-     Lesson Quiz — Multiple Choice
+-  ───────────────────────────────────────────── */
+ 
++  // ══════════════════════════════════════════════════════════════════════════
++  // 4. LESSON QUIZ — Multiple Choice  (easy | medium)
++  //    Service : LessonQuizService.generateQuiz()  when type = 'multiple_choice'
++  //    Input   : LessonQuizInput
++  //    Output  : MultipleChoiceQuestion[]  (exactly 1 item)
++  //    Temp    : 0.3
++  //
++  //    correctOption is a 0-based index — NOT the option text string.
++  //    (contrast with quarterlyExamMCQPrompt which uses correctAnswer: string)
++  // ══════════════════════════════════════════════════════════════════════════
+   static lessonQuizMCQPrompt = new PromptTemplate({
+     inputVariables: [
+-      "grade",
+-      "country",
+-      "difficulty",
+-      "question_number",
+-      "questions"
++      'grade',
++      'country',
++      'difficulty',
++      'question_number',
++      'questions',
+     ],
+     template: `
+-You are rewriting multiple-choice questions.
++You are rewriting a multiple-choice question for a Grade {grade} student in {country}.
++Difficulty target: {difficulty}
+ 
+-Grade: {grade}  
+-Country: {country}  
+-Difficulty: {difficulty}
+-
+-Existing Question:
++Existing question (question #{question_number}):
+ {questions}
+ 
+ Rules:
+-- Do NOT change the meaning.
+-- Keep the same options.
+-- Only rewrite the question wording.
+-- Maintain the same correct answer.
+-- Always produce 2-sentence explanations that teach the concept, even for easy questions.
+-
+-Return ONLY JSON:
++1. Rewrite the question wording to match the target difficulty — do NOT change the meaning.
++2. Keep all 4 options — only rephrase the question sentence.
++3. correctOption must be the 0-based index (0, 1, 2, or 3) of the correct answer in options[].
++4. explanation must be exactly 2 sentences that teach the concept behind the answer.
++5. options must contain exactly 4 items:
++     index 0 → correct concept
++     index 1 → common misconception
++     index 2 → related but wrong concept
++     index 3 → clearly incorrect answer
+ 
+ Return ONLY a valid JSON array containing exactly 1 object:
+ [
+   {{
+     "type": "multiple_choice",
+     "difficulty": "{difficulty}",
+-    "questionText": "rewritten question",
+-    "options": [
+-                "Correct concept",
+-                "Common misconception",
+-                "Related concept",
+-                "Clearly incorrect answer"
+-                ],
++    "questionText": "Rewritten question text?",
++    "options": ["Correct concept", "Common misconception", "Related concept", "Clearly incorrect"],
+     "correctOption": 0,
+-    "explanation": "Short explanation of why the answer is correct."
++    "explanation": "Sentence 1 explaining why the answer is correct. Sentence 2 reinforcing the concept."
+   }}
+ ]
+-`
+-  });
+ 
++Output only the JSON array. No extra text.
++    `.trim(),
++  });
+ 
+-  /* ─────────────────────────────────────────────
+-     Lesson Quiz — True/False
+-  ───────────────────────────────────────────── */
+ 
++  // ══════════════════════════════════════════════════════════════════════════
++  // 5. LESSON QUIZ — True / False  (easy | medium)
++  //    Service : LessonQuizService.generateQuiz()  when type = 'true_false'
++  //    Input   : LessonQuizInput
++  //    Output  : TrueFalseQuestion[]  (exactly 1 item)
++  //    Temp    : 0.3
++  // ══════════════════════════════════════════════════════════════════════════
+   static lessonQuizTFPrompt = new PromptTemplate({
+     inputVariables: [
+-      "grade",
+-      "country",
+-      "difficulty",
+-      "question_number",
+-      "questions"
++      'grade',
++      'country',
++      'difficulty',
++      'question_number',
++      'questions',
+     ],
+     template: `
+-Rewrite the following True/False question.
++You are rewriting a True/False question for a Grade {grade} student in {country}.
++Difficulty target: {difficulty}
+ 
+-Grade: {grade}  
+-Country: {country}
+-
+-Existing Question:
++Existing question (question #{question_number}):
+ {questions}
+ 
+ Rules:
+-- Always produce 2-sentence explanations that teach the concept, even for easy questions.
+-
+-Return ONLY JSON:
++1. Rewrite the statement to match the target difficulty — do NOT change the truth value.
++2. correctAnswer must be a JSON boolean (true or false) — NOT a string.
++3. explanation must be exactly 2 sentences that teach the concept behind the answer.
+ 
+ Return ONLY a valid JSON array containing exactly 1 object:
+ [
+   {{
+     "type": "true_false",
+     "difficulty": "{difficulty}",
+-    "questionText": "rewritten statement",
++    "questionText": "Rewritten statement that is true or false.",
+     "correctAnswer": true,
+-    "explanation": "Short explanation of why the answer is correct."
++    "explanation": "Sentence 1 explaining why this is true/false. Sentence 2 reinforcing the concept."
+   }}
+ ]
+-`
+-  });
+ 
++Output only the JSON array. No extra text.
++    `.trim(),
++  });
+ 
+-  /* ─────────────────────────────────────────────
+-     Lesson Quiz — Fill in the Blank
+-  ───────────────────────────────────────────── */
+ 
++  // ══════════════════════════════════════════════════════════════════════════
++  // 6. LESSON QUIZ — Fill in the Blank  (hard only)
++  //    Service : LessonQuizService.generateQuiz()  when difficulty = 'hard'
++  //    Input   : LessonQuizInput
++  //    Output  : FillBlankQuestion[]  (exactly 1 item)
++  //    Temp    : 0.3
++  // ══════════════════════════════════════════════════════════════════════════
+   static lessonQuizFBPrompt = new PromptTemplate({
+     inputVariables: [
+-      "grade",
+-      "country",
+-      "difficulty",
+-      "question_number",
+-      "questions"
++      'grade',
++      'country',
++      'difficulty',
++      'question_number',
++      'questions',
+     ],
+     template: `
+-Rewrite the fill-in-the-blank question.
++You are rewriting a fill-in-the-blank question for a Grade {grade} student in {country}.
++Difficulty target: {difficulty}
+ 
+-Existing Question:
++Existing question (question #{question_number}):
+ {questions}
+ 
+ Rules:
+-- Replace the key concept with ___
+-- Preserve the original meaning
+-- Always produce 2-sentence explanations that teach the concept, even for easy questions.
+-
+-Return ONLY JSON:
++1. Rewrite the sentence, replacing the key concept with exactly ___ (three underscores).
++2. Preserve the original meaning — do NOT change the correct answer.
++3. hint must be a short phrase that nudges without giving away the answer.
++4. explanation must be exactly 2 sentences that teach the concept behind the answer.
++5. correctAnswer must be the exact word or phrase that fills the blank.
+ 
+ Return ONLY a valid JSON array containing exactly 1 object:
+ [
+   {{
+     "type": "fill_blank",
+     "difficulty": "{difficulty}",
+-    "questionText": "Plants make food using ___",
+-    "correctAnswer": "photosynthesis",
+-    "hint": "Process plants use sunlight for energy.",
+-    "explanation": "Photosynthesis is the process plants use to make food."
++    "questionText": "Sentence with ___ where the answer goes.",
++    "correctAnswer": "exact answer",
++    "hint": "Short nudge hint.",
++    "explanation": "Sentence 1 explaining the concept. Sentence 2 reinforcing it."
+   }}
+ ]
+-`
++
++Output only the JSON array. No extra text.
++    `.trim(),
+   });
+ 
+-  // ── Multiple Choice ──────────────────────────────
++
++  // ══════════════════════════════════════════════════════════════════════════
++  // 7. QUARTERLY EXAM — Multiple Choice
++  //    Service : QuarterlyExamService.generateExam()  when type = 'mcq'
++  //    Input   : SimpleExamInput  (seeds as numbered list string)
++  //    Output  : QEMultipleChoiceQuestion[]  ({questionCount} items)
++  //    Temp    : 0.1
++  //
++  //    IMPORTANT: correctAnswer is the EXACT OPTION TEXT (string), NOT an index.
++  //    This is intentional — the seed knows the correct answer text, and asking
++  //    a small model to compute a reliable index is error-prone.
++  //    (contrast with lessonQuizMCQPrompt which uses correctOption: number)
++  // ══════════════════════════════════════════════════════════════════════════
+   static quarterlyExamMCQPrompt = new PromptTemplate({
+-    inputVariables: ['grade','difficulty','questions','questionCount'],
++    inputVariables: ['grade', 'difficulty', 'questions', 'questionCount'],
+     template: `
+-You are an expert AI tutor. You are rewriting multiple-choice questions for a school tutoring app.
+-
+-Grade  : {grade}
+-Target Difficulty: {difficulty}
++You are rewriting multiple-choice exam questions for a Grade {grade} student.
++Target difficulty: {difficulty}
+ 
+-Task:
+-Rewrite the wording of the following question to match the target difficulty.
+-
+-Existing Question:
++Existing questions (answer shown in parentheses):
+ {questions}
+ 
+-You will receive a list of questions with options and the correct answer.
++Rules:
++1. Paraphrase each question to make it sound fresh — do NOT change the meaning.
++2. Do NOT change the correct answer text.
++3. Ensure the correct answer is present in the options array exactly as written.
++4. Keep the original 3 wrong options — only rephrase the question sentence.
++5. Each question must have exactly 4 options.
++6. correctAnswer must be the EXACT TEXT of the correct option (not an index).
++7. Return exactly {questionCount} questions — one per seed question provided.
+ 
+-Task:
+-- Paraphrase each question to make it sound fresh.
+-- DO NOT change the meaning of the question.
+-- DO NOT change the correct answer.
+-- Ensure the correct answer remains in the options.
+-- Keep the original options exactly as they are.
+-- Return exactly {questionCount} questions.
+-- THERE SHOULD BE 4 OPTIONS IN TOTAL
+-
+-Return ONLY a valid JSON array containing {questionCount} questions
++Return ONLY a valid JSON array:
+ [
+   {{
+     "type": "multiple_choice",
+-    "questionText": "rewritten question",
+-    "options": ["option1","option2","option3","option4"],
+-    "correctAnswer": correctAnswer
++    "questionText": "Paraphrased question?",
++    "options": ["Correct answer text", "Wrong option 1", "Wrong option 2", "Wrong option 3"],
++    "correctAnswer": "Correct answer text"
+   }}
+-`
++]
++
++Output only the JSON array. No extra text.
++    `.trim(),
+   });
+ 
+-  // ── True/False ──────────────────────────────
++
++  // ══════════════════════════════════════════════════════════════════════════
++  // 8. QUARTERLY EXAM — True / False
++  //    Service : QuarterlyExamService.generateExam()  when type = 'tf'
++  //    Input   : SimpleExamInput
++  //    Output  : QETrueFalseQuestion[]  ({questionCount} items)
++  //    Temp    : 0.1
++  // ══════════════════════════════════════════════════════════════════════════
+   static quarterlyExamTFPrompt = new PromptTemplate({
+-    inputVariables: ['grade','difficulty','questions','questionCount'],
++    inputVariables: ['grade', 'difficulty', 'questions', 'questionCount'],
+     template: `
+-You are an expert AI tutor. You are rewriting true/false questions for a school tutoring app.
+-
+-Grade  : {grade}
+-Target Difficulty: {difficulty}
++You are rewriting true/false exam questions for a Grade {grade} student.
++Target difficulty: {difficulty}
+ 
+-You will receive a list of true/false questions with their correct answers.
+-
+-Existing Question:
++Existing questions (answer shown in parentheses):
+ {questions}
+ 
+-Task:
+-- Paraphrase each statement to make it sound fresh.
+-- DO NOT change the truth value of any question.
+-- Return exactly {questionCount} questions.
++Rules:
++1. Paraphrase each statement to make it sound fresh — do NOT change the truth value.
++2. correctAnswer must be a JSON boolean (true or false) — NOT a string.
++3. Return exactly {questionCount} questions — one per seed question provided.
+ 
+ Return ONLY a valid JSON array:
+-
+ [
+   {{
+     "type": "true_false",
+-    "questionText": "paraphrased statement",
++    "questionText": "Paraphrased statement.",
+     "correctAnswer": true
+   }}
+ ]
+-`
++
++Output only the JSON array. No extra text.
++    `.trim(),
+   });
+ 
+-  // ── Fill-in-the-Blank ──────────────────────────────
++
++  // ══════════════════════════════════════════════════════════════════════════
++  // 9. QUARTERLY EXAM — Fill in the Blank  (hard seeds only)
++  //    Service : QuarterlyExamService.generateExam()  when type = 'fb'
++  //    Input   : SimpleExamInput
++  //    Output  : QEFillBlankQuestion[]  ({questionCount} items)
++  //    Temp    : 0.1
++  // ══════════════════════════════════════════════════════════════════════════
+   static quarterlyExamFBPrompt = new PromptTemplate({
+-    inputVariables: ['grade','difficulty','questions','questionCount'],
++    inputVariables: ['grade', 'difficulty', 'questions', 'questionCount'],
+     template: `
+-You are an expert AI tutor. You are rewriting fill-in-the-blank questions for a school tutoring app.
++You are rewriting fill-in-the-blank exam questions for a Grade {grade} student.
++Target difficulty: {difficulty}
+ 
+-Grade  : {grade}
+-Target Difficulty: {difficulty}
+-
+-Existing Question:
++Existing questions (answer shown in parentheses):
+ {questions}
+ 
+-You will receive a list of questions with the correct answer.
+-
+-Task:
+-- Paraphrase the sentence while keeping the blank and correct answer intact.
+-- Use exactly ___ for the blank.
+-- Provide a short hint if needed.
+-- Return exactly {questionCount} questions.
++Rules:
++1. Paraphrase the sentence while keeping the blank and correct answer intact.
++2. Use exactly ___ (three underscores) for the blank.
++3. hint must be a short phrase that nudges without revealing the answer.
++4. correctAnswer must match the answer text shown in the seed exactly.
++5. Return exactly {questionCount} questions — one per seed question provided.
+ 
+ Return ONLY a valid JSON array:
+-
+ [
+   {{
+     "type": "fill_blank",
+-    "questionText": "paraphrased sentence with ___",
+-    "correctAnswer": "answer",
+-    "hint": "short hint"
++    "questionText": "Paraphrased sentence with ___.",
++    "correctAnswer": "exact answer from seed",
++    "hint": "short nudge hint"
+   }}
+ ]
+-`
++
++Output only the JSON array. No extra text.
++    `.trim(),
+   });
+ 
++
++  // ══════════════════════════════════════════════════════════════════════════
++  // 10. AI TUTOR CHAT
++  //     Service : AITutorService.getResponse()
++  //     Input   : TutorChatInput
++  //     Output  : string  (plain text, no JSON, no markdown)
++  //     Temp    : 0.5
++  //
++  //     history is pre-serialised by AITutorService.formatHistory() into:
++  //     "Student: ...\nTutor: ..." before being injected here.
++  // ══════════════════════════════════════════════════════════════════════════
+   static aiTutorChatPrompt = new PromptTemplate({
+-  inputVariables: ['name', 'grade', 'country', 'subjectName', 'lessonTitle', 'lessonContent', 'history'],
+-  template: `
++    inputVariables: [
++      'name',
++      'grade',
++      'country',
++      'subjectName',
++      'lessonTitle',
++      'lessonContent',
++      'history',
++    ],
++    template: `
+ You are a friendly AI tutor for {name}, a Grade {grade} student in {country}.
+ Subject: {subjectName} | Lesson: {lessonTitle}
+ 
+---- LESSON CONTENT (ONLY USE THIS) ---
++--- LESSON CONTENT (ANSWER ONLY FROM THIS) ---
+ {lessonContent}
+ 
+ --- CONVERSATION HISTORY ---
+ {history}
+ 
+---- FINAL INSTRUCTIONS ---
+-1. Address {name} and answer their LAST question using ONLY the Lesson Content above.
+-2. If the question is NOT in the Lesson Content, say: "I'm sorry {name}, but that isn't covered in our lesson on {lessonTitle}. Should we get back to that?"
+-3. Use a local example from {country} (like local plants or landmarks).
+-4. Do NOT repeat your previous answers from the history. 
+-5. Provide a NEW, direct answer to the latest message.
+-6. Plain text only. No markdown.
++--- INSTRUCTIONS ---
++1. Address {name} by name and answer their LAST question using ONLY the Lesson Content above.
++2. If the question is NOT covered by the Lesson Content, respond:
++   "I'm sorry {name}, but that isn't covered in our lesson on {lessonTitle}. Should we get back to that?"
++3. Use a local example from {country} (e.g. local plants, landmarks, or everyday situations).
++4. Do NOT repeat any answers already present in the conversation history.
++5. Provide a NEW, direct answer to the latest message only.
++6. Plain text only. No markdown, no bullet points, no headers.
++7. Keep your answer to 3–5 sentences — clear and age-appropriate for Grade {grade}.
+ 
+ Reply:
+-`
+-});
++    `.trim(),
++  });
+ 
+-  // ── 7. AI Explanation — TTS follow-up ─────────────────────────────────────
++
++  // ══════════════════════════════════════════════════════════════════════════
++  // 11. AI EXPLANATION  (TTS follow-up)
++  //     Service : AIExplanationService.getExplanation()
++  //     Input   : AIExplanationInput  { text: string, grade: number }
++  //     Output  : string  (plain text, TTS-safe, no markdown)
++  //     Temp    : 0.5
++  //
++  //     text must be markdown-stripped before being passed in.
++  //     Output is read directly by expo-speech — no special characters allowed.
++  // ══════════════════════════════════════════════════════════════════════════
+   static aiExplanationPrompt = new PromptTemplate({
+     inputVariables: ['text', 'grade'],
+     template: `
+@@ -409,14 +622,61 @@
+ They are in Grade {grade}.
+ 
+ Your task:
+-- Explain the key idea from that passage in simple, spoken language.
+-- Use vocabulary and examples appropriate for a Grade {grade} student.
+-- Keep your explanation to 3–5 sentences — it will be read aloud by text-to-speech.
+-- Do NOT use bullet points, markdown, lists, or special characters.
+-- Write as if speaking naturally to a student.
++1. Explain the key idea from that passage in simple, natural spoken language.
++2. Use vocabulary and examples appropriate for a Grade {grade} student.
++3. Keep your explanation to exactly 3–5 sentences — it will be read aloud by text-to-speech.
++4. Do NOT use bullet points, markdown, lists, numbers, or any special characters.
++5. Write as if you are speaking directly and naturally to the student.
++6. Do NOT start with "Sure!", "Of course!", or similar filler phrases.
+ 
+ Explanation:
+-    `,
++    `.trim(),
+   });
+-    static focusAreaPrompt: any;
++
++
++  // ══════════════════════════════════════════════════════════════════════════
++  // 12. FOCUS AREA  (dashboard widget)
++  //     Service : FocusAreaService.getFocusArea()
++  //     Input   : FocusAreaRequest
++  //     Output  : FocusAreaResponse  { subject_line, lesson_line, take_note }
++  //     Temp    : 0.3
++  //
++  //     subject_line format : "{subject_name} - {subject_mastery}% mastery"
++  //     lesson_line  format : "{lesson_title} - {lesson_score}% quiz result"
++  //     take_note           : action-oriented call to study, NO greeting
++  // ══════════════════════════════════════════════════════════════════════════
++  static focusAreaPrompt = new PromptTemplate({
++    inputVariables: [
++      'subject_name',
++      'subject_mastery',
++      'lesson_title',
++      'lesson_score',
++      'lesson_content',
++    ],
++    template: `
++You are an analytical educational system generating a dashboard focus widget.
++
++Weakest Subject : {subject_name} (Mastery: {subject_mastery}%)
++Weakest Lesson  : {lesson_title} (Score: {lesson_score}%)
++Lesson Concepts : {lesson_content}
++
++Rules:
++1. Tone: Be direct and action-oriented. NO greetings, NO "Hello", NO "Hi".
++2. subject_line must follow this EXACT format: "{subject_name} - {subject_mastery}% mastery"
++3. lesson_line  must follow this EXACT format: "{lesson_title} - {lesson_score}% quiz result"
++4. take_note must be a study Call to Action:
++     - Briefly summarise the lesson concepts (do NOT copy them word-for-word)
++     - End with an actionable next step (e.g. "retake the quiz", "re-read the section")
++5. Output a SINGLE JSON object — no arrays, no extra fields.
++
++Return ONLY this JSON object:
++{{
++  "subject_line": "{subject_name} - {subject_mastery}% mastery",
++  "lesson_line": "{lesson_title} - {lesson_score}% quiz result",
++  "take_note": "Review [briefly summarised concepts] and [actionable next step]."
++}}
++
++Output only the JSON. No extra text.
++    `.trim(),
++  });
+ }
+\ No newline at end of file
+Index: PocketClass_AIFeatures/main.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\r\nimport { ModelClass }           from './model/ModelClass';\r\nimport { DiagnosticQuiz }       from './services/DiagnosticQuiz';\r\nimport { StudyPlanService }     from './services/StudyPlanService';\r\nimport { LessonMaterialService} from './services/LessonMaterialService';\r\nimport { LessonQuizService }    from './services/LessonQuizService';\r\nimport { AITutorService }       from './services/AITutorService';\r\nimport { AIExplanationService } from './services/AIExplanationService';\r\n \r\nimport type { DiagnosticQuizInput }      from './types/input/diagnosticQuizInput';\r\nimport type { diagnosticScoreInterface } from './types/input/diagnosticScoreInterface';\r\nimport type { LessonMaterialInput }      from './types/input/LessonMaterialInput';\r\nimport type { LessonQuizInput }          from './types/input/LessonQuizInput';\r\n\r\nimport type { TutorChatInput }           from './types/input/TutorChatInput';\r\n\r\nfunction section(title: string) {\r\n  console.log('\\n' + '═'.repeat(60));\r\n  console.log(`  ${title}`);\r\n  console.log('═'.repeat(60));\r\n}\r\n\r\nasync function run<T>(label: string, fn: () => Promise<T>): Promise<T | null> {\r\n  console.log(`\\n⏳ ${label}...`);\r\n  try {\r\n    const result = await fn();\r\n    console.log(`✅ Done: ${label}`);\r\n    return result;\r\n  } catch (err) {\r\n    console.error(`❌ Failed: ${label}`);\r\n    console.error('   →', (err as Error).message);\r\n    return null;\r\n  }\r\n}\r\n\r\nasync function testAIExplanation() {\r\n  section('TEST 7 — AIExplanationService');\r\n\r\n  const svc = new AIExplanationService();\r\n\r\n  const sectionText = 'The small intestine absorbs most nutrients into the bloodstream. ' +\r\n    'It is about 6 metres long and lined with tiny finger-like projections ' +\r\n    'called villi that increase the surface area for absorption.';\r\n\r\n  // Grade 7 — simpler language expected\r\n  console.log('\\n\uD83D\uDCE5 Input text:', sectionText);\r\n  console.log('\\n▶ Testing Grade 7...');\r\n\r\n  const g7 = await run('AIExplanationService.getExplanation (Grade 7)', () =>\r\n    svc.getExplanation({ text: sectionText, grade: 7 })\r\n  );\r\n\r\n  if (g7) {\r\n    console.log(`\\n▶ Grade 7 result:\\n   \"${g7}\"`);\r\n    console.log(`▶ Is plain text (no markdown): ${!/[*#[\\]`]/.test(g7) ? '✅' : '❌'}`);\r\n    console.log(`▶ Not empty: ${g7.length > 20 ? '✅' : '❌'}`);\r\n  }\r\n\r\n  // Grade 12 — more technical language expected\r\n  console.log('\\n▶ Testing Grade 12...');\r\n\r\n  const g12 = await run('AIExplanationService.getExplanation (Grade 12)', () =>\r\n    svc.getExplanation({ text: sectionText, grade: 12 })\r\n  );\r\n\r\n  if (g12) {\r\n    console.log(`\\n▶ Grade 12 result:\\n   \"${g12}\"`);\r\n    console.log(`▶ Is plain text (no markdown): ${!/[*#[\\]`]/.test(g12) ? '✅' : '❌'}`);\r\n  }\r\n}\r\n\r\n\r\nasync function main() {\r\n  const lesson = new LessonQuizService();\r\n\r\n  // const json = await lesson.generateQuiz(lessonQuizInput);\r\n  // console.log(json);\r\n\r\n  console.log('\\n\uD83D\uDE80 PocketClass AI Module — CLI Test Runner');\r\n  console.log('Model: gemma2:2b via Ollama');\r\n  console.log('Make sure Ollama is running:  ollama serve\\n');\r\n\r\n  const start = Date.now();\r\n\r\n  // await testModelClass();\r\n  // await testDiagnosticQuiz();\r\n  // await testStudyPlan();\r\n  // await testLessonMaterial();\r\n  // await testLessonQuiz();\r\n  // await testAITutor();\r\n   await testAIExplanation();\r\n \r\n  const elapsed = ((Date.now() - start) / 1000).toFixed(1);\r\n  console.log('\\n' + '═'.repeat(60));\r\n  console.log(`  ✅ All tests complete — ${elapsed}s`);\r\n  console.log('═'.repeat(60) + '\\n');\r\n\r\n}\r\n\r\n// if (require.main === module) {\r\n//   runTests();\r\n// }
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/PocketClass_AIFeatures/main.ts b/PocketClass_AIFeatures/main.ts
+--- a/PocketClass_AIFeatures/main.ts	(revision c9432150fb668ee8b0f531213ac0b6d1a763ba69)
++++ b/PocketClass_AIFeatures/main.ts	(date 1773416971955)
+@@ -1,102 +1,572 @@
++/**
++ * main.test.ts
++ *
++ * Integration test runner for all AI services.
++ * Run with:  npx ts-node main.test.ts
++ *
++ * Each test is self-contained with realistic mock data that mirrors
++ * what the mobile app would pass in from SQLite.
++ *
++ * Test order follows the student journey:
++ *   1. DiagnosticQuizService   — baseline before studying
++ *   2. StudyPlanService        — personalised plan from diagnostic scores
++ *   3. LessonMaterialService   — AI-generated 3-page lesson
++ *   4. AIExplanationService    — TTS follow-up explanation
++ *   5. AITutorService          — conversational tutor Q&A
++ *   6. LessonQuizService       — end-of-lesson quiz (1 question per call)
++ *   7. QuarterlyExamService    — full seeded exam
++ *   8. FocusAreaService        — dashboard focus widget
++ */
+ 
+-import { ModelClass }           from './model/ModelClass';
+-import { DiagnosticQuiz }       from './services/DiagnosticQuiz';
+-import { StudyPlanService }     from './services/StudyPlanService';
+-import { LessonMaterialService} from './services/LessonMaterialService';
+-import { LessonQuizService }    from './services/LessonQuizService';
+-import { AITutorService }       from './services/AITutorService';
+-import { AIExplanationService } from './services/AIExplanationService';
+- 
+-import type { DiagnosticQuizInput }      from './types/input/diagnosticQuizInput';
++// ── Service imports ───────────────────────────────────────────────────────────
++import { DiagnosticQuiz }        from './services/DiagnosticQuiz';
++import { StudyPlanService }      from './services/StudyPlanService';
++import { LessonMaterialService } from './services/LessonMaterialService';
++import { LessonQuizService }     from './services/LessonQuizService';
++import { QuarterlyExamService }  from './services/QuarterlyExamService';
++import { AIExplanationService }  from './services/AIExplanationService';
++import { AITutorService }        from './services/AITutorService';
++import { FocusAreaService }      from './services/FocusAreaService';
++
++// ── Type imports ──────────────────────────────────────────────────────────────
++import type { DiagnosticQuizInput }    from './types/input/diagnosticQuizInput';
+ import type { diagnosticScoreInterface } from './types/input/diagnosticScoreInterface';
+-import type { LessonMaterialInput }      from './types/input/LessonMaterialInput';
+-import type { LessonQuizInput }          from './types/input/LessonQuizInput';
+-
+-import type { TutorChatInput }           from './types/input/TutorChatInput';
++import type { LessonMaterialInput }    from './types/input/LessonMaterialInput';
++import type { LessonQuizInput }        from './types/input/LessonQuizInput';
++import type { TutorChatInput }         from './types/input/TutorChatInput';
++import type { AIExplanationInput }     from './types/input/AIExplanationInput';
++import type { FocusAreaRequest }       from './types/input/focusAreaRequestInterface';
++import type { SimpleExamInput }        from './services/QuarterlyExamService';
++
++// ── Shared mock data (mirrors a seeded SQLite row) ────────────────────────────
++
++const MOCK_PROFILE = {
++  name:    'Amirah',
++  grade:   9,
++  country: 'malaysia' as const,
++};
++
++const MOCK_SUBJECT = {
++  name:      'Biology',
++  q1_topic:  'Cell Biology',
++  q1_content: `
++    Cells are the basic unit of life. There are two main types: prokaryotic (no membrane-bound
++    nucleus, e.g. bacteria) and eukaryotic (has a nucleus, e.g. plant and animal cells).
++    Key organelles include: nucleus (controls cell activities), mitochondria (produces ATP via
++    respiration), ribosomes (protein synthesis), endoplasmic reticulum (transport network),
++    Golgi apparatus (packages and ships proteins), cell membrane (semi-permeable barrier),
++    cell wall (plants only — provides rigidity), chloroplasts (plants only — photosynthesis),
++    vacuole (storage; large central vacuole in plant cells).
++    Cell division: mitosis produces two identical daughter cells (growth/repair);
++    meiosis produces four genetically unique gametes (sexual reproduction).
++  `.trim(),
++};
++
++const MOCK_LESSON = {
++  id:           1,
++  title:        'Cell Organelles and Their Functions',
++  quarter:      1,
++  lesson_index: 0,   // even → DragDrop in quarterly exam
++  subject_id:   1,
++};
+ 
+-function section(title: string) {
++// ── Utility helpers ───────────────────────────────────────────────────────────
++
++let passCount = 0;
++let failCount = 0;
++
++function printHeader(title: string): void {
+   console.log('\n' + '═'.repeat(60));
+   console.log(`  ${title}`);
+   console.log('═'.repeat(60));
+ }
+ 
+-async function run<T>(label: string, fn: () => Promise<T>): Promise<T | null> {
+-  console.log(`\n⏳ ${label}...`);
++function assert(condition: boolean, label: string): void {
++  if (condition) {
++    console.log(`  ✅  ${label}`);
++    passCount++;
++  } else {
++    console.error(`  ❌  FAIL: ${label}`);
++    failCount++;
++  }
++}
++
++function printSummary(): void {
++  console.log('\n' + '─'.repeat(60));
++  console.log(`  RESULTS:  ${passCount} passed  |  ${failCount} failed`);
++  console.log('─'.repeat(60) + '\n');
++  if (failCount > 0) process.exitCode = 1;
++}
++
++// ─────────────────────────────────────────────────────────────────────────────
++// TEST 1 — DiagnosticQuizService
++//   Generates 5 easy MCQ questions for one quarter.
++//   Called 4× by useDiagnostic (Q1 → Q4); here we test Q1 only.
++// ─────────────────────────────────────────────────────────────────────────────
++async function testDiagnosticQuiz(): Promise<void> {
++  printHeader('TEST 1 · DiagnosticQuizService');
++
++  const input: DiagnosticQuizInput = {
++    subjectName:    MOCK_SUBJECT.name,
++    quarter:        1,
++    quarterTopic:   MOCK_SUBJECT.q1_topic,
++    quarterContent: MOCK_SUBJECT.q1_content,
++    grade:          MOCK_PROFILE.grade,
++    country:        MOCK_PROFILE.country,
++  };
++
++  try {
++    const questions = await DiagnosticQuiz.generateQuestions(input);
++    console.log('  Output:', JSON.stringify(questions[0], null, 2));
++
++    assert(Array.isArray(questions),           'Returns an array');
++    assert(questions.length === 5,             'Returns exactly 5 questions');
++    assert(questions[0].type === 'multiple_choice', 'All questions are MCQ');
++    assert(questions[0].difficulty === 'easy', 'All questions are easy difficulty');
++    assert(Array.isArray(questions[0].options) && questions[0].options.length === 4,
++                                               'Each MCQ has exactly 4 options');
++    assert(typeof questions[0].correctOption === 'number' &&
++           questions[0].correctOption >= 0 &&
++           questions[0].correctOption <= 3,    'correctOption is a valid 0-based index');
++    assert(typeof questions[0].questionText === 'string' && questions[0].questionText.length > 0,
++                                               'questionText is a non-empty string');
++  } catch (err) {
++    console.error('  💥 Service threw:', err);
++    failCount += 7;
++  }
++}
++
++// ─────────────────────────────────────────────────────────────────────────────
++// TEST 2 — StudyPlanService
++//   Generates a 4-quarter personalised study plan from diagnostic scores.
++//   is_need_review = true when score < 76.
++// ─────────────────────────────────────────────────────────────────────────────
++async function testStudyPlan(): Promise<void> {
++  printHeader('TEST 2 · StudyPlanService');
++
++  const input: diagnosticScoreInterface = {
++    quarter1_score:   45,   // → High Priority, is_need_review = true
++    quarter1_lessons: ['Cell Biology Basics', 'Organelles'],
++    quarter2_score:   62,   // → Moderate Priority
++    quarter2_lessons: ['Genetics Introduction', 'DNA Structure'],
++    quarter3_score:   81,   // → Low Priority, is_need_review = false
++    quarter3_lessons: ['Ecology Basics', 'Food Chains'],
++    quarter4_score:   30,   // → High Priority, is_need_review = true
++    quarter4_lessons: ['Evolution', 'Natural Selection'],
++  };
++
+   try {
+-    const result = await fn();
+-    console.log(`✅ Done: ${label}`);
+-    return result;
++    const service  = new StudyPlanService();
++    const studyPlan = await service.generateStudyPlan(input);
++    console.log('  Output:', JSON.stringify(studyPlan.quarter1, null, 2));
++
++    assert(studyPlan !== null && typeof studyPlan === 'object', 'Returns a StudyPlan object');
++    assert('quarter1' in studyPlan && 'quarter4' in studyPlan,  'Has all 4 quarter keys');
++    assert(typeof studyPlan.quarter1.is_need_review === 'boolean',
++                                                               'is_need_review is boolean');
++    assert(studyPlan.quarter1.is_need_review === true,         'Q1 score 45 → is_need_review true');
++    assert(studyPlan.quarter3.is_need_review === false,        'Q3 score 81 → is_need_review false');
++    assert(
++      ['High Priority', 'Moderate Priority', 'Low Priority'].includes(studyPlan.quarter1.focus_level),
++      'focus_level is a valid enum value'
++    );
++    assert(typeof studyPlan.quarter1.how_to_get_high_scores === 'string' ||
++           Array.isArray(studyPlan.quarter1.how_to_get_high_scores),
++           'how_to_get_high_scores is present');
+   } catch (err) {
+-    console.error(`❌ Failed: ${label}`);
+-    console.error('   →', (err as Error).message);
+-    return null;
++    console.error('  💥 Service threw:', err);
++    failCount += 7;
++  }
++}
++
++// ─────────────────────────────────────────────────────────────────────────────
++// TEST 3 — LessonMaterialService
++//   Generates the 3-page structured lesson from curriculum content.
++//   NOTE: promptTemplates.ts names this 'tutorPrompt' — rename to
++//   'lessonMaterialPrompt' to match the service call (see consistency notes).
++// ─────────────────────────────────────────────────────────────────────────────
++async function testLessonMaterial(): Promise<void> {
++  printHeader('TEST 3 · LessonMaterialService');
++
++  const input: LessonMaterialInput = {
++    topic:   MOCK_LESSON.title,
++    lecture: MOCK_SUBJECT.q1_content,
++  };
++
++  try {
++    const service  = new LessonMaterialService();
++    const material = await service.generateMaterial(input);
++    console.log('  Output (page1):', JSON.stringify(material.page1, null, 2));
++
++    assert(material !== null && typeof material === 'object', 'Returns a LessonMaterial object');
++    assert('page1' in material && 'page2' in material && 'page3' in material,
++                                                              'Has all 3 page keys');
++
++    // Page 1 — Introduction
++    assert(typeof material.page1.topic_introduction === 'string' &&
++           material.page1.topic_introduction.length > 0,      'page1.topic_introduction is non-empty');
++    assert(Array.isArray(material.page1.learning_objectives) &&
++           material.page1.learning_objectives.length > 0,     'page1.learning_objectives is a non-empty array');
++    assert(typeof material.page1.tip === 'string',             'page1.tip is a string');
++
++    // Page 2 — Core Content
++    assert(typeof material.page2.lecture_content === 'string' &&
++           material.page2.lecture_content.length > 0,         'page2.lecture_content is non-empty');
++    assert(Array.isArray(material.page2.key_concepts),         'page2.key_concepts is an array');
++
++    // Page 3 — Application
++    assert(typeof material.page3.real_life_application === 'string', 'page3.real_life_application is a string');
++    assert(typeof material.page3.summary === 'string',               'page3.summary is a string');
++  } catch (err) {
++    console.error('  💥 Service threw:', err);
++    failCount += 8;
+   }
+ }
+ 
+-async function testAIExplanation() {
+-  section('TEST 7 — AIExplanationService');
++// ─────────────────────────────────────────────────────────────────────────────
++// TEST 4 — AIExplanationService
++//   Generates a 3-5 sentence spoken explanation from a lesson section.
++//   Input text must be markdown-stripped before passing in.
++// ─────────────────────────────────────────────────────────────────────────────
++async function testAIExplanation(): Promise<void> {
++  printHeader('TEST 4 · AIExplanationService');
+ 
+-  const svc = new AIExplanationService();
++  // Simulates stripMarkdown(lesson.sections[currentSection].content)
++  const input: AIExplanationInput = {
++    text: 'Cells are the basic unit of life. Eukaryotic cells have a nucleus ' +
++          'and membrane-bound organelles, while prokaryotic cells do not. ' +
++          'The mitochondria produces ATP through cellular respiration.',
++    grade: MOCK_PROFILE.grade,
++  };
+ 
+-  const sectionText = 'The small intestine absorbs most nutrients into the bloodstream. ' +
+-    'It is about 6 metres long and lined with tiny finger-like projections ' +
+-    'called villi that increase the surface area for absorption.';
++  try {
++    const service     = new AIExplanationService();
++    const explanation = await service.getExplanation(input);
++    console.log('  Output:', explanation);
+ 
+-  // Grade 7 — simpler language expected
+-  console.log('\n📥 Input text:', sectionText);
+-  console.log('\n▶ Testing Grade 7...');
++    assert(typeof explanation === 'string',     'Returns a string');
++    assert(explanation.trim().length > 0,        'Explanation is non-empty');
++    assert(!explanation.includes('```'),         'No markdown code fences');
++    assert(!explanation.includes('*') && !explanation.includes('#'),
++                                                 'No markdown symbols (TTS-safe)');
+ 
+-  const g7 = await run('AIExplanationService.getExplanation (Grade 7)', () =>
+-    svc.getExplanation({ text: sectionText, grade: 7 })
+-  );
++    // Rough sentence count — should be 3-5
++    const sentenceCount = (explanation.match(/[.!?]+/g) || []).length;
++    assert(sentenceCount >= 3 && sentenceCount <= 7,
++                                                 `Sentence count is reasonable (got ${sentenceCount})`);
++  } catch (err) {
++    console.error('  💥 Service threw:', err);
++    failCount += 5;
++  }
++}
++
++// ─────────────────────────────────────────────────────────────────────────────
++// TEST 5 — AITutorService
++//   Tests a 2-turn conversation grounded in lesson content.
++//   Turn 1: student asks a relevant question.
++//   Turn 2: student asks an off-topic question (should be redirected).
++// ─────────────────────────────────────────────────────────────────────────────
++async function testAITutor(): Promise<void> {
++  printHeader('TEST 5 · AITutorService');
++
++  const lessonContent =
++    'The mitochondria is the powerhouse of the cell. It produces ATP through ' +
++    'cellular respiration using oxygen and glucose. Plant cells also contain ' +
++    'chloroplasts which capture sunlight to produce food via photosynthesis.';
++
++  // ── Turn 1: on-topic question ─────────────────────────────────────────────
++  const turn1Input: TutorChatInput = {
++    name:          MOCK_PROFILE.name,
++    grade:         MOCK_PROFILE.grade,
++    country:       MOCK_PROFILE.country,
++    subjectName:   MOCK_SUBJECT.name,
++    lessonTitle:   MOCK_LESSON.title,
++    lessonContent,
++    history: [
++      { role: 'user', content: 'What does the mitochondria do?' },
++    ],
++  };
++
++  try {
++    const reply1 = await AITutorService.getResponse(turn1Input);
++    console.log('  Turn 1 Reply:', reply1);
++
++    assert(typeof reply1 === 'string' && reply1.trim().length > 0, 'Turn 1: returns non-empty string');
++    assert(!reply1.includes('```'),                                 'Turn 1: no markdown fences');
++    assert(
++      reply1.toLowerCase().includes('atp') ||
++      reply1.toLowerCase().includes('energy') ||
++      reply1.toLowerCase().includes('mitochondria'),
++      'Turn 1: response references the mitochondria topic'
++    );
++  } catch (err) {
++    console.error('  💥 Turn 1 threw:', err);
++    failCount += 3;
++  }
+ 
+-  if (g7) {
+-    console.log(`\n▶ Grade 7 result:\n   "${g7}"`);
+-    console.log(`▶ Is plain text (no markdown): ${!/[*#[\]`]/.test(g7) ? '✅' : '❌'}`);
+-    console.log(`▶ Not empty: ${g7.length > 20 ? '✅' : '❌'}`);
++  // ── Turn 2: off-topic question (should redirect) ──────────────────────────
++  const turn2Input: TutorChatInput = {
++    ...turn1Input,
++    history: [
++      { role: 'user',  content: 'What does the mitochondria do?' },
++      { role: 'tutor', content: 'Great question, Amirah! The mitochondria produces ATP...' },
++      { role: 'user',  content: 'Who won the World Cup?' },
++    ],
++  };
++
++  try {
++    const reply2 = await AITutorService.getResponse(turn2Input);
++    console.log('  Turn 2 Reply (off-topic):', reply2);
++
++    assert(typeof reply2 === 'string' && reply2.trim().length > 0, 'Turn 2: returns non-empty string');
++    assert(
++      reply2.toLowerCase().includes("isn't covered") ||
++      reply2.toLowerCase().includes('not covered')   ||
++      reply2.toLowerCase().includes('get back')      ||
++      reply2.toLowerCase().includes(MOCK_LESSON.title.toLowerCase()),
++      'Turn 2: off-topic question is redirected back to lesson'
++    );
++  } catch (err) {
++    console.error('  💥 Turn 2 threw:', err);
++    failCount += 2;
+   }
++}
+ 
+-  // Grade 12 — more technical language expected
+-  console.log('\n▶ Testing Grade 12...');
++// ─────────────────────────────────────────────────────────────────────────────
++// TEST 6 — LessonQuizService
++//   Tests all three question types: easy/medium (MCQ or TF) and hard (FB).
++//   Each call generates exactly 1 question.
++// ─────────────────────────────────────────────────────────────────────────────
++async function testLessonQuiz(): Promise<void> {
++  printHeader('TEST 6 · LessonQuizService');
+ 
+-  const g12 = await run('AIExplanationService.getExplanation (Grade 12)', () =>
+-    svc.getExplanation({ text: sectionText, grade: 12 })
+-  );
++  const service = new LessonQuizService();
++
++  // Seed questions (passed as Question[]) — mirrors what LessonView.tsx builds
++  const seedQuestions = [
++    { question: 'What is the function of the mitochondria?', answer: 'Produces ATP' },
++    { question: 'Do plant cells have cell walls?',           answer: 'true' },
++    { question: 'Cells are the basic ___ of life.',          answer: 'unit' },
++  ];
++
++  // ── 6a: Easy question (MCQ or TF random) ─────────────────────────────────
++  const easyInput: LessonQuizInput = {
++    grade:           MOCK_PROFILE.grade,
++    country:         MOCK_PROFILE.country,
++    difficulty:      'easy',
++    question_number: 1,
++    questions:       seedQuestions,
++  };
++
++  try {
++    const easyQ = await service.generateQuiz(easyInput);
++    console.log('  Easy Q:', JSON.stringify(easyQ, null, 2));
++
++    assert(easyQ !== null && typeof easyQ === 'object',                'Easy: returns an object');
++    assert(easyQ.type === 'multiple_choice' || easyQ.type === 'true_false',
++                                                                       'Easy: type is MCQ or TF');
++    assert(easyQ.difficulty === 'easy',                                'Easy: difficulty is easy');
++    assert(typeof (easyQ as any).explanation === 'string' &&
++           (easyQ as any).explanation.length > 0,                      'Easy: explanation is present');
++  } catch (err) {
++    console.error('  💥 Easy Q threw:', err);
++    failCount += 4;
++  }
++
++  // ── 6b: Hard question (always Fill Blank) ─────────────────────────────────
++  const hardInput: LessonQuizInput = {
++    ...easyInput,
++    difficulty:      'hard',
++    question_number: 3,
++  };
++
++  try {
++    const hardQ = await service.generateQuiz(hardInput);
++    console.log('  Hard Q:', JSON.stringify(hardQ, null, 2));
++
++    assert(hardQ.type === 'fill_blank',                'Hard: type is fill_blank');
++    assert(hardQ.difficulty === 'hard',                'Hard: difficulty is hard');
++    assert(typeof (hardQ as any).correctAnswer === 'string' &&
++           (hardQ as any).correctAnswer.length > 0,    'Hard: correctAnswer is a non-empty string');
++    assert((hardQ as any).questionText?.includes('___'),
++                                                       'Hard: questionText contains blank ___');
++  } catch (err) {
++    console.error('  💥 Hard Q threw:', err);
++    failCount += 4;
++  }
++}
++
++// ─────────────────────────────────────────────────────────────────────────────
++// TEST 7 — QuarterlyExamService
++//   Generates a full set of rewritten questions from seed data.
++//   Difficulty split: easy → MCQ/TF, hard → FB.
++//   lessonIndex = 0 (even) → DragDrop included via seed in real app.
++// ─────────────────────────────────────────────────────────────────────────────
++async function testQuarterlyExam(): Promise<void> {
++  printHeader('TEST 7 · QuarterlyExamService');
++
++  const input: SimpleExamInput = {
++    subjectName:  MOCK_SUBJECT.name,
++    quarter:      MOCK_LESSON.quarter,
++    lessonTitle:  MOCK_LESSON.title,
++    grade:        MOCK_PROFILE.grade,
++    country:      MOCK_PROFILE.country,
++    difficulty:   'mixed',
++    questions: [
++      { question: 'What organelle produces ATP?',                     answer: 'Mitochondria' },
++      { question: 'The cell membrane is selectively permeable.',       answer: 'true' },
++      { question: 'Plant cells contain ___ for photosynthesis.',      answer: 'chloroplasts' },
++      { question: 'What process creates two identical daughter cells?', answer: 'Mitosis' },
++      { question: 'Ribosomes are responsible for protein ___.',       answer: 'synthesis' },
++      { question: 'Which organelle packages and ships proteins?',      answer: 'Golgi apparatus' },
++    ],
++  };
++
++  try {
++    const service  = new QuarterlyExamService();
++    const examQs   = await service.generateExam(input);
++    console.log('  Output[0]:', JSON.stringify(examQs[0], null, 2));
++
++    assert(Array.isArray(examQs),            'Returns an array');
++    assert(examQs.length > 0,               'Array is non-empty');
++
++    const validTypes = ['multiple_choice', 'true_false', 'fill_blank', 'drag_drop', 'matching'];
++    assert(examQs.every(q => validTypes.includes(q.type)),
++                                             'All question types are valid');
++
++    const validDiffs = ['easy', 'medium', 'hard'];
++    assert(examQs.every(q => validDiffs.includes(q.difficulty)),
++                                             'All difficulty values are valid');
++
++    // MCQ in quarterly exam uses correctAnswer: string (NOT correctOption: number)
++    const mcqQs = examQs.filter(q => q.type === 'multiple_choice') as any[];
++    if (mcqQs.length > 0) {
++      assert(typeof mcqQs[0].correctAnswer === 'string',
++                                             'QE MCQ uses correctAnswer: string (not index)');
++      assert(Array.isArray(mcqQs[0].options) && mcqQs[0].options.length === 4,
++                                             'QE MCQ has exactly 4 options');
++    }
+ 
+-  if (g12) {
+-    console.log(`\n▶ Grade 12 result:\n   "${g12}"`);
+-    console.log(`▶ Is plain text (no markdown): ${!/[*#[\]`]/.test(g12) ? '✅' : '❌'}`);
++    const fbQs = examQs.filter(q => q.type === 'fill_blank') as any[];
++    if (fbQs.length > 0) {
++      assert(fbQs[0].questionText?.includes('___'),
++                                             'Fill-blank question contains ___');
++    }
++  } catch (err) {
++    console.error('  💥 Service threw:', err);
++    failCount += 7;
+   }
+ }
+ 
++// ─────────────────────────────────────────────────────────────────────────────
++// TEST 8 — FocusAreaService
++//   Generates the dashboard focus widget from weakest subject/lesson data.
++// ─────────────────────────────────────────────────────────────────────────────
++async function testFocusArea(): Promise<void> {
++  printHeader('TEST 8 · FocusAreaService');
++
++  const input: FocusAreaRequest = {
++    subject_name:    MOCK_SUBJECT.name,
++    subject_mastery: 42,
++    lesson_title:    MOCK_LESSON.title,
++    lesson_score:    38,
++    lesson_content:  'Cell organelles, mitochondria functions, photosynthesis in chloroplasts, ' +
++                     'ribosome protein synthesis, Golgi apparatus, cell wall rigidity',
++  };
+ 
+-async function main() {
+-  const lesson = new LessonQuizService();
++  try {
++    const response = await FocusAreaService.getFocusArea(input);
++    console.log('  Output:', JSON.stringify(response, null, 2));
+ 
+-  // const json = await lesson.generateQuiz(lessonQuizInput);
+-  // console.log(json);
++    assert(response !== null && typeof response === 'object',  'Returns a FocusAreaResponse object');
++    assert(typeof response.subject_line === 'string' && response.subject_line.length > 0,
++                                                               'subject_line is non-empty');
++    assert(typeof response.lesson_line === 'string' && response.lesson_line.length > 0,
++                                                               'lesson_line is non-empty');
++    assert(typeof response.take_note === 'string' && response.take_note.length > 0,
++                                                               'take_note is non-empty');
+ 
+-  console.log('\n🚀 PocketClass AI Module — CLI Test Runner');
+-  console.log('Model: gemma2:2b via Ollama');
+-  console.log('Make sure Ollama is running:  ollama serve\n');
++    // Verify format matches FocusAreaResponse contract
++    assert(response.subject_line.includes(MOCK_SUBJECT.name),
++                                                               'subject_line contains subject name');
++    assert(response.subject_line.includes('42'),               'subject_line contains mastery %');
++    assert(response.lesson_line.includes('38'),                'lesson_line contains score %');
+ 
+-  const start = Date.now();
++    // take_note should be a call to action, not a greeting
++    const lower = response.take_note.toLowerCase();
++    assert(!lower.startsWith('hello') && !lower.startsWith('hi'),
++                                                               'take_note has no greeting (action-oriented)');
++  } catch (err) {
++    console.error('  💥 Service threw:', err);
++    failCount += 7;
++  }
++}
+ 
+-  // await testModelClass();
+-  // await testDiagnosticQuiz();
+-  // await testStudyPlan();
+-  // await testLessonMaterial();
+-  // await testLessonQuiz();
+-  // await testAITutor();
+-   await testAIExplanation();
+- 
+-  const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+-  console.log('\n' + '═'.repeat(60));
+-  console.log(`  ✅ All tests complete — ${elapsed}s`);
+-  console.log('═'.repeat(60) + '\n');
++// ─────────────────────────────────────────────────────────────────────────────
++// CONSISTENCY NOTES  (printed at end — not assertions, just warnings)
++// ─────────────────────────────────────────────────────────────────────────────
++function printConsistencyNotes(): void {
++  printHeader('CONSISTENCY NOTES (non-fatal)');
++
++  console.log(`
++  1. PROMPT NAME MISMATCH
++     LessonMaterialService calls:  PromptTemplates.lessonMaterialPrompt
++     promptTemplates.ts defines:   PromptTemplates.tutorPrompt
++     Fix: Rename 'tutorPrompt' → 'lessonMaterialPrompt' in promptTemplates.ts
++
++  2. MCQ CORRECT ANSWER TYPE SPLIT
++     LessonQuizService  → MultipleChoiceQuestion.correctOption: number  (0-based index)
++     QuarterlyExamService → QEMultipleChoiceQuestion.correctAnswer: string (option text)
++     Both are intentional — ensure QuizRenderer.tsx and result-saving code
++     handle both variants via their respective type guards.
++
++  3. MISSING FocusAreaService
++     focusAreaPrompt is defined in promptTemplates.ts and interfaces exist,
++     but no service file was present. FocusAreaService.ts has been created
++     as part of this output — place it alongside the other services.
++
++  4. StudyPlan.how_to_get_high_scores TYPE MISMATCH
++     StudyPlan.ts interface declares: how_to_get_high_scores: string
++     diagnosticStudyPlanPrompt returns: how_to_get_high_scores as string[]
++     Fix: Update StudyPlan.ts → how_to_get_high_scores: string[] OR
++          update the prompt to return a joined string.
++
++  5. LessonQuizService IMPORTS UNUSED BaseQuestion
++     generateQuiz() is typed to return Promise<BaseQuestion>, but the
++     actual returned subtypes (MCQ / TF / FB) extend BaseQuestion correctly.
++     Callers should cast to the specific subtype when accessing type-specific
++     fields (e.g. correctOption, correctAnswer, hint).
++
++  6. ModelClass.getInstance() IS A SINGLETON
++     Tests run serially to avoid temperature race conditions.
++     Do not run tests in parallel without refactoring ModelClass to accept
++     temperature as a per-call argument.
++  `);
++}
++
++// ─────────────────────────────────────────────────────────────────────────────
++// MAIN — runs all tests in student-journey order
++// ─────────────────────────────────────────────────────────────────────────────
++async function main(): Promise<void> {
++  console.log('\n🚀  Starting AI Feature Integration Tests');
++  console.log(`    Profile: ${MOCK_PROFILE.name}, Grade ${MOCK_PROFILE.grade}, ${MOCK_PROFILE.country}`);
++  console.log(`    Subject: ${MOCK_SUBJECT.name} — ${MOCK_SUBJECT.q1_topic}`);
++
++  // Run serially — ModelClass is a singleton with mutable temperature
++  await testDiagnosticQuiz();
++  await testStudyPlan();
++  await testLessonMaterial();
++  await testAIExplanation();
++  await testAITutor();
++  await testLessonQuiz();
++  await testQuarterlyExam();
++  await testFocusArea();
+ 
++  printConsistencyNotes();
++  printSummary();
+ }
+ 
+-// if (require.main === module) {
+-//   runTests();
+-// }
+\ No newline at end of file
++main().catch(err => {
++  console.error('\n💥 Unexpected top-level error:', err);
++  process.exit(1);
++});
+\ No newline at end of file
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AutoImportSettings\">\r\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\r\n  </component>\r\n  <component name=\"ChangeListManager\">\r\n    <list default=\"true\" id=\"fe8a9897-b906-48e2-977a-046a41f7f3cb\" name=\"Changes\" comment=\"\">\r\n      <change beforePath=\"$PROJECT_DIR$/lib/database.ts\" beforeDir=\"false\" afterPath=\"$PROJECT_DIR$/lib/database.ts\" afterDir=\"false\" />\r\n    </list>\r\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\r\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\r\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\r\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\r\n  </component>\r\n  <component name=\"ExternalProjectsData\">\r\n    <projectState path=\"$PROJECT_DIR$/PocketClass_AIFeatures/node_modules/@react-native/gradle-plugin\">\r\n      <ProjectState />\r\n    </projectState>\r\n    <projectState path=\"$PROJECT_DIR$/PocketClass_AIFeatures/node_modules/expo-modules-core/expo-module-gradle-plugin\">\r\n      <ProjectState />\r\n    </projectState>\r\n    <projectState path=\"$PROJECT_DIR$/frontend/node_modules/@react-native/gradle-plugin\">\r\n      <ProjectState />\r\n    </projectState>\r\n    <projectState path=\"$PROJECT_DIR$/frontend/node_modules/expo-modules-autolinking/android/expo-gradle-plugin\">\r\n      <ProjectState />\r\n    </projectState>\r\n    <projectState path=\"$PROJECT_DIR$/frontend/node_modules/expo-modules-core/expo-module-gradle-plugin\">\r\n      <ProjectState />\r\n    </projectState>\r\n    <projectState path=\"$PROJECT_DIR$/frontend/node_modules/react-native-safe-area-context/android\">\r\n      <ProjectState />\r\n    </projectState>\r\n    <projectState path=\"$PROJECT_DIR$/frontend/node_modules/react-native-svg/android\">\r\n      <ProjectState />\r\n    </projectState>\r\n  </component>\r\n  <component name=\"ExternalProjectsManager\">\r\n    <system id=\"GRADLE\">\r\n      <state>\r\n        <task path=\"$PROJECT_DIR$/frontend/node_modules/react-native-safe-area-context/android\">\r\n          <activation />\r\n        </task>\r\n        <projects_view>\r\n          <tree_state>\r\n            <expand>\r\n              <path>\r\n                <item name=\"\" type=\"6a2764b6:ExternalProjectsStructure$RootNode\" />\r\n                <item name=\"android\" type=\"f1a62948:ProjectNode\" />\r\n              </path>\r\n              <path>\r\n                <item name=\"\" type=\"6a2764b6:ExternalProjectsStructure$RootNode\" />\r\n                <item name=\"android\" type=\"f1a62948:ProjectNode\" />\r\n                <item name=\"Tasks\" type=\"e4a08cd1:TasksNode\" />\r\n              </path>\r\n            </expand>\r\n            <select />\r\n          </tree_state>\r\n        </projects_view>\r\n      </state>\r\n    </system>\r\n  </component>\r\n  <component name=\"Git.Settings\">\r\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\r\n  </component>\r\n  <component name=\"GitHubPullRequestSearchHistory\"><![CDATA[{\r\n  \"lastFilter\": {\r\n    \"state\": \"OPEN\",\r\n    \"assignee\": \"AustineLomocso\"\r\n  }\r\n}]]></component>\r\n  <component name=\"GithubPullRequestsUISettings\"><![CDATA[{\r\n  \"selectedUrlAndAccountId\": {\r\n    \"url\": \"https://github.com/Bossdale/PocketClass.git\",\r\n    \"accountId\": \"77345a91-ac17-4bd6-8748-d07934a2620b\"\r\n  }\r\n}]]></component>\r\n  <component name=\"GradleScriptDefinitionsStorage\" workingDir=\"$PROJECT_DIR$/frontend/node_modules/expo-modules-autolinking/android/expo-gradle-plugin\" gradleHome=\"C:\\Users\\austi\\.gradle\\wrapper\\dists\\gradle-9.0.0-bin\\d6wjpkvcgsg3oed0qlfss3wgl\\gradle-9.0.0\" javaHome=\"C:\\Program Files\\Microsoft\\jdk-17.0.17.10-hotspot\" gradleVersion=\"9.0.0\">\r\n    <option name=\"jvmArguments\">\r\n      <list>\r\n        <option value=\"-Dandroid.home=C:\\Users\\austi\\AppData\\Local\\Android\\Sdk\" />\r\n      </list>\r\n    </option>\r\n  </component>\r\n  <component name=\"ProjectColorInfo\"><![CDATA[{\r\n  \"associatedIndex\": 5\r\n}]]></component>\r\n  <component name=\"ProjectId\" id=\"3AqlUsCftT8zZMrN3jhXjJEX7E7\" />\r\n  <component name=\"ProjectViewState\">\r\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\r\n    <option name=\"showLibraryContents\" value=\"true\" />\r\n  </component>\r\n  <component name=\"PropertiesComponent\"><![CDATA[{\r\n  \"keyToString\": {\r\n    \"ModuleVcsDetector.initialDetectionPerformed\": \"true\",\r\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\r\n    \"RunOnceActivity.git.unshallow\": \"true\",\r\n    \"git-widget-placeholder\": \"AI__Module\",\r\n    \"ignore.virus.scanning.warn.message\": \"true\",\r\n    \"kotlin-language-version-configured\": \"true\",\r\n    \"last_opened_file_path\": \"C:/Users/austi/PocketClass\",\r\n    \"project.structure.last.edited\": \"Project\",\r\n    \"project.structure.proportion\": \"0.0\",\r\n    \"project.structure.side.proportion\": \"0.0\"\r\n  }\r\n}]]></component>\r\n  <component name=\"SharedIndexes\">\r\n    <attachedChunks>\r\n      <set>\r\n        <option value=\"bundled-jdk-30f59d01ecdd-2fc7cc6b9a17-intellij.indexing.shared.core-IU-253.30387.90\" />\r\n      </set>\r\n    </attachedChunks>\r\n  </component>\r\n  <component name=\"TaskManager\">\r\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\r\n      <changelist id=\"fe8a9897-b906-48e2-977a-046a41f7f3cb\" name=\"Changes\" comment=\"\" />\r\n      <created>1773328000237</created>\r\n      <option name=\"number\" value=\"Default\" />\r\n      <option name=\"presentableId\" value=\"Default\" />\r\n      <updated>1773328000237</updated>\r\n    </task>\r\n    <servers />\r\n  </component>\r\n</project>
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision c9432150fb668ee8b0f531213ac0b6d1a763ba69)
++++ b/.idea/workspace.xml	(date 1775564569776)
+@@ -5,6 +5,9 @@
+   </component>
+   <component name="ChangeListManager">
+     <list default="true" id="fe8a9897-b906-48e2-977a-046a41f7f3cb" name="Changes" comment="">
++      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/main.ts" beforeDir="false" afterPath="$PROJECT_DIR$/PocketClass_AIFeatures/main.ts" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/services/LessonMaterialService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/PocketClass_AIFeatures/services/LessonMaterialService.ts" afterDir="false" />
++      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/templates/promptTemplates.ts" beforeDir="false" afterPath="$PROJECT_DIR$/PocketClass_AIFeatures/templates/promptTemplates.ts" afterDir="false" />
+       <change beforePath="$PROJECT_DIR$/lib/database.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/database.ts" afterDir="false" />
+     </list>
+     <option name="SHOW_DIALOG" value="false" />
+@@ -63,18 +66,18 @@
+   <component name="Git.Settings">
+     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+   </component>
+-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+-  "lastFilter": {
+-    "state": "OPEN",
+-    "assignee": "AustineLomocso"
++  <component name="GitHubPullRequestSearchHistory">{
++  &quot;lastFilter&quot;: {
++    &quot;state&quot;: &quot;OPEN&quot;,
++    &quot;assignee&quot;: &quot;AustineLomocso&quot;
+   }
+-}]]></component>
+-  <component name="GithubPullRequestsUISettings"><![CDATA[{
+-  "selectedUrlAndAccountId": {
+-    "url": "https://github.com/Bossdale/PocketClass.git",
+-    "accountId": "77345a91-ac17-4bd6-8748-d07934a2620b"
++}</component>
++  <component name="GithubPullRequestsUISettings">{
++  &quot;selectedUrlAndAccountId&quot;: {
++    &quot;url&quot;: &quot;https://github.com/Bossdale/PocketClass.git&quot;,
++    &quot;accountId&quot;: &quot;77345a91-ac17-4bd6-8748-d07934a2620b&quot;
+   }
+-}]]></component>
++}</component>
+   <component name="GradleScriptDefinitionsStorage" workingDir="$PROJECT_DIR$/frontend/node_modules/expo-modules-autolinking/android/expo-gradle-plugin" gradleHome="C:\Users\austi\.gradle\wrapper\dists\gradle-9.0.0-bin\d6wjpkvcgsg3oed0qlfss3wgl\gradle-9.0.0" javaHome="C:\Program Files\Microsoft\jdk-17.0.17.10-hotspot" gradleVersion="9.0.0">
+     <option name="jvmArguments">
+       <list>
+@@ -82,28 +85,41 @@
+       </list>
+     </option>
+   </component>
+-  <component name="ProjectColorInfo"><![CDATA[{
+-  "associatedIndex": 5
+-}]]></component>
++  <component name="ProjectColorInfo">{
++  &quot;associatedIndex&quot;: 5
++}</component>
+   <component name="ProjectId" id="3AqlUsCftT8zZMrN3jhXjJEX7E7" />
+   <component name="ProjectViewState">
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+-  <component name="PropertiesComponent"><![CDATA[{
+-  "keyToString": {
+-    "ModuleVcsDetector.initialDetectionPerformed": "true",
+-    "RunOnceActivity.ShowReadmeOnStart": "true",
+-    "RunOnceActivity.git.unshallow": "true",
+-    "git-widget-placeholder": "AI__Module",
+-    "ignore.virus.scanning.warn.message": "true",
+-    "kotlin-language-version-configured": "true",
+-    "last_opened_file_path": "C:/Users/austi/PocketClass",
+-    "project.structure.last.edited": "Project",
+-    "project.structure.proportion": "0.0",
+-    "project.structure.side.proportion": "0.0"
++  <component name="PropertiesComponent">{
++  &quot;keyToString&quot;: {
++    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
++    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
++    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
++    &quot;git-widget-placeholder&quot;: &quot;mergeAll&quot;,
++    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
++    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
++    &quot;last_opened_file_path&quot;: &quot;C:/Users/austi/PocketClass&quot;,
++    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
++    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
++    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;
+   }
+-}]]></component>
++}</component>
++  <component name="RunManager">
++    <configuration default="true" type="JetRunConfigurationType">
++      <module name="PocketClass" />
++      <method v="2">
++        <option name="Make" enabled="true" />
++      </method>
++    </configuration>
++    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
++      <module name="PocketClass" />
++      <option name="filePath" />
++      <method v="2" />
++    </configuration>
++  </component>
+   <component name="SharedIndexes">
+     <attachedChunks>
+       <set>
+Index: lib/database.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>/**\r\n * PocketClass — lib/database.ts  (v2)\r\n *\r\n * SQLite database layer using expo-sqlite v14+ (async API).\r\n *\r\n * v2 changes:\r\n *  ★ subjects now carry a `grade` field (grade-scoped subjects).\r\n *  ★ diagnostic_results is unique per (user_id, subject_id) — one per profile.\r\n *    - dbSaveDiagnosticResult()  uses INSERT OR IGNORE (no duplicate writes).\r\n *    - dbGetDiagnosticResult()   returns a single result | null  (not an array).\r\n *    - DiagnosticResult type no longer has attemptNumber.\r\n *  ★ dbGetSubjectsByGrade()  replaces dbGetSubjects() as the main query — it\r\n *    filters subjects to the student's grade level.\r\n *\r\n * Exports:\r\n *   getDb()    – opens / returns the singleton DB connection\r\n *   initDb()   – runs the full schema; safe to call on every app launch\r\n *   All CRUD helpers consumed by lib/store.ts\r\n *\r\n * Usage:\r\n *   import { initDb } from '@/lib/database';\r\n *   await initDb();   // call once in app/_layout.tsx before rendering\r\n */\r\n\r\nimport * as SQLite from 'expo-sqlite';\r\nimport type {\r\n  Profile,\r\n  Subject,\r\n  SubjectProgress,\r\n  Lesson,\r\n  LessonProgress,\r\n  DiagnosticResult,\r\n  QuarterlyExamResult,\r\n  LessonQuizResult,\r\n  ChatMessage,\r\n} from '@/lib/types';\r\n\r\n// ─── Singleton connection ────────────────────────────────────────────────────\r\n\r\nlet _db: SQLite.SQLiteDatabase | null = null;\r\n\r\n/**\r\n * Returns the open DB connection.\r\n * Opens on first call with WAL mode + foreign-key enforcement.\r\n */\r\nexport async function getDb(): Promise<SQLite.SQLiteDatabase> {\r\n  if (!_db) {\r\n    _db = await SQLite.openDatabaseAsync('pocketclass.db');\r\n    await _db.execAsync(`\r\n      PRAGMA foreign_keys = ON;\r\n      PRAGMA journal_mode = WAL;\r\n      PRAGMA synchronous  = NORMAL;\r\n    `);\r\n  }\r\n  return _db;\r\n}\r\n\r\n// ─── Schema Initialization ───────────────────────────────────────────────────\r\n\r\n/**\r\n * Creates all tables, indexes and views if they don't already exist.\r\n * Safe to call on every app launch — all statements use IF NOT EXISTS.\r\n */\r\nexport async function initDb(): Promise<void> {\r\n  const db = await getDb();\r\n\r\n  await db.execAsync(`\r\n\r\n    -- ── 1. PROFILES ──────────────────────────────────────────────────────────\r\n    CREATE TABLE IF NOT EXISTS profiles (\r\n      id         TEXT    PRIMARY KEY,\r\n      name       TEXT    NOT NULL,\r\n      country    TEXT    NOT NULL\r\n                   CHECK (country IN ('indonesia','malaysia','brunei')),\r\n      grade      INTEGER NOT NULL CHECK (grade BETWEEN 7 AND 12),\r\n      created_at TEXT    NOT NULL\r\n    );\r\n\r\n    -- ── 2. SUBJECTS ★ grade-scoped + static curriculum content ───────────────\r\n    --   Seeded once at first-launch, never modified by the app.\r\n    --   q{1-4}_topic / q{1-4}_content are the sole source of truth for all\r\n    --   AI generation: diagnostic quizzes, lesson material, lesson quizzes,\r\n    --   and quarterly exams all read from these fields.\r\n    CREATE TABLE IF NOT EXISTS subjects (\r\n      id            TEXT    PRIMARY KEY,\r\n      grade         INTEGER NOT NULL CHECK (grade BETWEEN 7 AND 12),\r\n      name          TEXT    NOT NULL,\r\n      emoji         TEXT    NOT NULL,\r\n      total_lessons INTEGER NOT NULL DEFAULT 0 CHECK (total_lessons >= 0),\r\n      description   TEXT    NOT NULL DEFAULT '',\r\n      q1_topic      TEXT    NOT NULL DEFAULT '',\r\n      q1_content    TEXT    NOT NULL DEFAULT '',\r\n      q2_topic      TEXT    NOT NULL DEFAULT '',\r\n      q2_content    TEXT    NOT NULL DEFAULT '',\r\n      q3_topic      TEXT    NOT NULL DEFAULT '',\r\n      q3_content    TEXT    NOT NULL DEFAULT '',\r\n      q4_topic      TEXT    NOT NULL DEFAULT '',\r\n      q4_content    TEXT    NOT NULL DEFAULT '',\r\n      UNIQUE (name, grade)\r\n    );\r\n    CREATE INDEX IF NOT EXISTS idx_subjects_grade ON subjects (grade);\r\n\r\n    -- ── 3. SUBJECT_PROGRESS ──────────────────────────────────────────────────\r\n    CREATE TABLE IF NOT EXISTS subject_progress (\r\n      id                   TEXT    PRIMARY KEY,\r\n      subject_id           TEXT    NOT NULL UNIQUE\r\n                                     REFERENCES subjects(id) ON DELETE CASCADE,\r\n      mastery_score        REAL    NOT NULL DEFAULT 0\r\n                                     CHECK (mastery_score BETWEEN 0 AND 100),\r\n      lessons_completed    INTEGER NOT NULL DEFAULT 0 CHECK (lessons_completed >= 0),\r\n      total_lessons        INTEGER NOT NULL DEFAULT 0 CHECK (total_lessons >= 0),\r\n      diagnostic_completed INTEGER NOT NULL DEFAULT 0\r\n                                     CHECK (diagnostic_completed IN (0,1))\r\n    );\r\n\r\n    -- ── 4. LESSONS ────────────────────────────────────────────────────────────\r\n    CREATE TABLE IF NOT EXISTS lessons (\r\n      id                TEXT    PRIMARY KEY,\r\n      subject_id        TEXT    NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,\r\n      title             TEXT    NOT NULL,\r\n      order_num         INTEGER NOT NULL CHECK (order_num >= 1),\r\n      quarter           INTEGER NOT NULL CHECK (quarter BETWEEN 1 AND 4),\r\n      is_quarterly_exam INTEGER NOT NULL DEFAULT 0 CHECK (is_quarterly_exam IN (0,1)),\r\n      sections          TEXT    NOT NULL DEFAULT '[]',\r\n      UNIQUE (subject_id, order_num)\r\n    );\r\n    CREATE INDEX IF NOT EXISTS idx_lessons_subject_quarter\r\n      ON lessons (subject_id, quarter);\r\n\r\n    -- ── 5. LESSON_PROGRESS ────────────────────────────────────────────────────\r\n    CREATE TABLE IF NOT EXISTS lesson_progress (\r\n      id           TEXT    PRIMARY KEY,\r\n      lesson_id    TEXT    NOT NULL UNIQUE REFERENCES lessons(id) ON DELETE CASCADE,\r\n      completed    INTEGER NOT NULL DEFAULT 0 CHECK (completed IN (0,1)),\r\n      quiz_score   REAL    CHECK (quiz_score IS NULL OR quiz_score BETWEEN 0 AND 100),\r\n      completed_at TEXT\r\n    );\r\n    CREATE INDEX IF NOT EXISTS idx_lesson_progress_lesson\r\n      ON lesson_progress (lesson_id);\r\n\r\n    -- ── 6. DIAGNOSTIC_RESULTS ★ one per (user, subject) ──────────────────────\r\n    CREATE TABLE IF NOT EXISTS diagnostic_results (\r\n      id            TEXT    PRIMARY KEY,\r\n      user_id       TEXT    NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,\r\n      subject_id    TEXT    NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,\r\n      q1_score      REAL    NOT NULL DEFAULT 0 CHECK (q1_score    BETWEEN 0 AND 100),\r\n      q2_score      REAL    NOT NULL DEFAULT 0 CHECK (q2_score    BETWEEN 0 AND 100),\r\n      q3_score      REAL    NOT NULL DEFAULT 0 CHECK (q3_score    BETWEEN 0 AND 100),\r\n      q4_score      REAL    NOT NULL DEFAULT 0 CHECK (q4_score    BETWEEN 0 AND 100),\r\n      overall_score REAL    NOT NULL DEFAULT 0 CHECK (overall_score BETWEEN 0 AND 100),\r\n      completed_at  TEXT    NOT NULL,\r\n      UNIQUE (user_id, subject_id)\r\n    );\r\n    CREATE UNIQUE INDEX IF NOT EXISTS idx_diagnostic_user_subject\r\n      ON diagnostic_results (user_id, subject_id);\r\n\r\n    -- ── 7. QUARTERLY_EXAM_RESULTS ────────────────────────────────────────────\r\n    CREATE TABLE IF NOT EXISTS quarterly_exam_results (\r\n      id              TEXT    PRIMARY KEY,\r\n      user_id         TEXT    NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,\r\n      subject_id      TEXT    NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,\r\n      quarter         INTEGER NOT NULL CHECK (quarter BETWEEN 1 AND 4),\r\n      score           INTEGER NOT NULL DEFAULT 0   CHECK (score >= 0),\r\n      total_questions INTEGER NOT NULL             CHECK (total_questions > 0),\r\n      easy_score      INTEGER NOT NULL DEFAULT 0   CHECK (easy_score   >= 0),\r\n      medium_score    INTEGER NOT NULL DEFAULT 0   CHECK (medium_score >= 0),\r\n      hard_score      INTEGER NOT NULL DEFAULT 0   CHECK (hard_score   >= 0),\r\n      completed_at    TEXT    NOT NULL,\r\n      attempt_number  INTEGER NOT NULL DEFAULT 1   CHECK (attempt_number >= 1)\r\n    );\r\n    CREATE INDEX IF NOT EXISTS idx_quarterly_exam_subject_quarter\r\n      ON quarterly_exam_results (subject_id, quarter, completed_at DESC);\r\n\r\n    -- ── 8. LESSON_QUIZ_RESULTS ────────────────────────────────────────────────\r\n    CREATE TABLE IF NOT EXISTS lesson_quiz_results (\r\n      id              TEXT    PRIMARY KEY,\r\n      lesson_id       TEXT    NOT NULL REFERENCES lessons(id)  ON DELETE CASCADE,\r\n      user_id         TEXT    NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,\r\n      score           REAL    NOT NULL DEFAULT 0  CHECK (score BETWEEN 0 AND 100),\r\n      total_questions INTEGER NOT NULL            CHECK (total_questions > 0),\r\n      easy_score      INTEGER NOT NULL DEFAULT 0  CHECK (easy_score   >= 0),\r\n      medium_score    INTEGER NOT NULL DEFAULT 0  CHECK (medium_score >= 0),\r\n      hard_score      INTEGER NOT NULL DEFAULT 0  CHECK (hard_score   >= 0),\r\n      completed_at    TEXT    NOT NULL,\r\n      attempt_number  INTEGER NOT NULL DEFAULT 1  CHECK (attempt_number >= 1)\r\n    );\r\n    CREATE INDEX IF NOT EXISTS idx_lesson_quiz_results_lesson\r\n      ON lesson_quiz_results (lesson_id, completed_at DESC);\r\n\r\n    -- ── 9. CHAT_MESSAGES ──────────────────────────────────────────────────────\r\n    CREATE TABLE IF NOT EXISTS chat_messages (\r\n      id        TEXT PRIMARY KEY,\r\n      lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,\r\n      role      TEXT NOT NULL CHECK (role IN ('user','tutor')),\r\n      content   TEXT NOT NULL,\r\n      timestamp TEXT NOT NULL\r\n    );\r\n    CREATE INDEX IF NOT EXISTS idx_chat_messages_lesson\r\n      ON chat_messages (lesson_id, timestamp ASC);\r\n\r\n    -- ── VIEWS ─────────────────────────────────────────────────────────────────\r\n    CREATE VIEW IF NOT EXISTS v_subject_grade_summary AS\r\n      SELECT s.id, s.name, s.emoji, s.grade, s.total_lessons,\r\n             sp.mastery_score, sp.lessons_completed, sp.diagnostic_completed,\r\n             CASE WHEN dr.id IS NOT NULL THEN 1 ELSE 0 END AS has_diagnostic_result\r\n      FROM   subjects s\r\n      LEFT   JOIN subject_progress   sp ON sp.subject_id = s.id\r\n      LEFT   JOIN diagnostic_results dr ON dr.subject_id = s.id;\r\n\r\n    CREATE VIEW IF NOT EXISTS v_lesson_grade_summary AS\r\n      SELECT l.id AS lesson_id, l.title, l.quarter, l.order_num,\r\n             l.is_quarterly_exam, s.grade, s.id AS subject_id, s.name AS subject_name,\r\n             lp.completed, lp.quiz_score\r\n      FROM   lessons l\r\n      JOIN   subjects        s  ON s.id  = l.subject_id\r\n      LEFT   JOIN lesson_progress lp ON lp.lesson_id = l.id;\r\n\r\n  `);\r\n}\r\n\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n// PROFILE\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n\r\n/** Returns the single stored profile, or null before onboarding. */\r\nexport async function dbGetProfile(): Promise<Profile | null> {\r\n  const db = await getDb();\r\n  const row = await db.getFirstAsync<{\r\n    id: string; name: string; country: string; grade: number; created_at: string;\r\n  }>('SELECT * FROM profiles LIMIT 1');\r\n  if (!row) return null;\r\n  return {\r\n    id: row.id,\r\n    name: row.name,\r\n    country: row.country as any,\r\n    grade: row.grade,\r\n    createdAt: row.created_at,\r\n  };\r\n}\r\n\r\n/** Inserts or replaces the student's profile (onboarding). */\r\nexport async function dbSaveProfile(profile: Profile): Promise<void> {\r\n  const db = await getDb();\r\n  await db.runAsync(\r\n    `INSERT OR REPLACE INTO profiles (id, name, country, grade, created_at)\r\n     VALUES (?, ?, ?, ?, ?)`,\r\n    [profile.id, profile.name, profile.country, profile.grade, profile.createdAt],\r\n  );\r\n}\r\n\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n// SUBJECTS  ★ grade-scoped\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n\r\n/**\r\n * ★ Returns only the subjects that match the student's grade level.\r\n * This is the primary query used throughout the app.\r\n */\r\nexport async function dbGetSubjectsByGrade(grade: number): Promise<Subject[]> {\r\n  const db = await getDb();\r\n  const rows = await db.getAllAsync<SubjectRow>(\r\n    'SELECT * FROM subjects WHERE grade = ? ORDER BY name',\r\n    [grade],\r\n  );\r\n  return rows.map(toSubject);\r\n}\r\n\r\n/** Returns all subjects regardless of grade (seeding / admin use). */\r\nexport async function dbGetAllSubjects(): Promise<Subject[]> {\r\n  const db = await getDb();\r\n  const rows = await db.getAllAsync<SubjectRow>(\r\n    'SELECT * FROM subjects ORDER BY grade, name',\r\n  );\r\n  return rows.map(toSubject);\r\n}\r\n\r\n/**\r\n * Returns a single subject by ID.\r\n * Used by screens that need to read q{n}_topic / q{n}_content before\r\n * calling an AI service.\r\n */\r\nexport async function dbGetSubjectById(subjectId: string): Promise<Subject | null> {\r\n  const db = await getDb();\r\n  const row = await db.getFirstAsync<SubjectRow>(\r\n    'SELECT * FROM subjects WHERE id = ?',\r\n    [subjectId],\r\n  );\r\n  return row ? toSubject(row) : null;\r\n}\r\n\r\n/** Inserts a subject row if it does not already exist (seeding). */\r\nexport async function dbUpsertSubject(subject: Subject): Promise<void> {\r\n  const db = await getDb();\r\n  await db.runAsync(\r\n    `INSERT OR IGNORE INTO subjects\r\n       (id, grade, name, emoji, total_lessons,\r\n        description,\r\n        q1_topic, q1_content,\r\n        q2_topic, q2_content,\r\n        q3_topic, q3_content,\r\n        q4_topic, q4_content)\r\n     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,\r\n    [\r\n      subject.id, subject.grade, subject.name, subject.emoji, subject.totalLessons,\r\n      subject.description,\r\n      subject.q1Topic, subject.q1Content,\r\n      subject.q2Topic, subject.q2Content,\r\n      subject.q3Topic, subject.q3Content,\r\n      subject.q4Topic, subject.q4Content,\r\n    ],\r\n  );\r\n}\r\n\r\n// ── Internal row type & mapper ─────────────────────────────────────────────\r\n\r\ntype SubjectRow = {\r\n  id: string; grade: number; name: string; emoji: string; total_lessons: number;\r\n  description: string;\r\n  q1_topic: string; q1_content: string;\r\n  q2_topic: string; q2_content: string;\r\n  q3_topic: string; q3_content: string;\r\n  q4_topic: string; q4_content: string;\r\n};\r\n\r\nfunction toSubject(r: SubjectRow): Subject {\r\n  return {\r\n    id:          r.id,\r\n    grade:       r.grade,\r\n    name:        r.name,\r\n    emoji:       r.emoji,\r\n    totalLessons: r.total_lessons,\r\n    description: r.description,\r\n    q1Topic:     r.q1_topic,   q1Content: r.q1_content,\r\n    q2Topic:     r.q2_topic,   q2Content: r.q2_content,\r\n    q3Topic:     r.q3_topic,   q3Content: r.q3_content,\r\n    q4Topic:     r.q4_topic,   q4Content: r.q4_content,\r\n  };\r\n}\r\n\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n// SUBJECT PROGRESS\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n\r\n/** Returns progress rows for all subjects. */\r\nexport async function dbGetAllSubjectProgress(): Promise<SubjectProgress[]> {\r\n  const db = await getDb();\r\n  const rows = await db.getAllAsync<{\r\n    id: string; subject_id: string; mastery_score: number;\r\n    lessons_completed: number; total_lessons: number; diagnostic_completed: number;\r\n  }>('SELECT * FROM subject_progress');\r\n  return rows.map(toSubjectProgress);\r\n}\r\n\r\n/** Returns progress for a single subject. */\r\nexport async function dbGetSubjectProgress(subjectId: string): Promise<SubjectProgress | null> {\r\n  const db = await getDb();\r\n  const row = await db.getFirstAsync<{\r\n    id: string; subject_id: string; mastery_score: number;\r\n    lessons_completed: number; total_lessons: number; diagnostic_completed: number;\r\n  }>('SELECT * FROM subject_progress WHERE subject_id = ?', [subjectId]);\r\n  return row ? toSubjectProgress(row) : null;\r\n}\r\n\r\n/** Inserts or replaces a subject progress row. */\r\nexport async function dbSaveSubjectProgress(sp: SubjectProgress): Promise<void> {\r\n  const db = await getDb();\r\n  await db.runAsync(\r\n    `INSERT OR REPLACE INTO subject_progress\r\n       (id, subject_id, mastery_score, lessons_completed, total_lessons, diagnostic_completed)\r\n     VALUES (?, ?, ?, ?, ?, ?)`,\r\n    [\r\n      sp.id, sp.subjectId, sp.masteryScore,\r\n      sp.lessonsCompleted, sp.totalLessons,\r\n      sp.diagnosticCompleted ? 1 : 0,\r\n    ],\r\n  );\r\n}\r\n\r\nfunction toSubjectProgress(r: {\r\n  id: string; subject_id: string; mastery_score: number;\r\n  lessons_completed: number; total_lessons: number; diagnostic_completed: number;\r\n}): SubjectProgress {\r\n  return {\r\n    id: r.id,\r\n    subjectId: r.subject_id,\r\n    masteryScore: r.mastery_score,\r\n    lessonsCompleted: r.lessons_completed,\r\n    totalLessons: r.total_lessons,\r\n    diagnosticCompleted: r.diagnostic_completed === 1,\r\n  };\r\n}\r\n\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n// LESSONS\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n\r\n/** Inserts a lesson row if it does not already exist (seeding). */\r\nexport async function dbUpsertLesson(lesson: Lesson): Promise<void> {\r\n  const db = await getDb();\r\n  await db.runAsync(\r\n    `INSERT OR IGNORE INTO lessons\r\n       (id, subject_id, title, order_num, quarter, is_quarterly_exam, sections)\r\n     VALUES (?, ?, ?, ?, ?, ?, ?)`,\r\n    [\r\n      lesson.id, lesson.subjectId, lesson.title, lesson.order,\r\n      lesson.quarter, lesson.isQuarterlyExam ? 1 : 0,\r\n      JSON.stringify(lesson.sections ?? []),\r\n    ],\r\n  );\r\n}\r\n\r\n/** Returns a single lesson by ID with sections parsed. */\r\nexport async function dbGetLessonById(lessonId: string): Promise<Lesson | null> {\r\n  const db = await getDb();\r\n  const row = await db.getFirstAsync<{\r\n    id: string; subject_id: string; title: string; order_num: number;\r\n    quarter: number; is_quarterly_exam: number; sections: string;\r\n  }>('SELECT * FROM lessons WHERE id = ?', [lessonId]);\r\n  return row ? toLesson(row) : null;\r\n}\r\n\r\n/**\r\n * Returns all lessons for a subject ordered by quarter then order_num.\r\n * Since subjects are grade-scoped, all returned lessons share the same grade.\r\n */\r\nexport async function dbGetLessonsBySubject(subjectId: string): Promise<Lesson[]> {\r\n  const db = await getDb();\r\n  const rows = await db.getAllAsync<{\r\n    id: string; subject_id: string; title: string; order_num: number;\r\n    quarter: number; is_quarterly_exam: number; sections: string;\r\n  }>(\r\n    'SELECT * FROM lessons WHERE subject_id = ? ORDER BY quarter, order_num',\r\n    [subjectId],\r\n  );\r\n  return rows.map(toLesson);\r\n}\r\n\r\n/**\r\n * ★ Returns all lessons for a given grade level (joins through subjects).\r\n * Useful for bulk progress checks.\r\n */\r\nexport async function dbGetLessonsByGrade(grade: number): Promise<Lesson[]> {\r\n  const db = await getDb();\r\n  const rows = await db.getAllAsync<{\r\n    id: string; subject_id: string; title: string; order_num: number;\r\n    quarter: number; is_quarterly_exam: number; sections: string;\r\n  }>(\r\n    `SELECT l.*\r\n     FROM   lessons  l\r\n     JOIN   subjects s ON s.id = l.subject_id\r\n     WHERE  s.grade = ?\r\n     ORDER  BY l.subject_id, l.quarter, l.order_num`,\r\n    [grade],\r\n  );\r\n  return rows.map(toLesson);\r\n}\r\n\r\nfunction toLesson(r: {\r\n  id: string; subject_id: string; title: string; order_num: number;\r\n  quarter: number; is_quarterly_exam: number; sections: string;\r\n}): Lesson {\r\n  return {\r\n    id: r.id,\r\n    subjectId: r.subject_id,\r\n    title: r.title,\r\n    order: r.order_num,\r\n    quarter: r.quarter,\r\n    isQuarterlyExam: r.is_quarterly_exam === 1,\r\n    sections: JSON.parse(r.sections ?? '[]'),\r\n  };\r\n}\r\n\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n// LESSON PROGRESS\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n\r\n/** Returns all lesson-progress rows (used in SubjectView). */\r\nexport async function dbGetAllLessonProgress(): Promise<LessonProgress[]> {\r\n  const db = await getDb();\r\n  const rows = await db.getAllAsync<{\r\n    id: string; lesson_id: string; completed: number;\r\n    quiz_score: number | null; completed_at: string | null;\r\n  }>('SELECT * FROM lesson_progress');\r\n  return rows.map(toLessonProgress);\r\n}\r\n\r\n/**\r\n * Marks a lesson as complete with a quiz score.\r\n * Uses UPSERT so it is safe to call whether the row exists or not.\r\n */\r\nexport async function dbCompleteLesson(\r\n  lessonId: string,\r\n  quizScore: number,\r\n  progressRowId: string,\r\n): Promise<void> {\r\n  const db = await getDb();\r\n  await db.runAsync(\r\n    `INSERT INTO lesson_progress (id, lesson_id, completed, quiz_score, completed_at)\r\n     VALUES (?, ?, 1, ?, ?)\r\n     ON CONFLICT(lesson_id) DO UPDATE SET\r\n       completed    = 1,\r\n       quiz_score   = excluded.quiz_score,\r\n       completed_at = excluded.completed_at`,\r\n    [progressRowId, lessonId, quizScore, new Date().toISOString()],\r\n  );\r\n}\r\n\r\nfunction toLessonProgress(r: {\r\n  id: string; lesson_id: string; completed: number;\r\n  quiz_score: number | null; completed_at: string | null;\r\n}): LessonProgress {\r\n  return {\r\n    id: r.id,\r\n    lessonId: r.lesson_id,\r\n    completed: r.completed === 1,\r\n    quizScore: r.quiz_score ?? undefined,\r\n    completedAt: r.completed_at ?? undefined,\r\n  };\r\n}\r\n\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n// DIAGNOSTIC RESULTS  ★ one per (user, subject)\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n\r\n/**\r\n * ★ Saves the student's one-time diagnostic result.\r\n *    INSERT OR IGNORE — silently does nothing if a result already exists,\r\n *    preventing any accidental second write from overwriting the first.\r\n */\r\nexport async function dbSaveDiagnosticResult(result: DiagnosticResult): Promise<void> {\r\n  const db = await getDb();\r\n  await db.runAsync(\r\n    `INSERT OR IGNORE INTO diagnostic_results\r\n       (id, user_id, subject_id,\r\n        q1_score, q2_score, q3_score, q4_score, overall_score, completed_at)\r\n     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,\r\n    [\r\n      result.id, result.userId, result.subjectId,\r\n      result.q1Score, result.q2Score, result.q3Score, result.q4Score,\r\n      result.overallScore, result.completedAt,\r\n    ],\r\n  );\r\n}\r\n\r\n/**\r\n * ★ Returns the single diagnostic result for a subject, or null if not yet taken.\r\n *    (Replaces the old getDiagnosticResults() array version.)\r\n */\r\nexport async function dbGetDiagnosticResult(\r\n  userId: string,\r\n  subjectId: string,\r\n): Promise<DiagnosticResult | null> {\r\n  const db = await getDb();\r\n  const row = await db.getFirstAsync<{\r\n    id: string; user_id: string; subject_id: string;\r\n    q1_score: number; q2_score: number; q3_score: number; q4_score: number;\r\n    overall_score: number; completed_at: string;\r\n  }>(\r\n    'SELECT * FROM diagnostic_results WHERE user_id = ? AND subject_id = ?',\r\n    [userId, subjectId],\r\n  );\r\n  if (!row) return null;\r\n  return {\r\n    id: row.id,\r\n    userId: row.user_id,\r\n    subjectId: row.subject_id,\r\n    q1Score: row.q1_score,\r\n    q2Score: row.q2_score,\r\n    q3Score: row.q3_score,\r\n    q4Score: row.q4_score,\r\n    overallScore: row.overall_score,\r\n    completedAt: row.completed_at,\r\n  };\r\n}\r\n\r\n/**\r\n * ★ Convenience check: has the student already taken the diagnostic for this subject?\r\n */\r\nexport async function dbDiagnosticTaken(\r\n  userId: string,\r\n  subjectId: string,\r\n): Promise<boolean> {\r\n  const db = await getDb();\r\n  const row = await db.getFirstAsync<{ n: number }>(\r\n    'SELECT COUNT(*) AS n FROM diagnostic_results WHERE user_id = ? AND subject_id = ?',\r\n    [userId, subjectId],\r\n  );\r\n  return (row?.n ?? 0) > 0;\r\n}\r\n\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n// QUARTERLY EXAM RESULTS\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n\r\n/** Saves a quarterly exam attempt. */\r\nexport async function dbSaveQuarterlyExamResult(result: QuarterlyExamResult): Promise<void> {\r\n  const db = await getDb();\r\n  await db.runAsync(\r\n    `INSERT INTO quarterly_exam_results\r\n       (id, user_id, subject_id, quarter, score, total_questions,\r\n        easy_score, medium_score, hard_score, completed_at, attempt_number)\r\n     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,\r\n    [\r\n      result.id, result.userId, result.subjectId, result.quarter,\r\n      result.score, result.totalQuestions,\r\n      result.easyScore ?? 0, result.mediumScore ?? 0, result.hardScore ?? 0,\r\n      result.completedAt, result.attemptNumber,\r\n    ],\r\n  );\r\n}\r\n\r\n/** Returns all quarterly exam attempts for a subject+quarter, oldest first. */\r\nexport async function dbGetQuarterlyExamResults(\r\n  subjectId: string,\r\n  quarter: number,\r\n): Promise<QuarterlyExamResult[]> {\r\n  const db = await getDb();\r\n  const rows = await db.getAllAsync<{\r\n    id: string; user_id: string; subject_id: string; quarter: number;\r\n    score: number; total_questions: number; easy_score: number;\r\n    medium_score: number; hard_score: number;\r\n    completed_at: string; attempt_number: number;\r\n  }>(\r\n    `SELECT * FROM quarterly_exam_results\r\n      WHERE subject_id = ? AND quarter = ?\r\n      ORDER BY attempt_number ASC`,\r\n    [subjectId, quarter],\r\n  );\r\n  return rows.map((r: { id: any; user_id: any; subject_id: any; quarter: any; score: any; total_questions: any; easy_score: any; medium_score: any; hard_score: any; completed_at: any; attempt_number: any; }) => ({\r\n    id: r.id, userId: r.user_id, subjectId: r.subject_id,\r\n    quarter: r.quarter, score: r.score, totalQuestions: r.total_questions,\r\n    easyScore: r.easy_score, mediumScore: r.medium_score, hardScore: r.hard_score,\r\n    completedAt: r.completed_at, attemptNumber: r.attempt_number,\r\n  }));\r\n}\r\n\r\n/**\r\n * Returns true when all non-exam lessons in a quarter are completed.\r\n * Used to gate the Quarterly Exam button in SubjectView.\r\n */\r\nexport async function dbQuarterlyExamUnlocked(\r\n  subjectId: string,\r\n  quarter: number,\r\n): Promise<boolean> {\r\n  const db = await getDb();\r\n  const row = await db.getFirstAsync<{ total: number; done: number }>(\r\n    `SELECT\r\n       COUNT(l.id)                                   AS total,\r\n       COUNT(CASE WHEN lp.completed = 1 THEN 1 END)  AS done\r\n     FROM   lessons l\r\n     LEFT   JOIN lesson_progress lp ON lp.lesson_id = l.id\r\n     WHERE  l.subject_id        = ?\r\n       AND  l.quarter           = ?\r\n       AND  l.is_quarterly_exam = 0`,\r\n    [subjectId, quarter],\r\n  );\r\n  if (!row || row.total === 0) return false;\r\n  return row.done >= row.total;\r\n}\r\n\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n// LESSON QUIZ RESULTS\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n\r\n/** Saves a lesson quiz attempt. */\r\nexport async function dbSaveLessonQuizResult(result: LessonQuizResult): Promise<void> {\r\n  const db = await getDb();\r\n  await db.runAsync(\r\n    `INSERT INTO lesson_quiz_results\r\n       (id, lesson_id, user_id, score, total_questions,\r\n        easy_score, medium_score, hard_score, completed_at, attempt_number)\r\n     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,\r\n    [\r\n      result.id, result.lessonId, result.userId,\r\n      result.score, result.totalQuestions,\r\n      result.easyScore ?? 0, result.mediumScore ?? 0, result.hardScore ?? 0,\r\n      result.completedAt, result.attemptNumber,\r\n    ],\r\n  );\r\n}\r\n\r\n/** Returns ALL lesson quiz results across every lesson (used by Dashboard AssessTab). */\r\nexport async function dbGetAllLessonQuizResults(): Promise<LessonQuizResult[]> {\r\n  const db = await getDb();\r\n  const rows = await db.getAllAsync<{\r\n    id: string; lesson_id: string; user_id: string; score: number;\r\n    total_questions: number; easy_score: number; medium_score: number;\r\n    hard_score: number; completed_at: string; attempt_number: number;\r\n  }>('SELECT * FROM lesson_quiz_results ORDER BY completed_at DESC');\r\n  return rows.map((r: { id: any; lesson_id: any; user_id: any; score: any; total_questions: any; easy_score: any; medium_score: any; hard_score: any; completed_at: any; attempt_number: any; }) => ({\r\n    id: r.id, lessonId: r.lesson_id, userId: r.user_id,\r\n    score: r.score, totalQuestions: r.total_questions,\r\n    easyScore: r.easy_score, mediumScore: r.medium_score, hardScore: r.hard_score,\r\n    completedAt: r.completed_at, attemptNumber: r.attempt_number,\r\n  }));\r\n}\r\n\r\n/** Returns all quiz attempts for a lesson, oldest first. */\r\nexport async function dbGetLessonQuizResults(lessonId: string): Promise<LessonQuizResult[]> {\r\n  const db = await getDb();\r\n  const rows = await db.getAllAsync<{\r\n    id: string; lesson_id: string; user_id: string; score: number;\r\n    total_questions: number; easy_score: number; medium_score: number;\r\n    hard_score: number; completed_at: string; attempt_number: number;\r\n  }>(\r\n    'SELECT * FROM lesson_quiz_results WHERE lesson_id = ? ORDER BY attempt_number ASC',\r\n    [lessonId],\r\n  );\r\n  return rows.map((r: { id: any; lesson_id: any; user_id: any; score: any; total_questions: any; easy_score: any; medium_score: any; hard_score: any; completed_at: any; attempt_number: any; }) => ({\r\n    id: r.id, lessonId: r.lesson_id, userId: r.user_id,\r\n    score: r.score, totalQuestions: r.total_questions,\r\n    easyScore: r.easy_score, mediumScore: r.medium_score, hardScore: r.hard_score,\r\n    completedAt: r.completed_at, attemptNumber: r.attempt_number,\r\n  }));\r\n}\r\n\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n// CHAT MESSAGES\r\n// ─────────────────────────────────────────────────────────────────────────────\r\n\r\n/** Saves a single chat message (called after each user send / tutor reply). */\r\nexport async function dbSaveChatMessage(msg: ChatMessage): Promise<void> {\r\n  const db = await getDb();\r\n  await db.runAsync(\r\n    `INSERT OR IGNORE INTO chat_messages (id, lesson_id, role, content, timestamp)\r\n     VALUES (?, ?, ?, ?, ?)`,\r\n    [msg.id, msg.lessonId, msg.role, msg.content, msg.timestamp],\r\n  );\r\n}\r\n\r\n/** Returns the full conversation history for a lesson, oldest message first. */\r\nexport async function dbGetChatHistory(lessonId: string): Promise<ChatMessage[]> {\r\n  const db = await getDb();\r\n  const rows = await db.getAllAsync<{\r\n    id: string; lesson_id: string; role: string; content: string; timestamp: string;\r\n  }>(\r\n    'SELECT * FROM chat_messages WHERE lesson_id = ? ORDER BY timestamp ASC',\r\n    [lessonId],\r\n  );\r\n  return rows.map((r: { id: any; lesson_id: any; role: string; content: any; timestamp: any; }) => ({\r\n    id: r.id,\r\n    lessonId: r.lesson_id,\r\n    role: r.role as 'user' | 'tutor',\r\n    content: r.content,\r\n    timestamp: r.timestamp,\r\n  }));\r\n}\r\n\r\n/** Clears all chat messages for a lesson. */\r\nexport async function dbClearChatHistory(lessonId: string): Promise<void> {\r\n  const db = await getDb();\r\n  await db.runAsync('DELETE FROM chat_messages WHERE lesson_id = ?', [lessonId]);\r\n}
+===================================================================
+diff --git a/lib/database.ts b/lib/database.ts
+--- a/lib/database.ts	(revision c9432150fb668ee8b0f531213ac0b6d1a763ba69)
++++ b/lib/database.ts	(date 1773418081440)
+@@ -1,753 +1,95 @@
+-/**
+- * PocketClass — lib/database.ts  (v2)
+- *
+- * SQLite database layer using expo-sqlite v14+ (async API).
+- *
+- * v2 changes:
+- *  ★ subjects now carry a `grade` field (grade-scoped subjects).
+- *  ★ diagnostic_results is unique per (user_id, subject_id) — one per profile.
+- *    - dbSaveDiagnosticResult()  uses INSERT OR IGNORE (no duplicate writes).
+- *    - dbGetDiagnosticResult()   returns a single result | null  (not an array).
+- *    - DiagnosticResult type no longer has attemptNumber.
+- *  ★ dbGetSubjectsByGrade()  replaces dbGetSubjects() as the main query — it
+- *    filters subjects to the student's grade level.
+- *
+- * Exports:
+- *   getDb()    – opens / returns the singleton DB connection
+- *   initDb()   – runs the full schema; safe to call on every app launch
+- *   All CRUD helpers consumed by lib/store.ts
+- *
+- * Usage:
+- *   import { initDb } from '@/lib/database';
+- *   await initDb();   // call once in app/_layout.tsx before rendering
+- */
+-
+ import * as SQLite from 'expo-sqlite';
+-import type {
+-  Profile,
+-  Subject,
+-  SubjectProgress,
+-  Lesson,
+-  LessonProgress,
+-  DiagnosticResult,
+-  QuarterlyExamResult,
+-  LessonQuizResult,
+-  ChatMessage,
+-} from '@/lib/types';
+-
+-// ─── Singleton connection ────────────────────────────────────────────────────
+-
+-let _db: SQLite.SQLiteDatabase | null = null;
+ 
+ /**
+- * Returns the open DB connection.
+- * Opens on first call with WAL mode + foreign-key enforcement.
++ * Initializes the SQLite database and creates all necessary tables
++ * based on the app's AI feature requirements.
+  */
+-export async function getDb(): Promise<SQLite.SQLiteDatabase> {
+-  if (!_db) {
+-    _db = await SQLite.openDatabaseAsync('pocketclass.db');
+-    await _db.execAsync(`
+-      PRAGMA foreign_keys = ON;
+-      PRAGMA journal_mode = WAL;
+-      PRAGMA synchronous  = NORMAL;
+-    `);
+-  }
+-  return _db;
+-}
+-
+-// ─── Schema Initialization ───────────────────────────────────────────────────
+-
+-/**
+- * Creates all tables, indexes and views if they don't already exist.
+- * Safe to call on every app launch — all statements use IF NOT EXISTS.
+- */
+-export async function initDb(): Promise<void> {
+-  const db = await getDb();
+-
+-  await db.execAsync(`
++export const initDatabase = async (db: SQLite.SQLiteDatabase) => {
++  try {
++    // We wrap table creation in a transaction for safety and speed
++    await db.execAsync(`
++      PRAGMA journal_mode = WAL;
++      PRAGMA foreign_keys = ON;
+ 
+-    -- ── 1. PROFILES ──────────────────────────────────────────────────────────
+-    CREATE TABLE IF NOT EXISTS profiles (
+-      id         TEXT    PRIMARY KEY,
+-      name       TEXT    NOT NULL,
+-      country    TEXT    NOT NULL
+-                   CHECK (country IN ('indonesia','malaysia','brunei')),
+-      grade      INTEGER NOT NULL CHECK (grade BETWEEN 7 AND 12),
+-      created_at TEXT    NOT NULL
+-    );
++      -- 1. Profiles (Student Identity)
++      CREATE TABLE IF NOT EXISTS profiles (
++        id INTEGER PRIMARY KEY AUTOINCREMENT,
++        name TEXT NOT NULL,
++        grade INTEGER NOT NULL,
++        country TEXT NOT NULL
++      );
+ 
+-    -- ── 2. SUBJECTS ★ grade-scoped + static curriculum content ───────────────
+-    --   Seeded once at first-launch, never modified by the app.
+-    --   q{1-4}_topic / q{1-4}_content are the sole source of truth for all
+-    --   AI generation: diagnostic quizzes, lesson material, lesson quizzes,
+-    --   and quarterly exams all read from these fields.
+-    CREATE TABLE IF NOT EXISTS subjects (
+-      id            TEXT    PRIMARY KEY,
+-      grade         INTEGER NOT NULL CHECK (grade BETWEEN 7 AND 12),
+-      name          TEXT    NOT NULL,
+-      emoji         TEXT    NOT NULL,
+-      total_lessons INTEGER NOT NULL DEFAULT 0 CHECK (total_lessons >= 0),
+-      description   TEXT    NOT NULL DEFAULT '',
+-      q1_topic      TEXT    NOT NULL DEFAULT '',
+-      q1_content    TEXT    NOT NULL DEFAULT '',
+-      q2_topic      TEXT    NOT NULL DEFAULT '',
+-      q2_content    TEXT    NOT NULL DEFAULT '',
+-      q3_topic      TEXT    NOT NULL DEFAULT '',
+-      q3_content    TEXT    NOT NULL DEFAULT '',
+-      q4_topic      TEXT    NOT NULL DEFAULT '',
+-      q4_content    TEXT    NOT NULL DEFAULT '',
+-      UNIQUE (name, grade)
+-    );
+-    CREATE INDEX IF NOT EXISTS idx_subjects_grade ON subjects (grade);
+-
+-    -- ── 3. SUBJECT_PROGRESS ──────────────────────────────────────────────────
+-    CREATE TABLE IF NOT EXISTS subject_progress (
+-      id                   TEXT    PRIMARY KEY,
+-      subject_id           TEXT    NOT NULL UNIQUE
+-                                     REFERENCES subjects(id) ON DELETE CASCADE,
+-      mastery_score        REAL    NOT NULL DEFAULT 0
+-                                     CHECK (mastery_score BETWEEN 0 AND 100),
+-      lessons_completed    INTEGER NOT NULL DEFAULT 0 CHECK (lessons_completed >= 0),
+-      total_lessons        INTEGER NOT NULL DEFAULT 0 CHECK (total_lessons >= 0),
+-      diagnostic_completed INTEGER NOT NULL DEFAULT 0
+-                                     CHECK (diagnostic_completed IN (0,1))
+-    );
++      -- 2. Subjects (Curriculum Source)
++      CREATE TABLE IF NOT EXISTS subjects (
++        id INTEGER PRIMARY KEY AUTOINCREMENT,
++        name TEXT NOT NULL,
++        mastery REAL DEFAULT 0,
++        q1_topic TEXT, q1_content TEXT,
++        q2_topic TEXT, q2_content TEXT,
++        q3_topic TEXT, q3_content TEXT,
++        q4_topic TEXT, q4_content TEXT
++      );
+ 
+-    -- ── 4. LESSONS ────────────────────────────────────────────────────────────
+-    CREATE TABLE IF NOT EXISTS lessons (
+-      id                TEXT    PRIMARY KEY,
+-      subject_id        TEXT    NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+-      title             TEXT    NOT NULL,
+-      order_num         INTEGER NOT NULL CHECK (order_num >= 1),
+-      quarter           INTEGER NOT NULL CHECK (quarter BETWEEN 1 AND 4),
+-      is_quarterly_exam INTEGER NOT NULL DEFAULT 0 CHECK (is_quarterly_exam IN (0,1)),
+-      sections          TEXT    NOT NULL DEFAULT '[]',
+-      UNIQUE (subject_id, order_num)
+-    );
+-    CREATE INDEX IF NOT EXISTS idx_lessons_subject_quarter
+-      ON lessons (subject_id, quarter);
+-
+-    -- ── 5. LESSON_PROGRESS ────────────────────────────────────────────────────
+-    CREATE TABLE IF NOT EXISTS lesson_progress (
+-      id           TEXT    PRIMARY KEY,
+-      lesson_id    TEXT    NOT NULL UNIQUE REFERENCES lessons(id) ON DELETE CASCADE,
+-      completed    INTEGER NOT NULL DEFAULT 0 CHECK (completed IN (0,1)),
+-      quiz_score   REAL    CHECK (quiz_score IS NULL OR quiz_score BETWEEN 0 AND 100),
+-      completed_at TEXT
+-    );
+-    CREATE INDEX IF NOT EXISTS idx_lesson_progress_lesson
+-      ON lesson_progress (lesson_id);
+-
+-    -- ── 6. DIAGNOSTIC_RESULTS ★ one per (user, subject) ──────────────────────
+-    CREATE TABLE IF NOT EXISTS diagnostic_results (
+-      id            TEXT    PRIMARY KEY,
+-      user_id       TEXT    NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+-      subject_id    TEXT    NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+-      q1_score      REAL    NOT NULL DEFAULT 0 CHECK (q1_score    BETWEEN 0 AND 100),
+-      q2_score      REAL    NOT NULL DEFAULT 0 CHECK (q2_score    BETWEEN 0 AND 100),
+-      q3_score      REAL    NOT NULL DEFAULT 0 CHECK (q3_score    BETWEEN 0 AND 100),
+-      q4_score      REAL    NOT NULL DEFAULT 0 CHECK (q4_score    BETWEEN 0 AND 100),
+-      overall_score REAL    NOT NULL DEFAULT 0 CHECK (overall_score BETWEEN 0 AND 100),
+-      completed_at  TEXT    NOT NULL,
+-      UNIQUE (user_id, subject_id)
+-    );
+-    CREATE UNIQUE INDEX IF NOT EXISTS idx_diagnostic_user_subject
+-      ON diagnostic_results (user_id, subject_id);
++      -- 3. Lessons (Tied to subjects and quarters)
++      CREATE TABLE IF NOT EXISTS lessons (
++        id INTEGER PRIMARY KEY AUTOINCREMENT,
++        subject_id INTEGER NOT NULL,
++        quarter INTEGER NOT NULL,
++        title TEXT NOT NULL,
++        latest_quiz_score REAL DEFAULT 0,
++        FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
++      );
+ 
+-    -- ── 7. QUARTERLY_EXAM_RESULTS ────────────────────────────────────────────
+-    CREATE TABLE IF NOT EXISTS quarterly_exam_results (
+-      id              TEXT    PRIMARY KEY,
+-      user_id         TEXT    NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+-      subject_id      TEXT    NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+-      quarter         INTEGER NOT NULL CHECK (quarter BETWEEN 1 AND 4),
+-      score           INTEGER NOT NULL DEFAULT 0   CHECK (score >= 0),
+-      total_questions INTEGER NOT NULL             CHECK (total_questions > 0),
+-      easy_score      INTEGER NOT NULL DEFAULT 0   CHECK (easy_score   >= 0),
+-      medium_score    INTEGER NOT NULL DEFAULT 0   CHECK (medium_score >= 0),
+-      hard_score      INTEGER NOT NULL DEFAULT 0   CHECK (hard_score   >= 0),
+-      completed_at    TEXT    NOT NULL,
+-      attempt_number  INTEGER NOT NULL DEFAULT 1   CHECK (attempt_number >= 1)
+-    );
+-    CREATE INDEX IF NOT EXISTS idx_quarterly_exam_subject_quarter
+-      ON quarterly_exam_results (subject_id, quarter, completed_at DESC);
++      -- 4. Lesson Sections (AI Generated 3-page content)
++      CREATE TABLE IF NOT EXISTS lesson_sections (
++        id INTEGER PRIMARY KEY AUTOINCREMENT,
++        lesson_id INTEGER NOT NULL,
++        page_number INTEGER NOT NULL, -- 1 (Intro), 2 (Core), 3 (App)
++        content TEXT NOT NULL,
++        FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
++      );
+ 
+-    -- ── 8. LESSON_QUIZ_RESULTS ────────────────────────────────────────────────
+-    CREATE TABLE IF NOT EXISTS lesson_quiz_results (
+-      id              TEXT    PRIMARY KEY,
+-      lesson_id       TEXT    NOT NULL REFERENCES lessons(id)  ON DELETE CASCADE,
+-      user_id         TEXT    NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+-      score           REAL    NOT NULL DEFAULT 0  CHECK (score BETWEEN 0 AND 100),
+-      total_questions INTEGER NOT NULL            CHECK (total_questions > 0),
+-      easy_score      INTEGER NOT NULL DEFAULT 0  CHECK (easy_score   >= 0),
+-      medium_score    INTEGER NOT NULL DEFAULT 0  CHECK (medium_score >= 0),
+-      hard_score      INTEGER NOT NULL DEFAULT 0  CHECK (hard_score   >= 0),
+-      completed_at    TEXT    NOT NULL,
+-      attempt_number  INTEGER NOT NULL DEFAULT 1  CHECK (attempt_number >= 1)
+-    );
+-    CREATE INDEX IF NOT EXISTS idx_lesson_quiz_results_lesson
+-      ON lesson_quiz_results (lesson_id, completed_at DESC);
+-
+-    -- ── 9. CHAT_MESSAGES ──────────────────────────────────────────────────────
+-    CREATE TABLE IF NOT EXISTS chat_messages (
+-      id        TEXT PRIMARY KEY,
+-      lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+-      role      TEXT NOT NULL CHECK (role IN ('user','tutor')),
+-      content   TEXT NOT NULL,
+-      timestamp TEXT NOT NULL
+-    );
+-    CREATE INDEX IF NOT EXISTS idx_chat_messages_lesson
+-      ON chat_messages (lesson_id, timestamp ASC);
+-
+-    -- ── VIEWS ─────────────────────────────────────────────────────────────────
+-    CREATE VIEW IF NOT EXISTS v_subject_grade_summary AS
+-      SELECT s.id, s.name, s.emoji, s.grade, s.total_lessons,
+-             sp.mastery_score, sp.lessons_completed, sp.diagnostic_completed,
+-             CASE WHEN dr.id IS NOT NULL THEN 1 ELSE 0 END AS has_diagnostic_result
+-      FROM   subjects s
+-      LEFT   JOIN subject_progress   sp ON sp.subject_id = s.id
+-      LEFT   JOIN diagnostic_results dr ON dr.subject_id = s.id;
+-
+-    CREATE VIEW IF NOT EXISTS v_lesson_grade_summary AS
+-      SELECT l.id AS lesson_id, l.title, l.quarter, l.order_num,
+-             l.is_quarterly_exam, s.grade, s.id AS subject_id, s.name AS subject_name,
+-             lp.completed, lp.quiz_score
+-      FROM   lessons l
+-      JOIN   subjects        s  ON s.id  = l.subject_id
+-      LEFT   JOIN lesson_progress lp ON lp.lesson_id = l.id;
+-
+-  `);
+-}
+-
+-// ─────────────────────────────────────────────────────────────────────────────
+-// PROFILE
+-// ─────────────────────────────────────────────────────────────────────────────
+-
+-/** Returns the single stored profile, or null before onboarding. */
+-export async function dbGetProfile(): Promise<Profile | null> {
+-  const db = await getDb();
+-  const row = await db.getFirstAsync<{
+-    id: string; name: string; country: string; grade: number; created_at: string;
+-  }>('SELECT * FROM profiles LIMIT 1');
+-  if (!row) return null;
+-  return {
+-    id: row.id,
+-    name: row.name,
+-    country: row.country as any,
+-    grade: row.grade,
+-    createdAt: row.created_at,
+-  };
+-}
+-
+-/** Inserts or replaces the student's profile (onboarding). */
+-export async function dbSaveProfile(profile: Profile): Promise<void> {
+-  const db = await getDb();
+-  await db.runAsync(
+-    `INSERT OR REPLACE INTO profiles (id, name, country, grade, created_at)
+-     VALUES (?, ?, ?, ?, ?)`,
+-    [profile.id, profile.name, profile.country, profile.grade, profile.createdAt],
+-  );
+-}
+-
+-// ─────────────────────────────────────────────────────────────────────────────
+-// SUBJECTS  ★ grade-scoped
+-// ─────────────────────────────────────────────────────────────────────────────
+-
+-/**
+- * ★ Returns only the subjects that match the student's grade level.
+- * This is the primary query used throughout the app.
+- */
+-export async function dbGetSubjectsByGrade(grade: number): Promise<Subject[]> {
+-  const db = await getDb();
+-  const rows = await db.getAllAsync<SubjectRow>(
+-    'SELECT * FROM subjects WHERE grade = ? ORDER BY name',
+-    [grade],
+-  );
+-  return rows.map(toSubject);
+-}
+-
+-/** Returns all subjects regardless of grade (seeding / admin use). */
+-export async function dbGetAllSubjects(): Promise<Subject[]> {
+-  const db = await getDb();
+-  const rows = await db.getAllAsync<SubjectRow>(
+-    'SELECT * FROM subjects ORDER BY grade, name',
+-  );
+-  return rows.map(toSubject);
+-}
+-
+-/**
+- * Returns a single subject by ID.
+- * Used by screens that need to read q{n}_topic / q{n}_content before
+- * calling an AI service.
+- */
+-export async function dbGetSubjectById(subjectId: string): Promise<Subject | null> {
+-  const db = await getDb();
+-  const row = await db.getFirstAsync<SubjectRow>(
+-    'SELECT * FROM subjects WHERE id = ?',
+-    [subjectId],
+-  );
+-  return row ? toSubject(row) : null;
+-}
+-
+-/** Inserts a subject row if it does not already exist (seeding). */
+-export async function dbUpsertSubject(subject: Subject): Promise<void> {
+-  const db = await getDb();
+-  await db.runAsync(
+-    `INSERT OR IGNORE INTO subjects
+-       (id, grade, name, emoji, total_lessons,
+-        description,
+-        q1_topic, q1_content,
+-        q2_topic, q2_content,
+-        q3_topic, q3_content,
+-        q4_topic, q4_content)
+-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+-    [
+-      subject.id, subject.grade, subject.name, subject.emoji, subject.totalLessons,
+-      subject.description,
+-      subject.q1Topic, subject.q1Content,
+-      subject.q2Topic, subject.q2Content,
+-      subject.q3Topic, subject.q3Content,
+-      subject.q4Topic, subject.q4Content,
+-    ],
+-  );
+-}
+-
+-// ── Internal row type & mapper ─────────────────────────────────────────────
+-
+-type SubjectRow = {
+-  id: string; grade: number; name: string; emoji: string; total_lessons: number;
+-  description: string;
+-  q1_topic: string; q1_content: string;
+-  q2_topic: string; q2_content: string;
+-  q3_topic: string; q3_content: string;
+-  q4_topic: string; q4_content: string;
+-};
+-
+-function toSubject(r: SubjectRow): Subject {
+-  return {
+-    id:          r.id,
+-    grade:       r.grade,
+-    name:        r.name,
+-    emoji:       r.emoji,
+-    totalLessons: r.total_lessons,
+-    description: r.description,
+-    q1Topic:     r.q1_topic,   q1Content: r.q1_content,
+-    q2Topic:     r.q2_topic,   q2Content: r.q2_content,
+-    q3Topic:     r.q3_topic,   q3Content: r.q3_content,
+-    q4Topic:     r.q4_topic,   q4Content: r.q4_content,
+-  };
+-}
+-
+-// ─────────────────────────────────────────────────────────────────────────────
+-// SUBJECT PROGRESS
+-// ─────────────────────────────────────────────────────────────────────────────
+-
+-/** Returns progress rows for all subjects. */
+-export async function dbGetAllSubjectProgress(): Promise<SubjectProgress[]> {
+-  const db = await getDb();
+-  const rows = await db.getAllAsync<{
+-    id: string; subject_id: string; mastery_score: number;
+-    lessons_completed: number; total_lessons: number; diagnostic_completed: number;
+-  }>('SELECT * FROM subject_progress');
+-  return rows.map(toSubjectProgress);
+-}
+-
+-/** Returns progress for a single subject. */
+-export async function dbGetSubjectProgress(subjectId: string): Promise<SubjectProgress | null> {
+-  const db = await getDb();
+-  const row = await db.getFirstAsync<{
+-    id: string; subject_id: string; mastery_score: number;
+-    lessons_completed: number; total_lessons: number; diagnostic_completed: number;
+-  }>('SELECT * FROM subject_progress WHERE subject_id = ?', [subjectId]);
+-  return row ? toSubjectProgress(row) : null;
+-}
+-
+-/** Inserts or replaces a subject progress row. */
+-export async function dbSaveSubjectProgress(sp: SubjectProgress): Promise<void> {
+-  const db = await getDb();
+-  await db.runAsync(
+-    `INSERT OR REPLACE INTO subject_progress
+-       (id, subject_id, mastery_score, lessons_completed, total_lessons, diagnostic_completed)
+-     VALUES (?, ?, ?, ?, ?, ?)`,
+-    [
+-      sp.id, sp.subjectId, sp.masteryScore,
+-      sp.lessonsCompleted, sp.totalLessons,
+-      sp.diagnosticCompleted ? 1 : 0,
+-    ],
+-  );
+-}
+-
+-function toSubjectProgress(r: {
+-  id: string; subject_id: string; mastery_score: number;
+-  lessons_completed: number; total_lessons: number; diagnostic_completed: number;
+-}): SubjectProgress {
+-  return {
+-    id: r.id,
+-    subjectId: r.subject_id,
+-    masteryScore: r.mastery_score,
+-    lessonsCompleted: r.lessons_completed,
+-    totalLessons: r.total_lessons,
+-    diagnosticCompleted: r.diagnostic_completed === 1,
+-  };
+-}
+-
+-// ─────────────────────────────────────────────────────────────────────────────
+-// LESSONS
+-// ─────────────────────────────────────────────────────────────────────────────
+-
+-/** Inserts a lesson row if it does not already exist (seeding). */
+-export async function dbUpsertLesson(lesson: Lesson): Promise<void> {
+-  const db = await getDb();
+-  await db.runAsync(
+-    `INSERT OR IGNORE INTO lessons
+-       (id, subject_id, title, order_num, quarter, is_quarterly_exam, sections)
+-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+-    [
+-      lesson.id, lesson.subjectId, lesson.title, lesson.order,
+-      lesson.quarter, lesson.isQuarterlyExam ? 1 : 0,
+-      JSON.stringify(lesson.sections ?? []),
+-    ],
+-  );
+-}
+-
+-/** Returns a single lesson by ID with sections parsed. */
+-export async function dbGetLessonById(lessonId: string): Promise<Lesson | null> {
+-  const db = await getDb();
+-  const row = await db.getFirstAsync<{
+-    id: string; subject_id: string; title: string; order_num: number;
+-    quarter: number; is_quarterly_exam: number; sections: string;
+-  }>('SELECT * FROM lessons WHERE id = ?', [lessonId]);
+-  return row ? toLesson(row) : null;
+-}
+-
+-/**
+- * Returns all lessons for a subject ordered by quarter then order_num.
+- * Since subjects are grade-scoped, all returned lessons share the same grade.
+- */
+-export async function dbGetLessonsBySubject(subjectId: string): Promise<Lesson[]> {
+-  const db = await getDb();
+-  const rows = await db.getAllAsync<{
+-    id: string; subject_id: string; title: string; order_num: number;
+-    quarter: number; is_quarterly_exam: number; sections: string;
+-  }>(
+-    'SELECT * FROM lessons WHERE subject_id = ? ORDER BY quarter, order_num',
+-    [subjectId],
+-  );
+-  return rows.map(toLesson);
+-}
++      -- 5. Chat Messages (AITutor Conversation History)
++      CREATE TABLE IF NOT EXISTS chat_messages (
++        id INTEGER PRIMARY KEY AUTOINCREMENT,
++        role TEXT CHECK(role IN ('user', 'tutor')) NOT NULL,
++        content TEXT NOT NULL,
++        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
++      );
+ 
+-/**
+- * ★ Returns all lessons for a given grade level (joins through subjects).
+- * Useful for bulk progress checks.
+- */
+-export async function dbGetLessonsByGrade(grade: number): Promise<Lesson[]> {
+-  const db = await getDb();
+-  const rows = await db.getAllAsync<{
+-    id: string; subject_id: string; title: string; order_num: number;
+-    quarter: number; is_quarterly_exam: number; sections: string;
+-  }>(
+-    `SELECT l.*
+-     FROM   lessons  l
+-     JOIN   subjects s ON s.id = l.subject_id
+-     WHERE  s.grade = ?
+-     ORDER  BY l.subject_id, l.quarter, l.order_num`,
+-    [grade],
+-  );
+-  return rows.map(toLesson);
+-}
+-
+-function toLesson(r: {
+-  id: string; subject_id: string; title: string; order_num: number;
+-  quarter: number; is_quarterly_exam: number; sections: string;
+-}): Lesson {
+-  return {
+-    id: r.id,
+-    subjectId: r.subject_id,
+-    title: r.title,
+-    order: r.order_num,
+-    quarter: r.quarter,
+-    isQuarterlyExam: r.is_quarterly_exam === 1,
+-    sections: JSON.parse(r.sections ?? '[]'),
+-  };
+-}
+-
+-// ─────────────────────────────────────────────────────────────────────────────
+-// LESSON PROGRESS
+-// ─────────────────────────────────────────────────────────────────────────────
+-
+-/** Returns all lesson-progress rows (used in SubjectView). */
+-export async function dbGetAllLessonProgress(): Promise<LessonProgress[]> {
+-  const db = await getDb();
+-  const rows = await db.getAllAsync<{
+-    id: string; lesson_id: string; completed: number;
+-    quiz_score: number | null; completed_at: string | null;
+-  }>('SELECT * FROM lesson_progress');
+-  return rows.map(toLessonProgress);
+-}
++      -- 6. Diagnostic Results (Saved after 4 quarters)
++      CREATE TABLE IF NOT EXISTS diagnostic_results (
++        id INTEGER PRIMARY KEY AUTOINCREMENT,
++        quarter1_score REAL NOT NULL,
++        quarter2_score REAL NOT NULL,
++        quarter3_score REAL NOT NULL,
++        quarter4_score REAL NOT NULL,
++        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
++      );
+ 
+-/**
+- * Marks a lesson as complete with a quiz score.
+- * Uses UPSERT so it is safe to call whether the row exists or not.
+- */
+-export async function dbCompleteLesson(
+-  lessonId: string,
+-  quizScore: number,
+-  progressRowId: string,
+-): Promise<void> {
+-  const db = await getDb();
+-  await db.runAsync(
+-    `INSERT INTO lesson_progress (id, lesson_id, completed, quiz_score, completed_at)
+-     VALUES (?, ?, 1, ?, ?)
+-     ON CONFLICT(lesson_id) DO UPDATE SET
+-       completed    = 1,
+-       quiz_score   = excluded.quiz_score,
+-       completed_at = excluded.completed_at`,
+-    [progressRowId, lessonId, quizScore, new Date().toISOString()],
+-  );
+-}
+-
+-function toLessonProgress(r: {
+-  id: string; lesson_id: string; completed: number;
+-  quiz_score: number | null; completed_at: string | null;
+-}): LessonProgress {
+-  return {
+-    id: r.id,
+-    lessonId: r.lesson_id,
+-    completed: r.completed === 1,
+-    quizScore: r.quiz_score ?? undefined,
+-    completedAt: r.completed_at ?? undefined,
+-  };
+-}
++      -- 7. Study Plans (Generated after diagnostic)
++      CREATE TABLE IF NOT EXISTS study_plans (
++        id INTEGER PRIMARY KEY AUTOINCREMENT,
++        quarter INTEGER NOT NULL,
++        lessons TEXT NOT NULL,
++        is_need_review BOOLEAN NOT NULL,
++        how_to_get_high_scores TEXT NOT NULL,
++        focus_level TEXT NOT NULL
++      );
+ 
+-// ─────────────────────────────────────────────────────────────────────────────
+-// DIAGNOSTIC RESULTS  ★ one per (user, subject)
+-// ─────────────────────────────────────────────────────────────────────────────
+-
+-/**
+- * ★ Saves the student's one-time diagnostic result.
+- *    INSERT OR IGNORE — silently does nothing if a result already exists,
+- *    preventing any accidental second write from overwriting the first.
+- */
+-export async function dbSaveDiagnosticResult(result: DiagnosticResult): Promise<void> {
+-  const db = await getDb();
+-  await db.runAsync(
+-    `INSERT OR IGNORE INTO diagnostic_results
+-       (id, user_id, subject_id,
+-        q1_score, q2_score, q3_score, q4_score, overall_score, completed_at)
+-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+-    [
+-      result.id, result.userId, result.subjectId,
+-      result.q1Score, result.q2Score, result.q3Score, result.q4Score,
+-      result.overallScore, result.completedAt,
+-    ],
+-  );
+-}
+-
+-/**
+- * ★ Returns the single diagnostic result for a subject, or null if not yet taken.
+- *    (Replaces the old getDiagnosticResults() array version.)
+- */
+-export async function dbGetDiagnosticResult(
+-  userId: string,
+-  subjectId: string,
+-): Promise<DiagnosticResult | null> {
+-  const db = await getDb();
+-  const row = await db.getFirstAsync<{
+-    id: string; user_id: string; subject_id: string;
+-    q1_score: number; q2_score: number; q3_score: number; q4_score: number;
+-    overall_score: number; completed_at: string;
+-  }>(
+-    'SELECT * FROM diagnostic_results WHERE user_id = ? AND subject_id = ?',
+-    [userId, subjectId],
+-  );
+-  if (!row) return null;
+-  return {
+-    id: row.id,
+-    userId: row.user_id,
+-    subjectId: row.subject_id,
+-    q1Score: row.q1_score,
+-    q2Score: row.q2_score,
+-    q3Score: row.q3_score,
+-    q4Score: row.q4_score,
+-    overallScore: row.overall_score,
+-    completedAt: row.completed_at,
+-  };
+-}
++      -- 8. Focus Areas (Dashboard Widget)
++      CREATE TABLE IF NOT EXISTS focus_areas (
++        id INTEGER PRIMARY KEY AUTOINCREMENT,
++        subject_line TEXT NOT NULL,
++        lesson_line TEXT NOT NULL,
++        take_note TEXT NOT NULL,
++        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
++      );
++    `);
+ 
+-/**
+- * ★ Convenience check: has the student already taken the diagnostic for this subject?
+- */
+-export async function dbDiagnosticTaken(
+-  userId: string,
+-  subjectId: string,
+-): Promise<boolean> {
+-  const db = await getDb();
+-  const row = await db.getFirstAsync<{ n: number }>(
+-    'SELECT COUNT(*) AS n FROM diagnostic_results WHERE user_id = ? AND subject_id = ?',
+-    [userId, subjectId],
+-  );
+-  return (row?.n ?? 0) > 0;
+-}
+-
+-// ─────────────────────────────────────────────────────────────────────────────
+-// QUARTERLY EXAM RESULTS
+-// ─────────────────────────────────────────────────────────────────────────────
+-
+-/** Saves a quarterly exam attempt. */
+-export async function dbSaveQuarterlyExamResult(result: QuarterlyExamResult): Promise<void> {
+-  const db = await getDb();
+-  await db.runAsync(
+-    `INSERT INTO quarterly_exam_results
+-       (id, user_id, subject_id, quarter, score, total_questions,
+-        easy_score, medium_score, hard_score, completed_at, attempt_number)
+-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+-    [
+-      result.id, result.userId, result.subjectId, result.quarter,
+-      result.score, result.totalQuestions,
+-      result.easyScore ?? 0, result.mediumScore ?? 0, result.hardScore ?? 0,
+-      result.completedAt, result.attemptNumber,
+-    ],
+-  );
+-}
+-
+-/** Returns all quarterly exam attempts for a subject+quarter, oldest first. */
+-export async function dbGetQuarterlyExamResults(
+-  subjectId: string,
+-  quarter: number,
+-): Promise<QuarterlyExamResult[]> {
+-  const db = await getDb();
+-  const rows = await db.getAllAsync<{
+-    id: string; user_id: string; subject_id: string; quarter: number;
+-    score: number; total_questions: number; easy_score: number;
+-    medium_score: number; hard_score: number;
+-    completed_at: string; attempt_number: number;
+-  }>(
+-    `SELECT * FROM quarterly_exam_results
+-      WHERE subject_id = ? AND quarter = ?
+-      ORDER BY attempt_number ASC`,
+-    [subjectId, quarter],
+-  );
+-  return rows.map((r: { id: any; user_id: any; subject_id: any; quarter: any; score: any; total_questions: any; easy_score: any; medium_score: any; hard_score: any; completed_at: any; attempt_number: any; }) => ({
+-    id: r.id, userId: r.user_id, subjectId: r.subject_id,
+-    quarter: r.quarter, score: r.score, totalQuestions: r.total_questions,
+-    easyScore: r.easy_score, mediumScore: r.medium_score, hardScore: r.hard_score,
+-    completedAt: r.completed_at, attemptNumber: r.attempt_number,
+-  }));
+-}
+-
+-/**
+- * Returns true when all non-exam lessons in a quarter are completed.
+- * Used to gate the Quarterly Exam button in SubjectView.
+- */
+-export async function dbQuarterlyExamUnlocked(
+-  subjectId: string,
+-  quarter: number,
+-): Promise<boolean> {
+-  const db = await getDb();
+-  const row = await db.getFirstAsync<{ total: number; done: number }>(
+-    `SELECT
+-       COUNT(l.id)                                   AS total,
+-       COUNT(CASE WHEN lp.completed = 1 THEN 1 END)  AS done
+-     FROM   lessons l
+-     LEFT   JOIN lesson_progress lp ON lp.lesson_id = l.id
+-     WHERE  l.subject_id        = ?
+-       AND  l.quarter           = ?
+-       AND  l.is_quarterly_exam = 0`,
+-    [subjectId, quarter],
+-  );
+-  if (!row || row.total === 0) return false;
+-  return row.done >= row.total;
+-}
+-
+-// ─────────────────────────────────────────────────────────────────────────────
+-// LESSON QUIZ RESULTS
+-// ─────────────────────────────────────────────────────────────────────────────
+-
+-/** Saves a lesson quiz attempt. */
+-export async function dbSaveLessonQuizResult(result: LessonQuizResult): Promise<void> {
+-  const db = await getDb();
+-  await db.runAsync(
+-    `INSERT INTO lesson_quiz_results
+-       (id, lesson_id, user_id, score, total_questions,
+-        easy_score, medium_score, hard_score, completed_at, attempt_number)
+-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+-    [
+-      result.id, result.lessonId, result.userId,
+-      result.score, result.totalQuestions,
+-      result.easyScore ?? 0, result.mediumScore ?? 0, result.hardScore ?? 0,
+-      result.completedAt, result.attemptNumber,
+-    ],
+-  );
+-}
+-
+-/** Returns ALL lesson quiz results across every lesson (used by Dashboard AssessTab). */
+-export async function dbGetAllLessonQuizResults(): Promise<LessonQuizResult[]> {
+-  const db = await getDb();
+-  const rows = await db.getAllAsync<{
+-    id: string; lesson_id: string; user_id: string; score: number;
+-    total_questions: number; easy_score: number; medium_score: number;
+-    hard_score: number; completed_at: string; attempt_number: number;
+-  }>('SELECT * FROM lesson_quiz_results ORDER BY completed_at DESC');
+-  return rows.map((r: { id: any; lesson_id: any; user_id: any; score: any; total_questions: any; easy_score: any; medium_score: any; hard_score: any; completed_at: any; attempt_number: any; }) => ({
+-    id: r.id, lessonId: r.lesson_id, userId: r.user_id,
+-    score: r.score, totalQuestions: r.total_questions,
+-    easyScore: r.easy_score, mediumScore: r.medium_score, hardScore: r.hard_score,
+-    completedAt: r.completed_at, attemptNumber: r.attempt_number,
+-  }));
+-}
+-
+-/** Returns all quiz attempts for a lesson, oldest first. */
+-export async function dbGetLessonQuizResults(lessonId: string): Promise<LessonQuizResult[]> {
+-  const db = await getDb();
+-  const rows = await db.getAllAsync<{
+-    id: string; lesson_id: string; user_id: string; score: number;
+-    total_questions: number; easy_score: number; medium_score: number;
+-    hard_score: number; completed_at: string; attempt_number: number;
+-  }>(
+-    'SELECT * FROM lesson_quiz_results WHERE lesson_id = ? ORDER BY attempt_number ASC',
+-    [lessonId],
+-  );
+-  return rows.map((r: { id: any; lesson_id: any; user_id: any; score: any; total_questions: any; easy_score: any; medium_score: any; hard_score: any; completed_at: any; attempt_number: any; }) => ({
+-    id: r.id, lessonId: r.lesson_id, userId: r.user_id,
+-    score: r.score, totalQuestions: r.total_questions,
+-    easyScore: r.easy_score, mediumScore: r.medium_score, hardScore: r.hard_score,
+-    completedAt: r.completed_at, attemptNumber: r.attempt_number,
+-  }));
+-}
+-
+-// ─────────────────────────────────────────────────────────────────────────────
+-// CHAT MESSAGES
+-// ─────────────────────────────────────────────────────────────────────────────
+-
+-/** Saves a single chat message (called after each user send / tutor reply). */
+-export async function dbSaveChatMessage(msg: ChatMessage): Promise<void> {
+-  const db = await getDb();
+-  await db.runAsync(
+-    `INSERT OR IGNORE INTO chat_messages (id, lesson_id, role, content, timestamp)
+-     VALUES (?, ?, ?, ?, ?)`,
+-    [msg.id, msg.lessonId, msg.role, msg.content, msg.timestamp],
+-  );
+-}
+-
+-/** Returns the full conversation history for a lesson, oldest message first. */
+-export async function dbGetChatHistory(lessonId: string): Promise<ChatMessage[]> {
+-  const db = await getDb();
+-  const rows = await db.getAllAsync<{
+-    id: string; lesson_id: string; role: string; content: string; timestamp: string;
+-  }>(
+-    'SELECT * FROM chat_messages WHERE lesson_id = ? ORDER BY timestamp ASC',
+-    [lessonId],
+-  );
+-  return rows.map((r: { id: any; lesson_id: any; role: string; content: any; timestamp: any; }) => ({
+-    id: r.id,
+-    lessonId: r.lesson_id,
+-    role: r.role as 'user' | 'tutor',
+-    content: r.content,
+-    timestamp: r.timestamp,
+-  }));
+-}
+-
+-/** Clears all chat messages for a lesson. */
+-export async function dbClearChatHistory(lessonId: string): Promise<void> {
+-  const db = await getDb();
+-  await db.runAsync('DELETE FROM chat_messages WHERE lesson_id = ?', [lessonId]);
+-}
+\ No newline at end of file
++    console.log('✅ SQLite Database schema initialized successfully.');
++  } catch (error) {
++    console.error('❌ Failed to initialize SQLite database:', error);
++    throw error;
++  }
++};
+\ No newline at end of file
+Index: PocketClass_AIFeatures/services/LessonMaterialService.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import { ModelClass }      from '../model/ModelClass';\r\nimport { PromptTemplates } from '../templates/promptTemplates';\r\nimport { jsonParser }      from '../utils/jsonParser';\r\nimport type { LessonMaterialInput } from '../types/input/';\r\nimport type { LessonMaterial }      from '../types/outputs/';\r\n\r\n/**\r\n * LessonMaterialService\r\n *\r\n * Generates the 3-page structured lesson content for a given topic.\r\n * This is the AI-generated counterpart to the static `lessons.sections`\r\n * stored in SQLite — it is used when the lesson has no pre-seeded content\r\n * or when AI-generated enrichment is desired.\r\n *\r\n * The `lecture` parameter carries whatever seed content exists for the topic\r\n * (could be a short outline, a paragraph, or even just the topic title\r\n * repeated). The model expands it into the full 3-page structure.\r\n *\r\n * Flow:\r\n *   LessonViewScreen (mode === 'content', first section load)\r\n *     → LessonMaterialService.generateMaterial({ topic, lecture })\r\n *       → ModelClass.getInstance()\r\n *       → PromptTemplates.lessonMaterialPrompt.pipe(model)\r\n *       → jsonParser<LessonMaterial>(response)\r\n *     ← LessonMaterial\r\n *       page1 → Section 1 (Introduction + objectives + tip)\r\n *       page2 → Section 2 (Core content + key concepts)\r\n *       page3 → Section 3 (Real-life application + summary)\r\n *\r\n * The page structure maps directly to the `lesson.sections` array that\r\n * LessonViewScreen already knows how to render via renderContent().\r\n */\r\nexport class LessonMaterialService {\r\n  async generateMaterial(input: LessonMaterialInput): Promise<LessonMaterial> {\r\n    // Slightly higher temperature for richer, more engaging lesson prose\r\n    ModelClass.setTemperature(0.6);\r\n    const model = ModelClass.getInstance();\r\n\r\n    const chain = PromptTemplates.lessonMaterialPrompt.pipe(model);\r\n\r\n    const response = await chain.invoke({\r\n      topic:   input.topic,\r\n      lecture: input.lecture,\r\n    });\r\n\r\n    ModelClass.setTemperature(0.5);\r\n\r\n    return jsonParser<LessonMaterial>(response.content);\r\n  }\r\n}\r\n
+===================================================================
+diff --git a/PocketClass_AIFeatures/services/LessonMaterialService.ts b/PocketClass_AIFeatures/services/LessonMaterialService.ts
+--- a/PocketClass_AIFeatures/services/LessonMaterialService.ts	(revision c9432150fb668ee8b0f531213ac0b6d1a763ba69)
++++ b/PocketClass_AIFeatures/services/LessonMaterialService.ts	(date 1773415922055)
+@@ -2,7 +2,7 @@
+ import { PromptTemplates } from '../templates/promptTemplates';
+ import { jsonParser }      from '../utils/jsonParser';
+ import type { LessonMaterialInput } from '../types/input/';
+-import type { LessonMaterial }      from '../types/outputs/';
++import type { LessonMaterial }      from '../types/outputs/LessonMaterial';
+ 
+ /**
+  * LessonMaterialService

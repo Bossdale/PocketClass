@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="b45bc7ed-9588-41c2-aea7-36d8b8d04ae5" name="Changes" comment="TODO: AI integration">
+      <change afterPath="$PROJECT_DIR$/AI_Prototyping/PocketClass_AI_Integration_Guide.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/features/generateFocusArea.ts" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/features/generateFocusArea.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/features/getLearningMaterial.ts" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/features/getLearningMaterial.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/features/getStudyTips.ts" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/features/getStudyTips.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/main.ts" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/main.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/model/ModelClass.ts" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/model/ModelClass.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/templates/promptTemplates.ts" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/templates/promptTemplates.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/tsconfig.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/types/input/diagnosticScoreInterface.ts" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/types/input/diagnosticScoreInterface.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/types/input/focusAreaRequestInterface.ts" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/types/input/focusAreaRequestInterface.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/types/input/focusAreaResponseInterface.ts" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/types/input/focusAreaResponseInterface.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/utils/jsonParser.ts" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/utils/jsonParser.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PocketClass_AIFeatures/utils/jsonToString.ts" beforeDir="false" afterPath="$PROJECT_DIR$/AI_Prototyping/utils/jsonToString.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/.gitignore" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="mergeAll" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "C:/Users/austi/PocketClass/AI_Prototyping"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\austi\PocketClass\AI_Prototyping" />
+      <recent name="C:\Users\austi\PocketClass\frontend\assets\models" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="PocketClass" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="PocketClass" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="TaskManager">
+    <task id="LOCAL-00001" summary="TODO: AI integration">
+      <option name="closed" value="true" />
+      <created>1775945250089</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1775945250089</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
+    <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="TODO: AI integration" />
+    <option name="LAST_COMMIT_MESSAGE" value="TODO: AI integration" />
+  </component>
+</project>
