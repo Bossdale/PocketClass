@@ -15,7 +15,8 @@ export class ModelClass {
         if (!this.model) {
             this.llama = await getLlama();
             this.model = await this.llama.loadModel({
-                modelPath: "./phi-3-mini-4k-instruct.F16.gguf",
+                modelPath: "./model/phi-3-mini-4k-instruct.F16.gguf",
+                gpuLayers: 0,
             });
 
             this.context = await this.model.createContext({
@@ -41,15 +42,85 @@ export class ModelClass {
 
     static async invoke(prompt: string, temperature?: number) {
         const instance = this.getInstance();
-
         await instance.init();
+
         if (!instance.session) {
             throw new Error("Session failed to initialize.");
         }
 
-        return await instance.session.prompt(prompt, {
+        console.log(`\nAsking AI: "${prompt}"\n`);
+        console.log("--- AI Response ---");
+
+        // The AI will now print word-by-word!
+        const finalResponse = await instance.session.prompt(prompt, {
             temperature: temperature ?? instance.temperature,
             maxTokens: 400,
+            onTextChunk: (text) => {(process as any).stdout.write(text);}
         });
+        
+        console.log("\n-------------------\n");
+        return finalResponse;
     }
 }
+
+
+
+
+// // You must install this via: npm install llama.rn
+// import { initLlama, LlamaContext } from 'llama.rn';
+
+// export class ModelClass {
+//     private static instance: ModelClass | null = null;
+
+//     private temperature = 0.5;
+    
+//     // llama.rn combines the model, session, and engine into a single "Context"
+//     private context: LlamaContext | null = null;
+
+//     private constructor() {}
+
+//     private async init() {
+//         if (!this.context) {
+//             // Note: The path below MUST be an absolute path on the phone's file system.
+//             // You cannot use relative paths like "./model/" on mobile.
+//             const modelFilePath = "./model/poc"; 
+
+//             this.context = await initLlama({
+//                 model: modelFilePath,
+//                 n_ctx: 4096,       // Context window size
+//                 n_gpu_layers: 0,   // 0 = CPU only. (Some iPhones support >0 for Metal GPU)
+//             });
+//         }
+//     }
+
+//     static getInstance() {
+//         if (!this.instance) {
+//             this.instance = new ModelClass();
+//         }
+//         return this.instance;
+//     }
+
+//     static setTemperature(t: number) {
+//         this.getInstance().temperature = t;
+//     }
+
+//     static async invoke(prompt: string, temperature?: number) {
+//         const instance = this.getInstance();
+
+//         await instance.init();
+
+//         if (!instance.context) {
+//             throw new Error("Session failed to initialize.");
+//         }
+
+//         // llama.rn uses .completion() instead of .prompt()
+//         const response = await instance.context.completion({
+//             prompt: prompt,
+//             n_predict: 400, // This is what llama.rn calls maxTokens
+//             temperature: temperature ?? instance.temperature,
+//         });
+
+//         // The text is nested inside the response object
+//         return response.text; 
+//     }
+// }

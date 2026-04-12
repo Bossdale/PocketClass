@@ -1,9 +1,10 @@
-import { getStudyTips } from "./features/getStudyTips";
-import { diagnosticScoreInterface } from "./types/input/diagnosticScoreInterface";
-import { DiagnosticQuizInput } from "./types/input/diagnosticQuizInput"
-import { QuarterlyExamInput } from "./types/input/quarterlyExamInput"
-import {DiagnosticQuiz} from "./services/DiagnosticQuiz"
-import {QuarterlyExamService} from "./services/QuarterlyExamService"
+import { getStudyTips } from "./features/getStudyTips.js";
+import { diagnosticScoreInterface } from "./types/input/diagnosticScoreInterface.js";
+import { DiagnosticQuizInput } from "./types/input/diagnosticQuizInput.js"
+import { QuarterlyExamInput } from "./types/input/quarterlyExamInput.js"
+import {DiagnosticQuiz} from "./services/DiagnosticQuiz.js"
+import {QuarterlyExamService} from "./services/QuarterlyExamService.js"
+import {ModelClass} from "./model/ModelClass.js"
 async function main() {
   // const mockDiagnosticData: diagnosticScoreInterface = {
   //   quarter1_score: 42,
@@ -53,7 +54,7 @@ async function main() {
   ]
 };
 
-  const json = await QuarterlyExamService.generateExam(mockQuarterlyExamInput);
+  const json = ModelClass.invoke("What is matter? in 1 sentence")
   console.log(json);
 
 }
