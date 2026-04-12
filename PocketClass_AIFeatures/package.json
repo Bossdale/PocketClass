@@ -5,6 +5,7 @@
     "@langchain/ollama": "^1.2.6",
     "expo-sqlite": "^55.0.10",
     "langchain": "^1.2.30",
+    "node-llama-cpp": "^3.18.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "uuid": "^13.0.0",
