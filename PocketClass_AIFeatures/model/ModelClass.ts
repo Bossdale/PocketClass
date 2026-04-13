@@ -11,22 +11,36 @@ export class ModelClass {
 
     private constructor() {}
 
+    private initPromise: Promise<void> | null = null;
+
     private async init() {
-        if (!this.model) {
-            this.llama = await getLlama();
-            this.model = await this.llama.loadModel({
-                modelPath: "./model/phi-3-mini-4k-instruct.F16.gguf",
-                gpuLayers: 0,
-            });
+        if (this.initPromise) return this.initPromise;
 
-            this.context = await this.model.createContext({
-                contextSize: 4096,
-            });
+        this.initPromise = (async () => {
+            if (!this.model) {
+                this.llama = await getLlama();
+                
+                this.model = await this.llama.loadModel({
+                    modelPath: "./model/phi-3.5-mini-instruct.Q4_K_M.gguf",
+                    gpuLayers: 0,
+                    // ADD THIS LINE: It tells the engine how to handle the specific Phi-3 vocabulary
+                    vocabularyType: "auto"
+                });
 
-            this.session = new LlamaChatSession({
-                contextSequence: this.context.getSequence()
-            });
-        }
+                this.context = await this.model.createContext({
+                    contextSize: 4096,
+                });
+
+                this.session = new LlamaChatSession({
+                    contextSequence: this.context.getSequence(),
+                    // Phi-3 fine-tunes often need a specific "System Prompt" wrapper 
+                    // to avoid tokenizer errors
+                    systemPrompt: "You are a helpful assistant." 
+                });
+            }
+        })();
+
+        return this.initPromise;
     }
 
     static getInstance() {
