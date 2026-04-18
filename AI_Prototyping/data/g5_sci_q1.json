@@ -1,0 +1,3273 @@
+{
+  "grade_level": 5,
+  "subject": "Science",
+  "quarters": [
+    {
+      "quarter_id": "Q1",
+      "quarter_name": "Materials and Matter",
+      "lessons": [
+        {
+          "lesson_id": "g5_sci_q1_l1",
+          "title": "Introduction to Matter in Daily Life",
+          "concepts": [
+            {
+              "concept_id": "g5_sci_q1_l1_c1",
+              "concept_name": "Definition of Matter",
+              "definition": "Anything that has mass and takes up space.",
+              "key_fact": "Everything around us that takes up space is matter.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice", "fill_in_the_blank"],
+                "templates": [
+                  "What do we call anything that {verb_phrase}?",
+                  "In science, what is defined as something that {verb_phrase}?",
+                  "Which term describes any substance that {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "has mass and takes up space",
+                    "occupies space and possesses mass"
+                  ]
+                }
+              },
+              "answer": "Matter",
+              "distractors": [
+                "Energy",
+                "Light",
+                "Sound"
+              ],
+              "rationale": "Matter is fundamentally defined as any physical substance that occupies space (volume) and possesses mass.",
+              "metadata": {
+                "tags": ["core_concept", "definition"],
+                "type": "vocabulary",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l1_c2",
+              "concept_name": "Mass",
+              "definition": "The amount of material in an object.",
+              "key_fact": "Heavier objects generally contain more mass than lighter ones.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice", "fill_in_the_blank"],
+                "templates": [
+                  "What scientific term refers to the {noun_phrase}?",
+                  "The {noun_phrase} is known as its what?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "amount of material in an object",
+                    "total amount of matter an object contains"
+                  ]
+                }
+              },
+              "answer": "Mass",
+              "distractors": [
+                "Volume",
+                "Weight",
+                "Length"
+              ],
+              "rationale": "Mass measures the actual amount of matter in an object, distinguishing it from volume (space taken up) and weight (the pull of gravity on that matter).",
+              "metadata": {
+                "tags": ["measurement", "property"],
+                "type": "property",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l1_c3",
+              "concept_name": "Space/Volume",
+              "definition": "The physical room or space an object occupies.",
+              "key_fact": "All states of matter, including invisible gases, have volume.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice", "fill_in_the_blank"],
+                "templates": [
+                  "What is the specific term for the {noun_phrase}?",
+                  "Which measurement describes the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "physical room an object occupies",
+                    "total amount of three-dimensional space an object takes up"
+                  ]
+                }
+              },
+              "answer": "Volume",
+              "distractors": [
+                "Mass",
+                "Weight",
+                "Texture"
+              ],
+              "rationale": "Volume refers specifically to the three-dimensional space enclosed by or occupied by any state of matter.",
+              "metadata": {
+                "tags": ["measurement", "property", "space"],
+                "type": "property",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l1_c4",
+              "concept_name": "Non-matter",
+              "definition": "Things that do not have mass or take up space.",
+              "key_fact": "Light, heat, and sound are examples of non-matter.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice", "true_false"],
+                "templates": [
+                  "What do we call things that {verb_phrase}?",
+                  "If an item is proven to {verb_phrase}, what category does it belong to?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "not have mass or take up any physical space",
+                    "be forms of energy rather than physical substances"
+                  ]
+                }
+              },
+              "answer": "Non-matter",
+              "distractors": [
+                "Matter",
+                "Solids",
+                "Liquids"
+              ],
+              "rationale": "Non-matter refers to things like light, heat, and sound, which are forms of energy and do not possess physical mass or volume.",
+              "metadata": {
+                "tags": ["classification", "energy"],
+                "type": "classification",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l1_c5",
+              "concept_name": "Matter at Home",
+              "definition": "Everyday objects found at home that have mass and volume.",
+              "key_fact": "Chairs, beds, and water are all matter found at home.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Everyday objects like chairs and beds are examples of {noun_phrase}?",
+                  "Which term best describes physical objects we use daily that are categorized as {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "matter found at home",
+                    "common matter used inside a house"
+                  ]
+                }
+              },
+              "answer": "Household matter",
+              "distractors": [
+                "Non-matter",
+                "Light energy",
+                "Ideas"
+              ],
+              "rationale": "Physical objects in our daily living spaces that have mass and take up space are considered household matter.",
+              "metadata": {
+                "tags": ["real_world", "home"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l1_c6",
+              "concept_name": "Matter in the Classroom",
+              "definition": "School supplies and furniture that have mass and volume.",
+              "key_fact": "Desks, whiteboards, and pencils are matter in the classroom.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "School supplies and desks are examples of {noun_phrase}?",
+                  "Pencils and whiteboards represent what kind of {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "matter in the classroom",
+                    "matter found inside a school environment"
+                  ]
+                }
+              },
+              "answer": "Classroom matter",
+              "distractors": [
+                "Non-matter",
+                "Heat",
+                "Thoughts"
+              ],
+              "rationale": "Any physical object in an educational setting that has mass and takes up space qualifies as classroom matter.",
+              "metadata": {
+                "tags": ["real_world", "school"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l1_c7",
+              "concept_name": "Observable Properties",
+              "definition": "Characteristics of matter that can be described using our senses.",
+              "key_fact": "Color, size, shape, and texture are observable properties.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice", "fill_in_the_blank"],
+                "templates": [
+                  "What do we call the {noun_phrase}?",
+                  "Color and texture are prime examples of {noun_phrase}."
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "characteristics of matter described using our natural senses",
+                    "traits of a physical object we can see, feel, or smell"
+                  ]
+                }
+              },
+              "answer": "Observable properties",
+              "distractors": [
+                "Hidden features",
+                "Chemical reactions",
+                "Invisible traits"
+              ],
+              "rationale": "Observable properties are physical traits that do not require testing to be identified, such as color and texture.",
+              "metadata": {
+                "tags": ["senses", "description"],
+                "type": "observation",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l1_c8",
+              "concept_name": "Particles of Matter",
+              "definition": "The tiny, invisible pieces that make up all matter.",
+              "key_fact": "Even though a solid looks like one piece, it is made of millions of tiny particles.",
+              "difficulty": "hard",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "All matter is made up of {noun_phrase}?",
+                  "What are the {noun_phrase} that form all physical objects?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "tiny, invisible pieces called particles",
+                    "microscopic building blocks called particles"
+                  ]
+                }
+              },
+              "answer": "Particles",
+              "distractors": [
+                "Cells",
+                "Light rays",
+                "Energy waves"
+              ],
+              "rationale": "All matter, regardless of its state, is fundamentally composed of tiny units called particles.",
+              "metadata": {
+                "tags": ["microscopic", "structure"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l1_c9",
+              "concept_name": "Living vs. Non-living Matter",
+              "definition": "Matter that is alive, such as plants, animals, and humans.",
+              "key_fact": "Living matter grows, needs energy, and takes up space.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice", "true_false"],
+                "templates": [
+                  "What do we call matter that {verb_phrase}?",
+                  "Humans and trees fall into the category of matter that {verb_phrase}. What is this called?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "is biologically alive",
+                    "naturally grows and requires a food energy source"
+                  ]
+                }
+              },
+              "answer": "Living matter",
+              "distractors": [
+                "Non-living matter",
+                "Non-matter",
+                "Inanimate objects"
+              ],
+              "rationale": "Matter is divided into living (biological organisms) and non-living (inanimate objects). Both have mass and volume, but living matter requires energy to grow.",
+              "metadata": {
+                "tags": ["biology", "classification"],
+                "type": "classification",
+                "blooms_taxonomy": "Analyzing"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l1_c10",
+              "concept_name": "Importance of Matter",
+              "definition": "Understanding matter helps us interact with the world and solve daily problems.",
+              "key_fact": "We choose different types of matter for different jobs, like using hard matter for building.",
+              "difficulty": "hard",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Understanding the {noun_phrase} helps us solve real-world engineering problems.",
+                  "Choosing the right physical material for a specific job demonstrates the {noun_phrase}."
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "importance of understanding matter",
+                    "value in studying matter's unique properties"
+                  ]
+                }
+              },
+              "answer": "Importance of matter",
+              "distractors": [
+                "Color of objects",
+                "Lack of volume",
+                "Invisibility of matter"
+              ],
+              "rationale": "By understanding the properties of different types of matter, humans can safely and effectively build structures, create tools, and solve daily problems.",
+              "metadata": {
+                "tags": ["application", "real_world"],
+                "type": "global_function",
+                "blooms_taxonomy": "Evaluating"
+              }
+            }
+          ]
+        },
+        {
+          "lesson_id": "g5_sci_q1_l2",
+          "title": "The Solid State of Matter",
+          "concepts": [
+            {
+              "concept_id": "g5_sci_q1_l2_c1",
+              "concept_name": "Definition of a Solid",
+              "definition": "A state of matter with a fixed shape and a fixed volume.",
+              "key_fact": "Solids do not change their shape when moved from one place to another.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice", "fill_in_the_blank"],
+                "templates": [
+                  "Which state of matter is defined by having a {noun_phrase}?",
+                  "An object that has a {noun_phrase} is classified as what?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "fixed shape and fixed volume",
+                    "definite shape that cannot easily flow"
+                  ]
+                }
+              },
+              "answer": "Solid",
+              "distractors": [
+                "Liquid",
+                "Gas",
+                "Plasma"
+              ],
+              "rationale": "A solid is a state of matter characterized by a rigid structure that maintains both its shape and its volume.",
+              "metadata": {
+                "tags": ["state_of_matter", "definition"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l2_c2",
+              "concept_name": "Definite Shape",
+              "definition": "A property where an object keeps its original form and does not flow.",
+              "key_fact": "Unlike liquids and gases, solids naturally have a definite shape.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Because a solid {verb_phrase}, we say it has a definite shape.",
+                  "Which property explains why a wooden block {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "keeps its original form and does not flow",
+                    "maintains its exact physical form regardless of its container"
+                  ]
+                }
+              },
+              "answer": "Definite shape",
+              "distractors": [
+                "Definite volume",
+                "No definite shape",
+                "Ability to flow"
+              ],
+              "rationale": "Definite shape means the matter strongly resists changing its form, a key identifier of a solid.",
+              "metadata": {
+                "tags": ["property", "shape"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l2_c3",
+              "concept_name": "Definite Volume",
+              "definition": "A property where an object takes up a specific, unchanging amount of space.",
+              "key_fact": "Even if you move a solid to a bigger container, its volume stays the exact same.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "When an object is observed to have a {noun_phrase}, it is said to have a definite volume.",
+                  "Which term describes the fact that a solid takes up a {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "specific, unchanging amount of space",
+                    "fixed amount of measurable space"
+                  ]
+                }
+              },
+              "answer": "Definite volume",
+              "distractors": [
+                "Definite shape",
+                "No definite volume",
+                "Changing space"
+              ],
+              "rationale": "Definite volume ensures that the physical space occupied by the object cannot be compressed or expanded under normal conditions.",
+              "metadata": {
+                "tags": ["property", "volume"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l2_c4",
+              "concept_name": "Particle Arrangement",
+              "definition": "Particles are tightly packed together and only vibrate in place.",
+              "key_fact": "This tight packing is the reason why solids are hard and keep their shape.",
+              "difficulty": "hard",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "In a solid, how are the particles {verb_phrase}?",
+                  "Which phrase best explains how solid particles are {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "arranged to hold the object's shape",
+                    "positioned internally to make the matter firm"
+                  ]
+                }
+              },
+              "answer": "Tightly packed",
+              "distractors": [
+                "Loosely packed",
+                "Spaced far apart",
+                "Moving freely"
+              ],
+              "rationale": "The microscopic arrangement of particles in a solid is highly dense and rigid, preventing them from sliding past one another.",
+              "metadata": {
+                "tags": ["microscopic", "particles"],
+                "type": "structure",
+                "blooms_taxonomy": "Analyzing"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l2_c5",
+              "concept_name": "Hardness",
+              "definition": "A property of a solid describing its resistance to being scratched, bent, or dented.",
+              "key_fact": "Diamond is an example of a solid with an extremely high level of hardness.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What property measures a solid's {noun_phrase}?",
+                  "If a solid shows high {noun_phrase}, what observable property does it possess?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "resistance to being scratched or dented",
+                    "ability to withstand surface pressure without getting scratched"
+                  ]
+                }
+              },
+              "answer": "Hardness",
+              "distractors": [
+                "Flexibility",
+                "Texture",
+                "Brittleness"
+              ],
+              "rationale": "Hardness defines how well a solid material resists external forces that attempt to alter its surface.",
+              "metadata": {
+                "tags": ["property", "observation"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l2_c6",
+              "concept_name": "Texture",
+              "definition": "How the surface of a solid feels, such as rough or smooth.",
+              "key_fact": "We can observe a solid's texture primarily by using our sense of touch.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What do we call the {noun_phrase}?",
+                  "The words 'rough' and 'smooth' are used to describe what {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "observation of how the surface of an object feels",
+                    "physical property detailing the way an object feels when touched"
+                  ]
+                }
+              },
+              "answer": "Texture",
+              "distractors": [
+                "Volume",
+                "Hardness",
+                "Temperature"
+              ],
+              "rationale": "Texture is an observable physical property interpreted primarily through tactile sensation.",
+              "metadata": {
+                "tags": ["property", "senses"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l2_c7",
+              "concept_name": "Identifying Solids",
+              "definition": "Recognizing objects like books, rocks, and ice as being in the solid state.",
+              "key_fact": "If you can hold an object and it doesn't spill or float away, it is usually a solid.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Books, rocks, and ice are all examples of {noun_phrase}?",
+                  "When you identify physical objects that keep their shape, you are identifying {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "solid matter",
+                    "matter existing purely in the solid state"
+                  ]
+                }
+              },
+              "answer": "Solids",
+              "distractors": [
+                "Liquids",
+                "Gases",
+                "Non-matter"
+              ],
+              "rationale": "Everyday objects that can be held and do not conform to their container are classified as solids.",
+              "metadata": {
+                "tags": ["classification", "real_world"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l2_c8",
+              "concept_name": "Shape Retention",
+              "definition": "The ability of a solid to maintain its form when moved or placed in different containers.",
+              "key_fact": "A wooden block placed inside a round bowl will still remain a block.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What property explains a solid's ability to {verb_phrase}?",
+                  "Which term refers to a solid's unique capacity to {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "maintain its geometric form in a differently shaped container",
+                    "keep its exact rigid shape when moved across surfaces"
+                  ]
+                }
+              },
+              "answer": "Shape retention",
+              "distractors": [
+                "Flexibility",
+                "Melting point",
+                "Viscosity"
+              ],
+              "rationale": "Shape retention is directly tied to the strong bonds between the solid's tightly packed particles.",
+              "metadata": {
+                "tags": ["property", "behavior"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l2_c9",
+              "concept_name": "Flexibility",
+              "definition": "The ability of some solids to bend without breaking.",
+              "key_fact": "Rubber and certain plastics are examples of highly flexible solids.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What physical property describes a solid's ability to {verb_phrase}?",
+                  "Rubber demonstrates which distinct property when it is able to {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "bend considerably without breaking",
+                    "flex and deform without snapping in half"
+                  ]
+                }
+              },
+              "answer": "Flexibility",
+              "distractors": [
+                "Brittleness",
+                "Hardness",
+                "Texture"
+              ],
+              "rationale": "Flexibility allows a solid's structure to temporarily deform under stress without suffering permanent failure or breaking.",
+              "metadata": {
+                "tags": ["property", "behavior"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l2_c10",
+              "concept_name": "Brittleness",
+              "definition": "The tendency of a solid to break, snap, or shatter easily when a force is applied.",
+              "key_fact": "Glass and dry clay are common examples of brittle solids.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the property that causes a solid to {verb_phrase}?",
+                  "Which term describes a material's high tendency to {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "break or shatter easily under pressure",
+                    "snap rapidly when a sudden force is applied"
+                  ]
+                }
+              },
+              "answer": "Brittleness",
+              "distractors": [
+                "Flexibility",
+                "Hardness",
+                "Shape retention"
+              ],
+              "rationale": "Brittleness is the opposite of flexibility; brittle materials cannot absorb much energy before fracturing.",
+              "metadata": {
+                "tags": ["property", "behavior"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            }
+          ]
+        },
+        {
+          "lesson_id": "g5_sci_q1_l3",
+          "title": "The Liquid State of Matter",
+          "concepts": [
+            {
+              "concept_id": "g5_sci_q1_l3_c1",
+              "concept_name": "Definition of a Liquid",
+              "definition": "A state of matter that flows.",
+              "key_fact": "Liquids can be poured easily and do not have a fixed shape.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Which state of matter is defined by having a {noun_phrase}?",
+                  "A substance characterized by its {noun_phrase} is classified as what?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "flowing nature rather than a fixed rigid structure",
+                    "ability to be poured easily without a fixed shape"
+                  ]
+                }
+              },
+              "answer": "Liquid",
+              "distractors": [
+                "Solid",
+                "Gas",
+                "Plasma"
+              ],
+              "rationale": "Liquids are defined by their ability to flow freely and conform to containers, distinguishing them from rigid solids.",
+              "metadata": {
+                "tags": ["state_of_matter", "definition"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l3_c2",
+              "concept_name": "No Definite Shape",
+              "definition": "A property where matter takes the exact shape of whatever container it is in.",
+              "key_fact": "If you pour a liquid from a round bowl into a square box, it becomes square.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Because water changes its form based on its container, we say it has the {noun_phrase}?",
+                  "Which property explains why a liquid possesses the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "ability to take the exact shape of its container",
+                    "tendency to adapt to the shape of whatever holds it"
+                  ]
+                }
+              },
+              "answer": "No definite shape",
+              "distractors": [
+                "Definite shape",
+                "Definite volume",
+                "Fixed structure"
+              ],
+              "rationale": "Because the particles in a liquid can slide past one another, they succumb to gravity and fill the shape of their container.",
+              "metadata": {
+                "tags": ["property", "shape"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l3_c3",
+              "concept_name": "Definite Volume",
+              "definition": "A property where the amount of liquid stays the same regardless of the container's shape.",
+              "key_fact": "Pouring 100mL of water into a taller glass still leaves you with exactly 100mL of water.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Even when poured into different glasses, a liquid takes up a {noun_phrase}. What is this called?",
+                  "What property ensures that liquid occupies a {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "specific, unchanging amount of total space",
+                    "constant and measurable amount of space"
+                  ]
+                }
+              },
+              "answer": "Definite volume",
+              "distractors": [
+                "No definite volume",
+                "Definite shape",
+                "Changing mass"
+              ],
+              "rationale": "While a liquid changes shape, its particles cannot be easily compressed, meaning it maintains a constant, definite volume.",
+              "metadata": {
+                "tags": ["property", "volume"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l3_c4",
+              "concept_name": "Particle Arrangement in Liquids",
+              "definition": "Particles are close together but have enough room to slide past one another.",
+              "key_fact": "This sliding movement is the reason why liquids are able to flow and be poured.",
+              "difficulty": "hard",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "In a liquid, how do the internal particles {verb_phrase}?",
+                  "Which phrase best explains how particles {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "move to allow the substance to flow",
+                    "behave when a liquid is actively being poured"
+                  ]
+                }
+              },
+              "answer": "Slide past one another",
+              "distractors": [
+                "Tightly packed in place",
+                "Spaced very far apart",
+                "Stop moving completely"
+              ],
+              "rationale": "The particles in a liquid have more energy than in a solid, allowing them to break rigid bonds and slide over each other.",
+              "metadata": {
+                "tags": ["microscopic", "particles"],
+                "type": "structure",
+                "blooms_taxonomy": "Analyzing"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l3_c5",
+              "concept_name": "Fluidity",
+              "definition": "The ability of a liquid to pour and move continuously.",
+              "key_fact": "Water flowing down a river is an example of a liquid's fluidity.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What property describes a liquid's unique ability to {verb_phrase}?",
+                  "Water demonstrates which fundamental property when it is able to {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "pour and move easily across a surface",
+                    "flow continuously down a stream"
+                  ]
+                }
+              },
+              "answer": "Fluidity",
+              "distractors": [
+                "Hardness",
+                "Brittleness",
+                "Shape retention"
+              ],
+              "rationale": "Fluidity is the macroscopic result of liquid particles sliding past one another, allowing continuous movement.",
+              "metadata": {
+                "tags": ["property", "behavior"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l3_c6",
+              "concept_name": "Viscosity",
+              "definition": "The thickness of a liquid or its resistance to flowing.",
+              "key_fact": "Honey flows much slower than water because honey has a higher viscosity.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What property measures a liquid's {noun_phrase}?",
+                  "Which physical property is defined strictly as a material's {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "thickness or chemical resistance to flowing",
+                    "slowness and internal friction when being poured"
+                  ]
+                }
+              },
+              "answer": "Viscosity",
+              "distractors": [
+                "Flexibility",
+                "Texture",
+                "Volume"
+              ],
+              "rationale": "Viscosity determines how thick a liquid is; high viscosity liquids (like honey) resist flow more than low viscosity liquids (like water).",
+              "metadata": {
+                "tags": ["property", "observation"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l3_c7",
+              "concept_name": "Identifying Liquids",
+              "definition": "Recognizing substances like water, juice, and oil as being in the liquid state.",
+              "key_fact": "If you can pour an item and it splashes, it is most likely a liquid.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Water, juice, and oil are all observable examples of {noun_phrase}?",
+                  "When you identify substances that can easily be poured, you are identifying {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "liquid matter",
+                    "substances physically in the liquid state"
+                  ]
+                }
+              },
+              "answer": "Liquids",
+              "distractors": [
+                "Solids",
+                "Gases",
+                "Non-matter"
+              ],
+              "rationale": "Everyday consumable and pourable items like juice and oil are practical classifications of the liquid state.",
+              "metadata": {
+                "tags": ["classification", "real_world"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l3_c8",
+              "concept_name": "Pouring Liquids",
+              "definition": "Observing how liquids behave when transferred between containers.",
+              "key_fact": "A liquid will continuously change its shape to match the new container as it is poured.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "When transferred between containers, what does a liquid continuously do to {verb_phrase}?",
+                  "Observing a poured liquid shows that it will change shape to {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "match the geometric structure of the new container",
+                    "fit snugly into the container it enters"
+                  ]
+                }
+              },
+              "answer": "Change shape",
+              "distractors": [
+                "Maintain shape",
+                "Change volume",
+                "Become solid"
+              ],
+              "rationale": "Pouring demonstrates a liquid's fluidity and its defining characteristic of having no definite shape.",
+              "metadata": {
+                "tags": ["observation", "behavior"],
+                "type": "observation",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l3_c9",
+              "concept_name": "Surface Level",
+              "definition": "How liquids settle to form a flat horizontal surface when at rest.",
+              "key_fact": "No matter how you tilt a half-full cup, the top of the resting liquid will always settle flat.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "When at rest, what kind of surface does a liquid form to {verb_phrase}?",
+                  "Gravity causes a resting liquid to create a flat surface to {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "level out evenly at the top",
+                    "settle in a perfectly balanced manner"
+                  ]
+                }
+              },
+              "answer": "Flat horizontal surface",
+              "distractors": [
+                "Curved vertical surface",
+                "Rigid fixed peak",
+                "Uneven bumpy surface"
+              ],
+              "rationale": "Due to gravity and fluidity, a liquid's particles will spread out until they form a completely flat, horizontal top layer when undisturbed.",
+              "metadata": {
+                "tags": ["property", "observation"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l3_c10",
+              "concept_name": "Mixing Liquids",
+              "definition": "Observing what happens when two different liquids are combined.",
+              "key_fact": "Some liquids mix perfectly together, while others, like oil and water, will separate.",
+              "difficulty": "hard",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "When two different liquids are mixed, they may uniquely {verb_phrase}. What are these possible outcomes?",
+                  "Depending on the chemical makeup of the liquids, they will {verb_phrase}. What happens?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "mix perfectly together or separate completely into layers",
+                    "blend seamlessly together or stubbornly stay apart"
+                  ]
+                }
+              },
+              "answer": "Combine or separate",
+              "distractors": [
+                "Always become solid",
+                "Always evaporate instantly",
+                "Always shrink in volume"
+              ],
+              "rationale": "Liquid combinations depend on density and chemical polarity, resulting in either a homogeneous mixture or separated layers.",
+              "metadata": {
+                "tags": ["observation", "behavior"],
+                "type": "observation",
+                "blooms_taxonomy": "Analyzing"
+              }
+            }
+          ]
+        },
+        {
+          "lesson_id": "g5_sci_q1_l4",
+          "title": "The Gaseous State of Matter",
+          "concepts": [
+            {
+              "concept_id": "g5_sci_q1_l4_c1",
+              "concept_name": "Definition of a Gas",
+              "definition": "A state of matter that expands to fill its space.",
+              "key_fact": "Gases will spread out in all directions until they fill the container they are in.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Which state of matter is defined as a substance that naturally {verb_phrase}?",
+                  "A material that effortlessly {verb_phrase} is classified as what?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "expands to fill all of its available space",
+                    "spreads out completely to fill its entire container"
+                  ]
+                }
+              },
+              "answer": "Gas",
+              "distractors": [
+                "Solid",
+                "Liquid",
+                "Plasma"
+              ],
+              "rationale": "A gas is defined by having neither a fixed shape nor a fixed volume, allowing it to expand indefinitely to fill a container.",
+              "metadata": {
+                "tags": ["state_of_matter", "definition"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l4_c2",
+              "concept_name": "No Definite Shape",
+              "definition": "A property where a gas takes the exact shape of its entire container.",
+              "key_fact": "If you pump a gas into a star-shaped balloon, the gas becomes star-shaped.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Because a gas changes its form to match a balloon, we say it has the {noun_phrase}?",
+                  "Which structural property explains why a gas possesses the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "ability to take the exact shape of its entire container",
+                    "trait of completely adapting to the shape of whatever holds it"
+                  ]
+                }
+              },
+              "answer": "No definite shape",
+              "distractors": [
+                "Definite shape",
+                "Fixed structure",
+                "Solid form"
+              ],
+              "rationale": "Similar to liquids, gases flow and conform entirely to the shape of any container they are placed in.",
+              "metadata": {
+                "tags": ["property", "shape"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l4_c3",
+              "concept_name": "No Definite Volume",
+              "definition": "A property where a gas expands or compresses to fill available space.",
+              "key_fact": "The exact same amount of gas can spread out to fill a large room or be squeezed into a tiny tank.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Because gas does not take up a fixed amount of space, it possesses the {noun_phrase}. What is this property called?",
+                  "What volume property ensures that a gas has the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "ability to naturally expand or compress to fill available space",
+                    "capacity to drastically change its volume to fit the space it is given"
+                  ]
+                }
+              },
+              "answer": "No definite volume",
+              "distractors": [
+                "Definite volume",
+                "Definite shape",
+                "Constant mass"
+              ],
+              "rationale": "Unlike solids and liquids, the distance between gas particles can be easily altered, meaning its volume is not fixed.",
+              "metadata": {
+                "tags": ["property", "volume"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l4_c4",
+              "concept_name": "Particle Arrangement in Gases",
+              "definition": "Particles in a gas are spread far apart and move freely at high speeds.",
+              "key_fact": "This free and rapid movement is why gases can spread out and fill a room so quickly.",
+              "difficulty": "hard",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "In a gas, how do the particles {verb_phrase}?",
+                  "Which phrase best explains how gas particles {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "arrange themselves to be spread far apart and move freely",
+                    "behave by becoming widely separated and moving quickly"
+                  ]
+                }
+              },
+              "answer": "Spread far apart",
+              "distractors": [
+                "Tightly packed",
+                "Sliding slowly",
+                "Vibrating in place"
+              ],
+              "rationale": "Gas particles have the highest thermal energy of the three standard states, causing them to move chaotically and spread far apart.",
+              "metadata": {
+                "tags": ["microscopic", "particles"],
+                "type": "structure",
+                "blooms_taxonomy": "Analyzing"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l4_c5",
+              "concept_name": "Invisibility",
+              "definition": "A property where many gases cannot be seen with the naked eye.",
+              "key_fact": "Even though we cannot see the air around us, it is still made of physical matter.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice", "true_false"],
+                "templates": [
+                  "What descriptive property applies to a gas that {verb_phrase}?",
+                  "Oxygen demonstrates which property when it {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "cannot be seen with the human naked eye",
+                    "is completely invisible to human sight"
+                  ]
+                }
+              },
+              "answer": "Invisibility",
+              "distractors": [
+                "Hardness",
+                "Texture",
+                "Brittleness"
+              ],
+              "rationale": "Because gas particles are spread so thin and many do not absorb visible light, they appear completely invisible.",
+              "metadata": {
+                "tags": ["property", "observation"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l4_c6",
+              "concept_name": "Air as a Mixture",
+              "definition": "Recognizing that the air we breathe is made of different gases mixed together.",
+              "key_fact": "Air is not just one gas; it is mostly made of nitrogen and oxygen.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What term describes the fact that the air we breathe {verb_phrase}?",
+                  "The air around us is best described as a what, because it {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "is actually made of different gases combined",
+                    "contains a complex combination of various gases"
+                  ]
+                }
+              },
+              "answer": "Mixture",
+              "distractors": [
+                "Single gas",
+                "Pure liquid",
+                "Solid state"
+              ],
+              "rationale": "Earth's atmosphere is a mixture composed primarily of Nitrogen (78%) and Oxygen (21%).",
+              "metadata": {
+                "tags": ["composition", "real_world"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Analyzing"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l4_c7",
+              "concept_name": "Compressibility",
+              "definition": "The ability to squeeze or force gas into a smaller space.",
+              "key_fact": "You can squeeze a balloon full of air easily because gases are highly compressible.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What property measures a gas's ability to {verb_phrase}?",
+                  "Which physical property is defined as a material's capacity to {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "be squeezed physically into a much smaller space",
+                    "be safely compressed into a tighter area"
+                  ]
+                }
+              },
+              "answer": "Compressibility",
+              "distractors": [
+                "Flexibility",
+                "Hardness",
+                "Shape retention"
+              ],
+              "rationale": "Because the particles in a gas are very far apart, they can easily be pushed closer together (compressed) by an outside force.",
+              "metadata": {
+                "tags": ["property", "behavior"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l4_c8",
+              "concept_name": "Gases Have Mass",
+              "definition": "Proving that gases are matter because they have weight and take up space.",
+              "key_fact": "An inflated balloon weighs slightly more than a deflated balloon because the air inside has mass.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "When an inflated balloon is weighed, it shows that gases {verb_phrase}. What property do they have?",
+                  "Observing that gases actively {verb_phrase} proves they have what property?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "weigh measurably more than empty space",
+                    "add measurable physical weight to an object"
+                  ]
+                }
+              },
+              "answer": "Mass",
+              "distractors": [
+                "No weight",
+                "Invisibility",
+                "Zero volume"
+              ],
+              "rationale": "Though very light, gases are composed of physical particles (atoms and molecules) which all possess a measurable mass.",
+              "metadata": {
+                "tags": ["property", "measurement"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Analyzing"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l4_c9",
+              "concept_name": "Wind",
+              "definition": "Understanding wind as moving air or gas from one place to another.",
+              "key_fact": "We can feel wind on our skin and see it move trees, even if we cannot see the gas itself.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "When we experience {noun_phrase}, what specific weather phenomenon do we call it?",
+                  "What is the common weather term used for a large volume of {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "moving air or gas",
+                    "atmospheric air that is in fast motion"
+                  ]
+                }
+              },
+              "answer": "Wind",
+              "distractors": [
+                "Temperature",
+                "Light",
+                "Sound"
+              ],
+              "rationale": "Wind is simply the bulk movement of the invisible gas mixture (air) that makes up the Earth's atmosphere.",
+              "metadata": {
+                "tags": ["weather", "real_world"],
+                "type": "application",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l4_c10",
+              "concept_name": "Identifying Gases",
+              "definition": "Recognizing common gases like oxygen, carbon dioxide, and helium.",
+              "key_fact": "Helium is the specific gas used to make party balloons float.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Oxygen, carbon dioxide, and helium are all observable examples of {noun_phrase}?",
+                  "When you identify helium inside a floating balloon, you are identifying {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "gaseous matter",
+                    "substances existing strictly in the gas state"
+                  ]
+                }
+              },
+              "answer": "Gases",
+              "distractors": [
+                "Liquids",
+                "Solids",
+                "Non-matter"
+              ],
+              "rationale": "Elements and compounds that naturally lack definite shape or volume at room temperature (like Helium and Oxygen) are identified as gases.",
+              "metadata": {
+                "tags": ["classification", "real_world"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            }
+          ]
+        },
+        {
+          "lesson_id": "g5_sci_q1_l5",
+          "title": "Measuring Volume",
+          "concepts": [
+            {
+              "concept_id": "g5_sci_q1_l5_c1",
+              "concept_name": "Definition of Volume Measurement",
+              "definition": "Quantifying how much space a liquid takes up.",
+              "key_fact": "We measure volume to know exactly how much liquid we have in a container.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What do we precisely call the scientific process of {verb_phrase}?",
+                  "In science, the mathematical act of {verb_phrase} is known as what?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "quantifying how much physical space a liquid takes up",
+                    "finding out the exact numerical amount of space a liquid occupies"
+                  ]
+                }
+              },
+              "answer": "Volume measurement",
+              "distractors": [
+                "Mass measurement",
+                "Temperature reading",
+                "Length measurement"
+              ],
+              "rationale": "Measuring volume is the act of assigning a specific number and unit to the 3D space occupied by a substance.",
+              "metadata": {
+                "tags": ["measurement", "definition"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l5_c2",
+              "concept_name": "Measuring Cylinders",
+              "definition": "Tall, narrow scientific tools used for exact measurement of liquids.",
+              "key_fact": "Because they are narrow, measuring cylinders give much more accurate readings than wide cups.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Which specific scientific tools are categorized as {noun_phrase}?",
+                  "What are the names of the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "tall, narrow tools used for exact liquid volume measurement",
+                    "tall and thin glass containers used to accurately measure volume"
+                  ]
+                }
+              },
+              "answer": "Measuring cylinders",
+              "distractors": [
+                "Beakers",
+                "Thermometers",
+                "Balances"
+              ],
+              "rationale": "Measuring cylinders (graduated cylinders) have a narrow diameter, meaning small changes in volume show as large vertical changes on the scale, increasing accuracy.",
+              "metadata": {
+                "tags": ["tools", "accuracy"],
+                "type": "equipment",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l5_c3",
+              "concept_name": "Beakers",
+              "definition": "Wide scientific tools used for approximate measurement and mixing.",
+              "key_fact": "Beakers are great for stirring and mixing liquids because of their wide openings.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Which scientific tools are broadly known as {noun_phrase}?",
+                  "In a lab setting, {noun_phrase} are called what?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "wide scientific tools meant for approximate measurement and mixing",
+                    "wide glass containers used mostly for mixing liquids together safely"
+                  ]
+                }
+              },
+              "answer": "Beakers",
+              "distractors": [
+                "Measuring cylinders",
+                "Test tubes",
+                "Pipettes"
+              ],
+              "rationale": "Beakers have wide mouths that make pouring and stirring easy, but their broad scales make them poor tools for exact measurements.",
+              "metadata": {
+                "tags": ["tools", "mixing"],
+                "type": "equipment",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l5_c4",
+              "concept_name": "Milliliters (mL)",
+              "definition": "The standard unit used for small volumes of liquid.",
+              "key_fact": "A standard medicine dropper usually holds about one milliliter of liquid.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the correct metric unit to use when {verb_phrase}?",
+                  "Scientists use what exact measurement unit for {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "measuring very small volumes of a liquid",
+                    "recording tiny amounts of liquid like a few drops"
+                  ]
+                }
+              },
+              "answer": "Milliliters",
+              "distractors": [
+                "Liters",
+                "Grams",
+                "Meters"
+              ],
+              "rationale": "Milliliters (mL) are a metric unit measuring 1/1000th of a liter, perfectly scaled for small, handheld amounts of liquid.",
+              "metadata": {
+                "tags": ["units", "small_scale"],
+                "type": "measurement",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l5_c5",
+              "concept_name": "Liters (L)",
+              "definition": "The standard unit used for larger volumes of liquid.",
+              "key_fact": "A large bottle of soda or a jug of water is usually measured in liters.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the standard metric unit selected when {verb_phrase}?",
+                  "When {verb_phrase}, what is the best base unit to use?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "measuring larger volumes of liquid like a big bottle",
+                    "recording big, heavy amounts of water or juice"
+                  ]
+                }
+              },
+              "answer": "Liters",
+              "distractors": [
+                "Milliliters",
+                "Kilograms",
+                "Centimeters"
+              ],
+              "rationale": "Liters (L) are the base metric unit for volume, appropriate for everyday larger quantities like beverages and buckets.",
+              "metadata": {
+                "tags": ["units", "large_scale"],
+                "type": "measurement",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l5_c6",
+              "concept_name": "Reading a Meniscus",
+              "definition": "The proper technique of reading liquid volume at eye level.",
+              "key_fact": "Water naturally curves downward in a glass tube, so you must read the bottom of this curve.",
+              "difficulty": "hard",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What do we officially call the technique of {verb_phrase}?",
+                  "If a lab scientist is {verb_phrase}, what critical technique are they doing?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "reading the curved liquid volume at perfect eye level",
+                    "looking closely at the bottom of the liquid curve at eye level"
+                  ]
+                }
+              },
+              "answer": "Reading a meniscus",
+              "distractors": [
+                "Weighing the liquid",
+                "Guessing the amount",
+                "Looking from above"
+              ],
+              "rationale": "Because water molecules cling to glass (adhesion), a curved meniscus forms. You must read from the center (bottom) of the curve at eye level for accuracy.",
+              "metadata": {
+                "tags": ["technique", "accuracy"],
+                "type": "observation",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l5_c7",
+              "concept_name": "Appropriate Unit Selection",
+              "definition": "Knowing when to use milliliters (mL) versus liters (L) based on the amount of liquid.",
+              "key_fact": "You would use mL for a spoon of medicine, but L for measuring a swimming pool.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What broad scientific skill involves {verb_phrase}?",
+                  "The mental process of successfully {verb_phrase} is called what?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "knowing exactly when to use mL versus L for a liquid",
+                    "choosing the mathematically correct volume measurement unit based on size"
+                  ]
+                }
+              },
+              "answer": "Appropriate unit selection",
+              "distractors": [
+                "Guessing measurements",
+                "Ignoring volume",
+                "Mixing liquids"
+              ],
+              "rationale": "Selecting the correct unit prevents massive numerical errors (e.g., measuring a pool as 500,000 mL is accurate but impractical compared to 500 L).",
+              "metadata": {
+                "tags": ["units", "application"],
+                "type": "application",
+                "blooms_taxonomy": "Evaluating"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l5_c8",
+              "concept_name": "Comparing Volumes",
+              "definition": "Determining which container holds more or less liquid.",
+              "key_fact": "A short, wide bowl might actually hold more liquid than a tall, skinny glass.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the analytical process of {verb_phrase}?",
+                  "Which broad term describes the careful action of {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "determining precisely which container holds more or less liquid",
+                    "figuring out mathematically which glass has the larger amount of water"
+                  ]
+                }
+              },
+              "answer": "Comparing volumes",
+              "distractors": [
+                "Changing states",
+                "Measuring mass",
+                "Filtering liquids"
+              ],
+              "rationale": "Because containers have different shapes (height vs width), humans must systematically compare volume numbers rather than trusting visual estimates.",
+              "metadata": {
+                "tags": ["analysis", "volume"],
+                "type": "observation",
+                "blooms_taxonomy": "Analyzing"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l5_c9",
+              "concept_name": "Accuracy in Measurement",
+              "definition": "Why precise measurements matter in scientific experiments.",
+              "key_fact": "Adding even a little bit too much liquid can completely ruin a science experiment.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What overarching concept emphasizes the {noun_phrase}?",
+                  "Scientists strive for what important standard regarding the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "need for precise volume measurements in science",
+                    "absolute necessity of making sure the exact correct amount of liquid is used"
+                  ]
+                }
+              },
+              "answer": "Accuracy",
+              "distractors": [
+                "Speed",
+                "Guesswork",
+                "Color change"
+              ],
+              "rationale": "Accuracy dictates how close a measured value is to the true value, which is vital for experiments to be repeatable and safe.",
+              "metadata": {
+                "tags": ["scientific_method", "accuracy"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Evaluating"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l5_c10",
+              "concept_name": "Capacity",
+              "definition": "The maximum volume a specific container can hold.",
+              "key_fact": "Even if a 1-liter bottle is only half full, its total capacity is still 1 liter.",
+              "difficulty": "hard",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What specific property identifies the {noun_phrase}?",
+                  "Which technical term officially refers to the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "absolute maximum volume a specific container can hold",
+                    "theoretical most liquid a container can fit inside before overflowing"
+                  ]
+                }
+              },
+              "answer": "Capacity",
+              "distractors": [
+                "Mass",
+                "Weight",
+                "Temperature"
+              ],
+              "rationale": "Capacity refers to the potential internal volume of a container, not the actual volume of liquid currently inside it.",
+              "metadata": {
+                "tags": ["volume", "limits"],
+                "type": "property",
+                "blooms_taxonomy": "Understanding"
+              }
+            }
+          ]
+        },
+        {
+          "lesson_id": "g5_sci_q1_l6",
+          "title": "Measuring Mass and Temperature",
+          "concepts": [
+            {
+              "concept_id": "g5_sci_q1_l6_c1",
+              "concept_name": "Balances and Scales",
+              "definition": "Simple science equipment used to precisely measure the mass of an object.",
+              "key_fact": "A balance compares the mass of two objects, while a scale measures the downward force to find mass.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What scientific tools are officially defined as {noun_phrase}?",
+                  "Which general equipment is used in the lab as {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "equipment designed to measure the total mass of an object",
+                    "tools heavily used to find out exactly how much matter an object contains"
+                  ]
+                }
+              },
+              "answer": "Balances and scales",
+              "distractors": [
+                "Thermometers",
+                "Beakers",
+                "Measuring cylinders"
+              ],
+              "rationale": "Balances and scales are the standard laboratory instruments required to determine the mass or weight of solid matter.",
+              "metadata": {
+                "tags": ["tools", "mass"],
+                "type": "equipment",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l6_c2",
+              "concept_name": "Milligrams (mg)",
+              "definition": "The standard unit used for measuring very light objects.",
+              "key_fact": "A small grain of sand or a tiny pill is usually measured in milligrams.",
+              "difficulty": "hard",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the correct base unit required when {verb_phrase}?",
+                  "Scientists use what specific mass unit for {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "measuring extremely light objects like a single grain of sand",
+                    "recording the exact mass of tiny, feather-light medical pills"
+                  ]
+                }
+              },
+              "answer": "Milligrams",
+              "distractors": [
+                "Kilograms",
+                "Liters",
+                "Meters"
+              ],
+              "rationale": "A milligram (mg) is 1/1000th of a gram, making it the appropriate metric unit for microscopic or highly precise weights like medicine.",
+              "metadata": {
+                "tags": ["units", "small_scale"],
+                "type": "measurement",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l6_c3",
+              "concept_name": "Grams (g)",
+              "definition": "The standard unit used for moderately light objects.",
+              "key_fact": "A standard metal paperclip weighs about one gram.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the standard metric unit applied when {verb_phrase}?",
+                  "When {verb_phrase}, what is the most appropriate unit?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "measuring moderately light objects like an apple or a pencil",
+                    "recording the physical mass of small, everyday handheld items"
+                  ]
+                }
+              },
+              "answer": "Grams",
+              "distractors": [
+                "Kilograms",
+                "Milliliters",
+                "Tons"
+              ],
+              "rationale": "Grams (g) are the base metric unit for mass, ideal for measuring standard household or desktop items.",
+              "metadata": {
+                "tags": ["units", "medium_scale"],
+                "type": "measurement",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l6_c4",
+              "concept_name": "Kilograms (kg)",
+              "definition": "The standard unit used for measuring heavier objects.",
+              "key_fact": "Human body weight and large sacks of rice are typically measured in kilograms.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the standard metric unit selected when {verb_phrase}?",
+                  "When {verb_phrase}, what is the best unit to properly use?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "measuring much heavier objects like a person or a large desk",
+                    "recording the dense mass of large, heavy everyday things"
+                  ]
+                }
+              },
+              "answer": "Kilograms",
+              "distractors": [
+                "Milligrams",
+                "Grams",
+                "Centimeters"
+              ],
+              "rationale": "A kilogram (kg) is equal to 1,000 grams and is the standard metric unit for expressing large amounts of mass.",
+              "metadata": {
+                "tags": ["units", "large_scale"],
+                "type": "measurement",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l6_c5",
+              "concept_name": "Comparing Mass",
+              "definition": "Understanding that larger objects do not always have more mass than smaller ones.",
+              "key_fact": "A small block of iron has much more mass than a large balloon filled with air.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the analytical process of {verb_phrase}?",
+                  "Which scientific term accurately describes the action of {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "determining which object has more mass even if their physical sizes differ completely",
+                    "figuring out that a larger overall size doesn't always mean a heavier weight"
+                  ]
+                }
+              },
+              "answer": "Comparing mass",
+              "distractors": [
+                "Comparing volume",
+                "Measuring length",
+                "Changing states"
+              ],
+              "rationale": "Comparing mass teaches students the concept of density—that mass is about the amount of matter packed inside, not just the ballooning physical size.",
+              "metadata": {
+                "tags": ["analysis", "observation"],
+                "type": "application",
+                "blooms_taxonomy": "Analyzing"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l6_c6",
+              "concept_name": "Definition of Temperature",
+              "definition": "A measure of how hot or cold matter is.",
+              "key_fact": "Temperature actually tells us how fast the tiny particles inside an object are moving.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What do we globally call the {noun_phrase}?",
+                  "Which scientific term primarily describes a {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "scientific measure of exactly how hot or cold matter is",
+                    "numerical reading of the average heat energy inside an object"
+                  ]
+                }
+              },
+              "answer": "Temperature",
+              "distractors": [
+                "Volume",
+                "Mass",
+                "Hardness"
+              ],
+              "rationale": "Temperature is the measurement of the average kinetic energy (movement) of the particles within a substance.",
+              "metadata": {
+                "tags": ["core_concept", "energy"],
+                "type": "definition",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l6_c7",
+              "concept_name": "Thermometers",
+              "definition": "The scientific tool used to precisely measure temperature.",
+              "key_fact": "Many traditional thermometers use a special liquid that expands when it gets hot.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Which specific scientific tools are universally defined as {noun_phrase}?",
+                  "What is the official name of the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "tool exclusively used to measure temperature accurately",
+                    "instruments designed specifically to read how hot or cold a substance is"
+                  ]
+                }
+              },
+              "answer": "Thermometers",
+              "distractors": [
+                "Balances",
+                "Measuring cylinders",
+                "Rulers"
+              ],
+              "rationale": "A thermometer utilizes thermal expansion (of liquid or metal) to visually represent the kinetic energy of the substance it is touching.",
+              "metadata": {
+                "tags": ["tools", "temperature"],
+                "type": "equipment",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l6_c8",
+              "concept_name": "Degrees Centigrade (°C)",
+              "definition": "The appropriate unit for measuring temperature in simple science activities.",
+              "key_fact": "On this scale, water freezes at 0°C and boils at 100°C.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the standard laboratory unit recorded when {verb_phrase}?",
+                  "Scientists predominantly use what specific unit for {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "recording the exact temperature in simple science class activities",
+                    "measuring exactly how hot water is in the lab environment"
+                  ]
+                }
+              },
+              "answer": "Degrees Centigrade",
+              "distractors": [
+                "Fahrenheit",
+                "Kelvin",
+                "Milliliters"
+              ],
+              "rationale": "Degrees Centigrade (Celsius) is the standard metric scale for temperature, based logically on the freezing (0) and boiling (100) points of water.",
+              "metadata": {
+                "tags": ["units", "temperature"],
+                "type": "measurement",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l6_c9",
+              "concept_name": "Reading a Thermometer",
+              "definition": "Understanding how the liquid inside rises with heat and falls with cold.",
+              "key_fact": "When particles get hot, they spread out, pushing the liquid up the thermometer tube.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What laboratory skill actively involves {verb_phrase}?",
+                  "The visual process of actively {verb_phrase} is called what?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "understanding exactly how the liquid inside a glass tube rises with heat",
+                    "looking at the top line of liquid to objectively see how hot or cold it is"
+                  ]
+                }
+              },
+              "answer": "Reading a thermometer",
+              "distractors": [
+                "Reading a meniscus",
+                "Weighing an object",
+                "Mixing liquids"
+              ],
+              "rationale": "Reading a thermometer requires understanding the scale on the instrument and properly observing where the thermally expanded fluid aligns with that scale.",
+              "metadata": {
+                "tags": ["technique", "observation"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l6_c10",
+              "concept_name": "Safe Handling",
+              "definition": "How to properly hold and use fragile measuring equipment.",
+              "key_fact": "Thermometers and glass beakers can shatter easily, so they must be placed securely on flat surfaces.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What broad laboratory concept emphasizes {verb_phrase}?",
+                  "Scientists must fiercely practice what overarching rule when {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "properly holding and securely using fragile measuring equipment",
+                    "ensuring glass tools do not break or cause accidental injuries"
+                  ]
+                }
+              },
+              "answer": "Safe handling",
+              "distractors": [
+                "Accuracy",
+                "Speed",
+                "Guesswork"
+              ],
+              "rationale": "Safe handling prevents dangerous accidents, such as shattering glass or spilling toxic/hot substances, ensuring a secure laboratory environment.",
+              "metadata": {
+                "tags": ["safety", "lab_skills"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            }
+          ]
+        },
+        {
+          "lesson_id": "g5_sci_q1_l7",
+          "title": "Changes in State - Adding Heat",
+          "concepts": [
+            {
+              "concept_id": "g5_sci_q1_l7_c1",
+              "concept_name": "Temperature and State Changes",
+              "definition": "How an increase in heat causes matter to change form.",
+              "key_fact": "Adding heat makes particles move faster and spread further apart, causing the state of matter to change.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the scientific result of the {noun_phrase}?",
+                  "Which macro concept best explains the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "fact that an increase in heat can cause matter to change its physical form",
+                    "process of adding intense heat energy to make matter abruptly change its state"
+                  ]
+                }
+              },
+              "answer": "State change",
+              "distractors": [
+                "Chemical reaction",
+                "Freezing",
+                "Condensation"
+              ],
+              "rationale": "A state change occurs when thermal energy breaks the bonds holding particles in their current phase, shifting them from solid to liquid, or liquid to gas.",
+              "metadata": {
+                "tags": ["heat", "transformation"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l7_c2",
+              "concept_name": "Melting",
+              "definition": "The process of a solid changing into a liquid.",
+              "key_fact": "This happens when solid particles gain enough heat energy to break out of their tightly packed positions.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What do we officially call the exact process of the {noun_phrase}?",
+                  "Which scientific term perfectly describes the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "event of a solid visibly changing into a liquid",
+                    "action of matter fully transforming from a rigid solid state to a flowing liquid state"
+                  ]
+                }
+              },
+              "answer": "Melting",
+              "distractors": [
+                "Evaporation",
+                "Freezing",
+                "Condensation"
+              ],
+              "rationale": "Melting is the specific phase transition from a solid to a liquid, caused by an increase in internal thermal energy.",
+              "metadata": {
+                "tags": ["state_change", "process"],
+                "type": "process",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l7_c3",
+              "concept_name": "Melting Point",
+              "definition": "The specific temperature at which a solid begins to melt.",
+              "key_fact": "The melting point of pure water ice is exactly 0°C.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the designated term for the {noun_phrase}?",
+                  "Which exact measurement definitively identifies the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "specific recorded temperature at which a solid begins to physically melt",
+                    "exact degree of heat needed to turn a solid chunk into a liquid puddle"
+                  ]
+                }
+              },
+              "answer": "Melting point",
+              "distractors": [
+                "Boiling point",
+                "Freezing point",
+                "Room temperature"
+              ],
+              "rationale": "Every substance has a unique melting point, the exact thermal threshold where solid bonds are broken and liquid flow begins.",
+              "metadata": {
+                "tags": ["temperature", "measurement"],
+                "type": "property",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l7_c4",
+              "concept_name": "Examples of Melting",
+              "definition": "Real-world observations like ice turning to water or butter melting.",
+              "key_fact": "We see this change every day when we leave a solid object like a chocolate bar out in the hot sun.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Ice turning into water and butter softening in a hot pan are standard {noun_phrase}?",
+                  "Which overarching concept is demonstrated strongly by {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "real-world visual observations of a solid actively turning into a liquid",
+                    "everyday kitchen events like solid ice cream rapidly dripping on a hot day"
+                  ]
+                }
+              },
+              "answer": "Examples of melting",
+              "distractors": [
+                "Examples of freezing",
+                "Examples of evaporation",
+                "Examples of condensation"
+              ],
+              "rationale": "Identifying real-world occurrences of melting helps anchor the abstract scientific concept to everyday observable reality.",
+              "metadata": {
+                "tags": ["real_world", "observation"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l7_c5",
+              "concept_name": "Evaporation",
+              "definition": "The process of a liquid changing into a gas.",
+              "key_fact": "Evaporation can happen at any temperature, usually occurring right at the surface of the liquid.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the official scientific process of the {noun_phrase}?",
+                  "Which distinct term technically defines the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "event of a liquid naturally changing into a gas",
+                    "occurrence of liquid water slowly turning into invisible water vapor in the air"
+                  ]
+                }
+              },
+              "answer": "Evaporation",
+              "distractors": [
+                "Condensation",
+                "Melting",
+                "Freezing"
+              ],
+              "rationale": "Evaporation is a surface-level phase transition where liquid molecules gain enough energy to escape into the gaseous phase.",
+              "metadata": {
+                "tags": ["state_change", "process"],
+                "type": "process",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l7_c6",
+              "concept_name": "Boiling",
+              "definition": "Rapid evaporation that occurs when a liquid is heated to its boiling point.",
+              "key_fact": "When water reaches 100°C, bubbles of gas form throughout the entire liquid, not just at the surface.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the proper name for the {noun_phrase}?",
+                  "Which scientific term accurately means the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "rapid interior evaporation that occurs when a liquid is heated to its maximum point",
+                    "fast violent change from liquid to gas causing gas bubbles to form everywhere"
+                  ]
+                }
+              },
+              "answer": "Boiling",
+              "distractors": [
+                "Melting",
+                "Freezing",
+                "Condensation"
+              ],
+              "rationale": "Unlike evaporation which happens only at the surface, boiling occurs throughout the entire bulk of the liquid when it hits its thermal limit.",
+              "metadata": {
+                "tags": ["state_change", "temperature"],
+                "type": "process",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l7_c7",
+              "concept_name": "Examples of Evaporation",
+              "definition": "Real-world observations like drying wet clothes or puddles disappearing.",
+              "key_fact": "Heat from the sun gives the liquid water energy to turn into an invisible gas and float away.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Wet clothes safely drying on a line and puddles naturally disappearing in the sun are {noun_phrase}?",
+                  "Drying your wet hair with a hot hairdryer is one of many {noun_phrase}."
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "real-world visual observations of physical liquids turning into gases",
+                    "everyday normal events where water seems to disappear into the invisible air"
+                  ]
+                }
+              },
+              "answer": "Examples of evaporation",
+              "distractors": [
+                "Examples of melting",
+                "Examples of condensation",
+                "Examples of freezing"
+              ],
+              "rationale": "Drying is the most common real-world application of evaporation, driven by ambient heat and air flow.",
+              "metadata": {
+                "tags": ["real_world", "observation"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l7_c8",
+              "concept_name": "Heat Energy",
+              "definition": "The type of energy that makes particles move faster and spread apart.",
+              "key_fact": "The more of this energy you add to a substance, the faster and farther apart its particles will go.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What specific force is directly responsible for {verb_phrase}?",
+                  "Which scientific term primarily describes the energy required for {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "making atomic particles naturally move much faster and spread apart",
+                    "causing the particles inside a solid object to vividly break free and move rapidly"
+                  ]
+                }
+              },
+              "answer": "Heat energy",
+              "distractors": [
+                "Light energy",
+                "Sound energy",
+                "Electrical energy"
+              ],
+              "rationale": "Heat energy (thermal energy) transfers kinetic power to particles, directly driving all 'melting' and 'evaporation' phase changes.",
+              "metadata": {
+                "tags": ["energy", "particles"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l7_c9",
+              "concept_name": "Reversibility",
+              "definition": "The concept that physical changes of state can be undone by adding or removing heat.",
+              "key_fact": "If you melt ice into water, you can easily reverse the process by freezing the water back into ice.",
+              "difficulty": "hard",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What overarching concept logically describes the {noun_phrase}?",
+                  "Which scientific principle powerfully states the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "fundamental idea that physical changes of matter states can be fully undone",
+                    "proven ability to successfully turn a liquid back into a solid after it melts"
+                  ]
+                }
+              },
+              "answer": "Reversibility",
+              "distractors": [
+                "Chemical reaction",
+                "Permanent change",
+                "Irreversibility"
+              ],
+              "rationale": "Phase changes are physical changes, not chemical changes, meaning the original material can always be recovered by reversing the thermal energy flow.",
+              "metadata": {
+                "tags": ["concept", "behavior"],
+                "type": "property",
+                "blooms_taxonomy": "Analyzing"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l7_c10",
+              "concept_name": "Solving Problems with Heat",
+              "definition": "Applying melting and evaporation to accomplish daily tasks, such as cooking or drying.",
+              "key_fact": "We use heat intentionally to boil water to make pasta or to use a hair dryer to dry wet hair.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "When we deliberately use our knowledge of science for {verb_phrase}, what are we doing?",
+                  "Which broad practical concept intentionally involves {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "applying processes of melting and evaporation to accomplish daily human tasks",
+                    "using heat energy intentionally to cook raw food or dry wet things safely"
+                  ]
+                }
+              },
+              "answer": "Solving problems with heat",
+              "distractors": [
+                "Measuring volume",
+                "Creating cold energy",
+                "Observing texture"
+              ],
+              "rationale": "Human engineering relies heavily on manipulating the states of matter via heat to create tools, cook food, and improve sanitation.",
+              "metadata": {
+                "tags": ["application", "real_world"],
+                "type": "application",
+                "blooms_taxonomy": "Creating"
+              }
+            }
+          ]
+        },
+        {
+          "lesson_id": "g5_sci_q1_l8",
+          "title": "Changes in State - Removing Heat",
+          "concepts": [
+            {
+              "concept_id": "g5_sci_q1_l8_c1",
+              "concept_name": "Cooling and State Changes",
+              "definition": "How a decrease in heat causes matter to change form.",
+              "key_fact": "When heat is removed from a substance, it cools down and can change into a more solid state.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the ultimate scientific result of the {noun_phrase}?",
+                  "Which core concept fully explains the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "fact that a drastic decrease in heat causes matter to change form",
+                    "process of deliberately removing heat energy to make matter radically change its state"
+                  ]
+                }
+              },
+              "answer": "State change",
+              "distractors": [
+                "Chemical reaction",
+                "Melting",
+                "Boiling"
+              ],
+              "rationale": "Removing thermal energy forces particles to slow down and bond together, changing the state from gas to liquid, or liquid to solid.",
+              "metadata": {
+                "tags": ["cooling", "transformation"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l8_c2",
+              "concept_name": "Freezing",
+              "definition": "The process of a liquid changing into a solid.",
+              "key_fact": "This happens when liquid particles lose enough heat energy that they stop sliding and lock into place.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What do we officially call the exact process of the {noun_phrase}?",
+                  "Which scientific term perfectly describes the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "event of a flowing liquid safely changing into a rigid solid",
+                    "action of physical matter transforming strongly from a liquid state to a solid state"
+                  ]
+                }
+              },
+              "answer": "Freezing",
+              "distractors": [
+                "Melting",
+                "Evaporation",
+                "Boiling"
+              ],
+              "rationale": "Freezing is the specific phase transition from liquid to solid, caused by a critical loss of internal thermal energy.",
+              "metadata": {
+                "tags": ["state_change", "process"],
+                "type": "process",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l8_c3",
+              "concept_name": "Freezing Point",
+              "definition": "The specific temperature at which a liquid solidifies.",
+              "key_fact": "For pure water, the freezing point is exactly 0°C.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the designated term for the {noun_phrase}?",
+                  "Which exact measurement definitively identifies the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "specific recorded temperature at which a liquid officially begins to turn solid",
+                    "exact degree of ambient cold needed to turn a puddle of liquid into a block of solid"
+                  ]
+                }
+              },
+              "answer": "Freezing point",
+              "distractors": [
+                "Melting point",
+                "Boiling point",
+                "Room temperature"
+              ],
+              "rationale": "The freezing point is the exact thermal floor where liquid particles can no longer slide past one another and must lock into a solid grid.",
+              "metadata": {
+                "tags": ["temperature", "measurement"],
+                "type": "property",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l8_c4",
+              "concept_name": "Examples of Freezing",
+              "definition": "Real-world observations like making ice cubes or water freezing in winter.",
+              "key_fact": "We see this change when liquid water is placed into a cold freezer and turns into solid ice.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Making solid ice cubes and lakes completely freezing over in winter are {noun_phrase}?",
+                  "Which overarching concept is demonstrated strongly by {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "real-world visual observations of a liquid turning securely into a solid",
+                    "everyday natural events like fluid water turning to solid ice on a remarkably cold night"
+                  ]
+                }
+              },
+              "answer": "Examples of freezing",
+              "distractors": [
+                "Examples of melting",
+                "Examples of boiling",
+                "Examples of condensation"
+              ],
+              "rationale": "Winter ice and kitchen freezers provide the most accessible real-world evidence of the freezing phase transition.",
+              "metadata": {
+                "tags": ["real_world", "observation"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l8_c5",
+              "concept_name": "Condensation",
+              "definition": "The process of a gas changing into a liquid.",
+              "key_fact": "This occurs when gas particles cool down, slow their movement, and clump together to form liquid drops.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the official scientific process of the {noun_phrase}?",
+                  "Which distinct term technically defines the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "event of a hot gas sufficiently cooling down and safely changing into a liquid",
+                    "occurrence of invisible water vapor actively turning into visible liquid droplets"
+                  ]
+                }
+              },
+              "answer": "Condensation",
+              "distractors": [
+                "Evaporation",
+                "Freezing",
+                "Melting"
+              ],
+              "rationale": "Condensation is the process where gaseous particles lose energy, slow down, and group together to form liquid droplets.",
+              "metadata": {
+                "tags": ["state_change", "process"],
+                "type": "process",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l8_c6",
+              "concept_name": "Examples of Condensation",
+              "definition": "Real-world observations like dew forming or water droplets on a cold glass.",
+              "key_fact": "The water on the outside of a cold glass comes from water vapor in the air cooling down and turning liquid.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "Morning dew naturally forming on grass and water droplets on a cold glass are {noun_phrase}?",
+                  "Seeing a bathroom mirror completely fog up after a very hot shower is one of many {noun_phrase}."
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "real-world visual observations of floating gases turning into resting liquids",
+                    "everyday normal events where water vapor forms wet liquid drops on cold flat surfaces"
+                  ]
+                }
+              },
+              "answer": "Examples of condensation",
+              "distractors": [
+                "Examples of evaporation",
+                "Examples of melting",
+                "Examples of freezing"
+              ],
+              "rationale": "Condensation is commonly observed as 'sweat' on cold drinks or fog on glass, proving that the air contains invisible water vapor.",
+              "metadata": {
+                "tags": ["real_world", "observation"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l8_c7",
+              "concept_name": "Loss of Heat Energy",
+              "definition": "Understanding that removing heat makes particles slow down and pack closer.",
+              "key_fact": "As heat is lost, particles lose their speed, which makes them pack tightly together into a liquid or solid.",
+              "difficulty": "hard",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What missing force is directly responsible for {verb_phrase}?",
+                  "Which scientific term primarily describes the core reason for {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "making fast atomic particles forcibly slow down and pack much closer together",
+                    "causing the chaotic particles inside a gas or liquid to heavily lose speed and clump up"
+                  ]
+                }
+              },
+              "answer": "Loss of heat energy",
+              "distractors": [
+                "Adding heat energy",
+                "Increasing temperature",
+                "Gaining light energy"
+              ],
+              "rationale": "Removing thermal energy steals the kinetic power of particles, allowing molecular bonds to pull them tightly into denser states of matter.",
+              "metadata": {
+                "tags": ["energy", "particles"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l8_c8",
+              "concept_name": "The Water Cycle Integration",
+              "definition": "How evaporation and condensation work together in nature.",
+              "key_fact": "The sun evaporates water into gas, and the cold upper atmosphere condenses it back into liquid rain.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What global environmental concept vividly describes the {noun_phrase}?",
+                  "Which scientific phrase perfectly represents the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "massive scale of how evaporation and condensation work endlessly together in nature",
+                    "continuous planetary movement of surface water turning into a gas and back into falling rain"
+                  ]
+                }
+              },
+              "answer": "The water cycle",
+              "distractors": [
+                "The carbon cycle",
+                "Reversibility",
+                "Freezing points"
+              ],
+              "rationale": "The water cycle is the Earth's natural application of the evaporation and condensation phase changes, driven by the sun's thermal energy.",
+              "metadata": {
+                "tags": ["nature", "systems"],
+                "type": "application",
+                "blooms_taxonomy": "Analyzing"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l8_c9",
+              "concept_name": "Comparing Opposite Processes",
+              "definition": "Understanding melting versus freezing as reverse operations.",
+              "key_fact": "Melting requires adding heat to turn a solid to liquid, while freezing requires removing heat to do the exact opposite.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the critical analytical process of {verb_phrase}?",
+                  "Which educational term technically describes the mental action of {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "understanding profoundly how solid melting and liquid freezing are completely opposite processes",
+                    "analyzing precisely the difference between adding heat to purposefully melt and removing heat to heavily freeze"
+                  ]
+                }
+              },
+              "answer": "Comparing opposite processes",
+              "distractors": [
+                "Comparing mass",
+                "Identifying liquids",
+                "Measuring volume"
+              ],
+              "rationale": "Comparing phase changes highlights the core principle of Reversibility in physical states based purely on energy flow.",
+              "metadata": {
+                "tags": ["analysis", "comparison"],
+                "type": "observation",
+                "blooms_taxonomy": "Analyzing"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l8_c10",
+              "concept_name": "Real-world Application",
+              "definition": "Using cooling processes to preserve food or solve daily problems.",
+              "key_fact": "We put meat and vegetables in the freezer to cool them down so they last longer without spoiling.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "When we deliberately use our knowledge of science for {verb_phrase}, what are we formally doing?",
+                  "Which broad practical concept intentionally involves {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "using mechanical cooling processes strictly to safely preserve raw food",
+                    "removing internal heat intentionally to logically solve daily household problems like food going completely bad"
+                  ]
+                }
+              },
+              "answer": "Real-world application",
+              "distractors": [
+                "Solving problems with heat",
+                "Measuring temperature",
+                "Boiling water"
+              ],
+              "rationale": "Modern refrigeration is the pinnacle of humans applying the physics of cooling and condensation to protect the global food supply.",
+              "metadata": {
+                "tags": ["application", "real_world"],
+                "type": "application",
+                "blooms_taxonomy": "Creating"
+              }
+            }
+          ]
+        },
+        {
+          "lesson_id": "g5_sci_q1_l9",
+          "title": "The Scientific Investigation - Planning",
+          "concepts": [
+            {
+              "concept_id": "g5_sci_q1_l9_c1",
+              "concept_name": "Definition of Scientific Investigation",
+              "definition": "A planned process to answer a question about the world.",
+              "key_fact": "It provides a structured way to discover new facts instead of just guessing.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What do we formally call the {noun_phrase}?",
+                  "In structured science, the {noun_phrase} is universally known as what?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "highly planned process used specifically to answer a complex question about the natural world",
+                    "safe, structured method deployed to accurately find out exactly how things physically work"
+                  ]
+                }
+              },
+              "answer": "Scientific investigation",
+              "distractors": [
+                "Wild guessing",
+                "Reading a textbook",
+                "Accidental discovery"
+              ],
+              "rationale": "A scientific investigation replaces random guesswork with a formal, repeatable methodology to extract absolute truth from nature.",
+              "metadata": {
+                "tags": ["scientific_method", "definition"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Remembering"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l9_c2",
+              "concept_name": "Observation",
+              "definition": "Using the senses to notice things and spark questions.",
+              "key_fact": "Good scientific investigations always begin with careful observation of the surroundings.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What do we officially call the foundational act of {verb_phrase}?",
+                  "Which core scientific term essentially means {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "using the physical senses to quietly notice things and instantly spark new scientific questions",
+                    "paying extremely close attention to worldly details purely to form a testable question"
+                  ]
+                }
+              },
+              "answer": "Observation",
+              "distractors": [
+                "Conclusion",
+                "Hypothesis",
+                "Fair testing"
+              ],
+              "rationale": "Observation is the necessary precursor to all science; you cannot test what you have not yet noticed.",
+              "metadata": {
+                "tags": ["senses", "process"],
+                "type": "process",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l9_c3",
+              "concept_name": "Formulating the Problem",
+              "definition": "Identifying the specific question to answer in an experiment.",
+              "key_fact": "This is the first formal step, often framed as asking, 'What is the problem?'",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the official scientific process of {verb_phrase}?",
+                  "Which early scientific step heavily involves {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "identifying cleanly the highly specific question to answer formally in an upcoming experiment",
+                    "figuring out exactly and precisely what unknown issue you passionately want to solve"
+                  ]
+                }
+              },
+              "answer": "Formulating the problem",
+              "distractors": [
+                "Drawing a conclusion",
+                "Selecting equipment",
+                "Recording data"
+              ],
+              "rationale": "Formulating the problem narrows a broad observation down into a single, testable, and targeted question.",
+              "metadata": {
+                "tags": ["scientific_method", "planning"],
+                "type": "process",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l9_c4",
+              "concept_name": "Creating a Hypothesis",
+              "definition": "Making an educated guess about what the answer to the problem will be.",
+              "key_fact": "A hypothesis is written before the experiment starts and can be proven right or wrong.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the precise laboratory term for {verb_phrase}?",
+                  "Which vital planning step requires {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "making an academically educated guess logically about what the final answer will be",
+                    "predicting scientifically the exact outcome of a lab experiment before physically testing it"
+                  ]
+                }
+              },
+              "answer": "Hypothesis",
+              "distractors": [
+                "Conclusion",
+                "Observation",
+                "Variable"
+              ],
+              "rationale": "A hypothesis sets a measurable expectation. Without it, the experiment has no stated baseline to prove or disprove.",
+              "metadata": {
+                "tags": ["scientific_method", "prediction"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Creating"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l9_c5",
+              "concept_name": "Identifying Materials",
+              "definition": "Listing everything required for the experiment.",
+              "key_fact": "It answers the question, 'What materials do you need?' so nothing is forgotten during the test.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What necessary preparation process explicitly involves {verb_phrase}?",
+                  "Which planning step practically ensures you are accurately {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "listing down systematically everything chemically required for the upcoming experiment",
+                    "writing down heavily all the physical lab supplies strictly needed before safely starting"
+                  ]
+                }
+              },
+              "answer": "Identifying materials",
+              "distractors": [
+                "Drawing a conclusion",
+                "Formulating the problem",
+                "Creating a hypothesis"
+              ],
+              "rationale": "Identifying materials ensures logistical readiness so that an active chemical process isn't interrupted by missing supplies.",
+              "metadata": {
+                "tags": ["planning", "preparation"],
+                "type": "process",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l9_c6",
+              "concept_name": "Selecting Equipment",
+              "definition": "Choosing the right tools like balances or thermometers for the investigation.",
+              "key_fact": "Using the wrong tool can lead to inaccurate measurements and incorrect conclusions.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What do we specifically call the technical step of {verb_phrase}?",
+                  "Which vital planning step focuses heavily on {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "choosing safely the absolute right physical tools like lab balances or accurate thermometers",
+                    "picking deliberately the precisely correct scientific measuring devices specifically for the test"
+                  ]
+                }
+              },
+              "answer": "Selecting equipment",
+              "distractors": [
+                "Making an observation",
+                "Writing a hypothesis",
+                "Recording data"
+              ],
+              "rationale": "Selecting equipment dictates the accuracy of the data. Measuring liquid volume with a beaker instead of a graduated cylinder ruins the precision.",
+              "metadata": {
+                "tags": ["tools", "planning"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l9_c7",
+              "concept_name": "Variables (Intro)",
+              "definition": "Understanding that things can change in an experiment.",
+              "key_fact": "A good experiment usually only changes one variable at a time to see exactly what happens.",
+              "difficulty": "hard",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the official plural term for the {noun_phrase}?",
+                  "Which word universally defines the {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "environmental things or chemical states that can actively change in an experiment",
+                    "environmental factors that can be safely adjusted or physically altered during a lab test"
+                  ]
+                }
+              },
+              "answer": "Variables",
+              "distractors": [
+                "Constants",
+                "Conclusions",
+                "Hypotheses"
+              ],
+              "rationale": "Variables are the shifting parts of an experiment. Controlling them is the only way to isolate what is actually causing an effect.",
+              "metadata": {
+                "tags": ["scientific_method", "rules"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Understanding"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l9_c8",
+              "concept_name": "Fair Testing",
+              "definition": "Making sure an experiment is conducted evenly so results are trustworthy.",
+              "key_fact": "If a test is not fair, the scientist cannot trust that their conclusion is correct.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What stringent laboratory concept ensures {verb_phrase}?",
+                  "Which major scientific principle focuses intensely on {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "making absolutely sure an experiment is conducted perfectly evenly so final results are undeniably trustworthy",
+                    "keeping strictly all background conditions perfectly equal simply to get undeniably accurate results"
+                  ]
+                }
+              },
+              "answer": "Fair testing",
+              "distractors": [
+                "Uncontrolled guessing",
+                "Formulating problems",
+                "Random changing"
+              ],
+              "rationale": "Fair testing requires establishing controls (constants) to ensure the only thing causing a result is the single variable being tested.",
+              "metadata": {
+                "tags": ["scientific_method", "accuracy"],
+                "type": "process",
+                "blooms_taxonomy": "Evaluating"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l9_c9",
+              "concept_name": "Investigation Planning",
+              "definition": "Writing down the steps before beginning the activity.",
+              "key_fact": "A clear plan helps scientists stay organized and safe during the experiment.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What do we broadly call the preventative act of {verb_phrase}?",
+                  "Which necessary preparatory process directly involves {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "writing down fully all the safety steps comprehensively before physically beginning the lab activity",
+                    "creating diligently a highly detailed manual guide to rigidly follow safely during the experiment"
+                  ]
+                }
+              },
+              "answer": "Investigation planning",
+              "distractors": [
+                "Drawing a conclusion",
+                "Executing the procedure",
+                "Observation"
+              ],
+              "rationale": "Investigation planning establishes the procedure, ensuring safety, repeatability, and order during what could be a chaotic physical test.",
+              "metadata": {
+                "tags": ["planning", "preparation"],
+                "type": "process",
+                "blooms_taxonomy": "Creating"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l9_c10",
+              "concept_name": "Sample Plan",
+              "definition": "Planning an investigation to answer a specific question, like 'Do gases have mass?'",
+              "key_fact": "Practicing with a sample plan helps students learn the correct format before doing their own.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the educational purpose of using a {noun_phrase}?",
+                  "Which teaching term accurately describes a {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "written practice plan logically used to answer a specific scientific question like 'Do gases have mass?'",
+                    "safe pre-made lab guide cleverly used to safely learn how complex experiments are designed"
+                  ]
+                }
+              },
+              "answer": "Sample plan",
+              "distractors": [
+                "Final conclusion",
+                "Wild guess",
+                "Unplanned test"
+              ],
+              "rationale": "A sample plan offers a low-stakes framework for students to learn the methodology of science before they attempt original research.",
+              "metadata": {
+                "tags": ["application", "practice"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            }
+          ]
+        },
+        {
+          "lesson_id": "g5_sci_q1_l10",
+          "title": "The Scientific Investigation - Execution and Conclusion",
+          "concepts": [
+            {
+              "concept_id": "g5_sci_q1_l10_c1",
+              "concept_name": "Executing the Procedure",
+              "definition": "Following the planned steps carefully to conduct the experiment.",
+              "key_fact": "Carefully following the steps ensures the experiment is conducted fairly and safely.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What do we properly call the active act of {verb_phrase}?",
+                  "Which post-planning term practically describes safely {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "following strictly the pre-planned steps carefully during an active live experiment",
+                    "carrying out exactly and physically the written steps established in the investigation plan"
+                  ]
+                }
+              },
+              "answer": "Executing the procedure",
+              "distractors": [
+                "Formulating the problem",
+                "Creating a hypothesis",
+                "Drawing a conclusion"
+              ],
+              "rationale": "Execution bridges the gap between theoretical planning and physical data collection, requiring discipline and safety awareness.",
+              "metadata": {
+                "tags": ["scientific_method", "execution"],
+                "type": "process",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l10_c2",
+              "concept_name": "Observation During Testing",
+              "definition": "Paying close attention while the experiment happens.",
+              "key_fact": "Scientists use their senses to notice any changes, like bubbles forming or colors shifting, while the test is running.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the formal process of keenly {verb_phrase}?",
+                  "Which action-oriented term technically means {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "paying remarkably close sensory attention specifically while the physical experiment is actually happening",
+                    "watching exceptionally carefully for any sudden physical chemical changes safely during a test"
+                  ]
+                }
+              },
+              "answer": "Observation during testing",
+              "distractors": [
+                "Identifying materials",
+                "Validating the hypothesis",
+                "Selecting equipment"
+              ],
+              "rationale": "In-moment observation allows scientists to catch secondary reactions or procedural errors that numerical data alone might miss.",
+              "metadata": {
+                "tags": ["senses", "process"],
+                "type": "process",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l10_c3",
+              "concept_name": "Recording Data",
+              "definition": "Writing down measurements accurately as they occur.",
+              "key_fact": "Data must be written down immediately so it is not forgotten or guessed later.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the required laboratory term for explicitly {verb_phrase}?",
+                  "Which highly critical step logically involves {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "writing down heavily exact factual measurements perfectly as they naturally occur",
+                    "documenting legally exact scientific numbers like hot temperature or heavy mass safely during a test"
+                  ]
+                }
+              },
+              "answer": "Recording data",
+              "distractors": [
+                "Drawing a conclusion",
+                "Creating a hypothesis",
+                "Variables"
+              ],
+              "rationale": "Immediate recording of data removes human memory errors and ensures the statistical integrity of the entire investigation.",
+              "metadata": {
+                "tags": ["data", "accuracy"],
+                "type": "process",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l10_c4",
+              "concept_name": "Safety Protocols",
+              "definition": "Following rules to ensure no one gets hurt during the investigation.",
+              "key_fact": "Wearing safety goggles and handling glass carefully are common safety protocols in a science lab.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What do we universally call the strict practice of cautiously {verb_phrase}?",
+                  "Which primary concept rigorously ensures you are appropriately {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "following strict lab rules to fully ensure absolutely no one gets horribly hurt during the investigation",
+                    "obeying rigid institutional guidelines strictly designed to keep all active students totally safe in the lab"
+                  ]
+                }
+              },
+              "answer": "Safety protocols",
+              "distractors": [
+                "Fair testing",
+                "Interpreting results",
+                "Variable changing"
+              ],
+              "rationale": "Safety protocols protect human health. A compromised lab environment halts all scientific progress.",
+              "metadata": {
+                "tags": ["safety", "rules"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l10_c5",
+              "concept_name": "Interpreting Results",
+              "definition": "Looking at the recorded data to see what it means.",
+              "key_fact": "This step turns raw numbers into useful information that helps answer the original question.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the mathematical process of intelligently {verb_phrase}?",
+                  "Which late-stage scientific step fundamentally involves {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "looking deeply at the heavily recorded data cleanly to see what it actually technically means",
+                    "analyzing powerfully the raw numbers painstakingly gathered from a lab test to securely find a pattern"
+                  ]
+                }
+              },
+              "answer": "Interpreting results",
+              "distractors": [
+                "Selecting equipment",
+                "Identifying materials",
+                "Creating a hypothesis"
+              ],
+              "rationale": "Data is useless without interpretation. This step converts numerical spreadsheets into recognizable scientific truths.",
+              "metadata": {
+                "tags": ["data", "analysis"],
+                "type": "process",
+                "blooms_taxonomy": "Analyzing"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l10_c6",
+              "concept_name": "Drawing a Conclusion",
+              "definition": "Summarizing the results to state what was found out or learned.",
+              "key_fact": "A good conclusion always refers back to the data to support its final claim.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the structural term for properly {verb_phrase}?",
+                  "Which final mandatory step requires beautifully {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "summarizing accurately all the results simply to proudly state what you have ultimately found out or learned",
+                    "writing conclusively a final academic statement based entirely on the hard evidence from the experiment"
+                  ]
+                }
+              },
+              "answer": "Drawing a conclusion",
+              "distractors": [
+                "Formulating the problem",
+                "Observation",
+                "Executing the procedure"
+              ],
+              "rationale": "The conclusion provides the final, scientifically backed answer to the question asked in step one, firmly anchored in the data collected.",
+              "metadata": {
+                "tags": ["scientific_method", "summary"],
+                "type": "core_concept",
+                "blooms_taxonomy": "Evaluating"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l10_c7",
+              "concept_name": "Validating the Hypothesis",
+              "definition": "Checking if the initial educated guess was correct or incorrect.",
+              "key_fact": "It is perfectly okay in science if your hypothesis is wrong; a wrong guess still teaches you something new.",
+              "difficulty": "hard",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What concept strictly ensures actively {verb_phrase}?",
+                  "Which part of the final conclusion focuses primarily on heavily {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "checking honestly if the very initial educated guess was ultimately correct or terribly incorrect",
+                    "comparing objectively the final verified results solidly back to the very original unproven prediction"
+                  ]
+                }
+              },
+              "answer": "Validating the hypothesis",
+              "distractors": [
+                "Selecting equipment",
+                "Identifying materials",
+                "Fair testing"
+              ],
+              "rationale": "Validation checks the integrity of the original prediction. Disproving a hypothesis is just as scientifically valuable as proving it.",
+              "metadata": {
+                "tags": ["scientific_method", "analysis"],
+                "type": "process",
+                "blooms_taxonomy": "Evaluating"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l10_c8",
+              "concept_name": "Communicating Findings",
+              "definition": "Sharing the results of the investigation with others.",
+              "key_fact": "Scientists share their findings so other people can learn from them or try the experiment themselves.",
+              "difficulty": "easy",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What do we socially call the vital act of freely {verb_phrase}?",
+                  "Which important post-experiment academic process deliberately involves smoothly {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "sharing publicly the honest results of the scientific investigation safely with others",
+                    "presenting loudly what was fundamentally learned from a lab experiment to a much wider audience"
+                  ]
+                }
+              },
+              "answer": "Communicating findings",
+              "distractors": [
+                "Keeping data secret",
+                "Guessing the results",
+                "Identifying materials"
+              ],
+              "rationale": "Science is a communal effort. By communicating findings, scientists allow peers to peer-review their work and build upon their discoveries.",
+              "metadata": {
+                "tags": ["collaboration", "sharing"],
+                "type": "application",
+                "blooms_taxonomy": "Creating"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l10_c9",
+              "concept_name": "Real-World Problem Solving",
+              "definition": "Applying what was learned to situations at home or in the classroom.",
+              "key_fact": "Science is most useful when the discoveries help make everyday life safer or easier.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the global term for usefully {verb_phrase}?",
+                  "Which impactful phrase totally defines brilliantly {verb_phrase}?"
+                ],
+                "variables": {
+                  "verb_phrase": [
+                    "applying heavily exactly what was learned in a strict lab strictly to situations at home or in the classroom",
+                    "using confirmed scientific discoveries cleverly to logically fix massive everyday human issues"
+                  ]
+                }
+              },
+              "answer": "Real-world problem solving",
+              "distractors": [
+                "Drawing a conclusion",
+                "Formulating the problem",
+                "Fair testing"
+              ],
+              "rationale": "The ultimate goal of scientific discovery is the practical application of new knowledge to elevate technology and human living standards.",
+              "metadata": {
+                "tags": ["application", "real_world"],
+                "type": "application",
+                "blooms_taxonomy": "Creating"
+              }
+            },
+            {
+              "concept_id": "g5_sci_q1_l10_c10",
+              "concept_name": "Sample Execution",
+              "definition": "Carrying out the plan to answer a specific question, like 'Do liquids have mass?'",
+              "key_fact": "Following a sample execution helps students practice their lab skills before designing their own complex experiments.",
+              "difficulty": "medium",
+              "question_generation": {
+                "supported_formats": ["multiple_choice"],
+                "templates": [
+                  "What is the educational purpose of heavily utilizing a {noun_phrase}?",
+                  "Which academic term perfectly describes a {noun_phrase}?"
+                ],
+                "variables": {
+                  "noun_phrase": [
+                    "process of carrying out safely a practice plan physically to answer a question like 'Do liquids have mass?'",
+                    "act of performing strongly a fully guided live experiment simply to safely build raw lab skills"
+                  ]
+                }
+              },
+              "answer": "Sample execution",
+              "distractors": [
+                "Sample planning",
+                "Safety protocol",
+                "Hypothesis creation"
+              ],
+              "rationale": "A sample execution provides a safe, guided environment to practice the physical motor skills needed for complex lab tests.",
+              "metadata": {
+                "tags": ["practice", "lab_skills"],
+                "type": "application",
+                "blooms_taxonomy": "Applying"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
