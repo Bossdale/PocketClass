@@ -1,6 +1,6 @@
 import { ModelClass } from "../model/ModelClass";
 import { PromptTemplates } from "../templates/promptTemplates";
-import { diagnosticScoreInterface } from "../types/input/diagnosticScoreInterface";
+import { diagnosticScoreInterface } from "../input/diagnosticScoreInterface";
 import { jsonParser } from "../utils/jsonParser";
 
 export async function getStudyTips(data: diagnosticScoreInterface) {

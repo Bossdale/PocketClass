@@ -1,7 +1,7 @@
 import { ModelClass } from "../model/ModelClass";
 import { PromptTemplates } from "../templates/promptTemplates";
-import { FocusAreaRequest } from "../types/input/focusAreaRequestInterface";
-import { FocusAreaResponse } from "../types/input/focusAreaResponseInterface";
+import { FocusAreaRequest } from "../input/focusAreaRequestInterface";
+import { FocusAreaResponse } from "../input/focusAreaResponseInterface";
 import { jsonParser } from "../utils/jsonParser";
 
 export async function generateFocusArea(data: FocusAreaRequest): Promise<FocusAreaResponse | null> {

@@ -7,7 +7,12 @@ export class ModelClass {
 
     private constructor(temperature: number){
         this.temperature = temperature
-        this.model = new ChatOllama({model: "gemma:2b", temperature: this.temperature})
+        this.model = new ChatOllama({
+            model: "gemma:2b", 
+            temperature: this.temperature,
+            baseUrl: "http://localhost:11434",
+            streaming: false,
+        })
     }
 
     public static getInstance(): ChatOllama {
@@ -20,7 +25,11 @@ export class ModelClass {
     public static setTemperature(temp: number) {
         if (this.instance) {
             this.instance.temperature = temp;
-            this.instance.model = new ChatOllama({ model: "gemma:2b", temperature: temp });
+            this.instance.model = new ChatOllama({ 
+                model: "gemma:2b", 
+                temperature: temp,
+                baseUrl: "http://localhost:11434" 
+            });
         } else {
             this.instance = new ModelClass(temp);
         }
@@ -29,6 +38,4 @@ export class ModelClass {
     public static getTemperature(): number | null {
         return this.instance ? this.instance.temperature : null;
     }
-    
-    
 }

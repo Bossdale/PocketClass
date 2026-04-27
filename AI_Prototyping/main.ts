@@ -1,6 +1,6 @@
-import { getStudyTips } from "./features/getStudyTips";
+import { getStudyTips } from "../frontend/ai_engine/features/getStudyTips";
 import { diagnosticScoreInterface } from "./types/input/diagnosticScoreInterface";
-import { generateFocusArea } from "./features/generateFocusArea"; 
+import { generateFocusArea } from "../frontend/ai_engine/features/generateFocusArea"; 
 import { FocusAreaRequest } from "./types/input/focusAreaRequestInterface";
 
 async function main() {

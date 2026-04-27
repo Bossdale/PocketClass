@@ -2,8 +2,8 @@ import { ModelClass }      from '../model/ModelClass';
 import { PromptTemplates } from '../templates/promptTemplates';
 import { jsonParser }      from '../utils/jsonParser';
 
-import type { FocusAreaRequest  } from '../types/input/focusAreaRequestInterface';
-import type { FocusAreaResponse } from '../types/input/focusAreaResponseInterface';
+import type { FocusAreaRequest  } from '../input/focusAreaRequestInterface';
+import type { FocusAreaResponse } from '../input/focusAreaResponseInterface';
 
 /**
  * FocusAreaService

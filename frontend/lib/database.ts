@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import scienceData from './data/g5_sci_q1.json';
+import scienceData from '../data/g5_sci_q1.json';
 
 // Open the local database (it creates 'pocketclass.db' if it doesn't exist)
 const db = SQLite.openDatabaseSync('pocketclass.db');
@@ -444,6 +444,107 @@ export const seedDatabaseFromJSON = async () => {
     console.log("Database successfully seeded with JSON data!");
   } catch (error) {
     console.error("Error seeding the database:", error);
+  }
+};
+
+
+// --- HELPER FUNCTION ---
+// This prevents us from repeating the formatting code for Quiz, Quarterly, and Diagnostic!
+const formatConceptsForAI = (rawConcepts: any[]) => {
+  return rawConcepts.map((c: any) => {
+    const distractors = db.getAllSync(
+      'SELECT distractor_text FROM concept_distractors WHERE concept_id = ? ORDER BY sort_order',
+      [c.concept_id]
+    ).map((d: any) => d.distractor_text);
+
+    const templates = db.getAllSync(
+      'SELECT template_text FROM concept_templates WHERE concept_id = ? ORDER BY sort_order',
+      [c.concept_id]
+    ).map((t: any) => t.template_text);
+
+    return {
+      concept_id: c.concept_id,
+      concept_name: c.concept_name,
+      definition: c.definition,
+      key_fact: c.key_fact,
+      difficulty: c.difficulty,
+      answer: c.answer,
+      distractors: distractors, // ✅ ADD THIS LINE
+      rationale: c.rationale,
+      metadata: {
+        blooms_taxonomy: c.blooms_taxonomy,
+        type: c.concept_type,
+      },
+      question_generation: {
+        variables: JSON.parse(c.variables), 
+        templates: templates,
+      }
+    };
+  });
+};
+
+// --- 1. QUIZ DATA (10 items from 1 specific lesson) ---
+export const getQuizDataForLesson = (lessonId: string) => {
+  try {
+    const rawConcepts = db.getAllSync(
+      'SELECT * FROM concepts WHERE lesson_id = ? LIMIT 10',
+      [lessonId]
+    );
+    const shapedConcepts = formatConceptsForAI(rawConcepts);
+    return shapedConcepts.sort(() => 0.5 - Math.random());
+  } catch (error) {
+    console.error("Error fetching quiz data:", error);
+    return [];
+  }
+};
+
+// --- 2. QUARTERLY EXAM DATA (4 items per lesson across the whole quarter) ---
+export const getQuarterlyExamData = (quarterId: string) => {
+  try {
+    // Find all lessons in this quarter
+    const lessons = db.getAllSync('SELECT lesson_id FROM lessons WHERE quarter_id = ?', [quarterId]);
+    let examConcepts: any[] = [];
+
+    // Loop through each lesson and grab 4 random concepts
+    for (const l of lessons) {
+      const rawConcepts = db.getAllSync(
+        'SELECT * FROM concepts WHERE lesson_id = ? ORDER BY RANDOM() LIMIT 4',
+        [(l as any).lesson_id]
+      );
+      const shapedConcepts = formatConceptsForAI(rawConcepts);
+      examConcepts = examConcepts.concat(shapedConcepts);
+    }
+
+    // Shuffle the final 40 items
+    return examConcepts.sort(() => 0.5 - Math.random());
+  } catch (error) {
+    console.error("Error fetching quarterly data:", error);
+    return [];
+  }
+};
+
+// --- 3. DIAGNOSTIC DATA (1 item per lesson across the whole quarter) ---
+export const getDiagnosticData = (quarterId: string) => {
+  try {
+    // Find all lessons in this quarter
+    const lessons = db.getAllSync('SELECT lesson_id FROM lessons WHERE quarter_id = ?', [quarterId]);
+    let diagnosticConcepts: any[] = [];
+
+    // Loop through each lesson and grab 1 random concept
+    for (const l of lessons) {
+      const rawConcepts = db.getAllSync(
+        'SELECT * FROM concepts WHERE lesson_id = ? ORDER BY RANDOM() LIMIT 1',
+        [(l as any).lesson_id]
+      );
+      const shapedConcepts = formatConceptsForAI(rawConcepts);
+      diagnosticConcepts = diagnosticConcepts.concat(shapedConcepts);
+    }
+
+    // Shuffle the final 10 items
+    return diagnosticConcepts.sort(() => 0.5 - Math.random());
+  } catch (error) {
+    console.error("Error fetching diagnostic data:", error);
+    return [];
   }
 };
 
